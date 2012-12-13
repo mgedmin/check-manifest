@@ -19,6 +19,7 @@ Here's the plan:
 Features currently implemented:
 
     * getting file list from Subversion (executes svn in a subprocess)
+    * getting file list from Mercurial (executes hg in a subprocess)
     * comparing it with the list of files in a .tar.gz source distribution
 
 It is currently usable for checking if you can produce complete source
@@ -38,9 +39,10 @@ import tempfile
 from contextlib import contextmanager
 
 
-__version__ = '0.1'
+__version__ = '0.2'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
 __licence__ = 'GPL v2 or later' # or ask me for MIT
+__url__ = 'https://gist.github.com/4277075' # for now
 
 
 class Failure(Exception):
@@ -208,6 +210,8 @@ def get_vcs_files():
     """List all files under version control in the current directory."""
     if os.path.exists('.svn'):
         return get_svn_files()
+    if os.path.exists('.hg'):
+        return get_hg_files()
     # XXX: support git/hg/bzr
     raise Failure("This doesn't look like a Subversion checkout")
 
@@ -223,10 +227,34 @@ def get_svn_files():
     return [name.rstrip('/') for name in output.splitlines()]
 
 
+def get_hg_files():
+    """List all files under Mercurial control in the current directory."""
+    output = run(['hg', 'status', '-ncam'])
+    # Mercurial omits directories, let's add them back
+    names = output.splitlines()
+    seen = set(names)
+    for name in list(names):
+        while True:
+            dir = os.path.dirname(name)
+            if not dir or dir in seen:
+                break
+            names.append(dir)
+            seen.add(dir)
+    return names
+
+
+IGNORE = set([
+    'PKG-INFO',  # always generated
+    'setup.cfg', # always generated, sometimes also kept in source control
+    # it's not a problem if the sdist is lacking these files:
+    '.hgtags', '.hgignore', '.gitignore',
+])
+
+
 def strip_sdist_extras(filelist):
     """Strip generated files that are only present in source distributions."""
     return [name for name in filelist
-            if name not in ('PKG-INFO', 'setup.cfg')
+            if name not in IGNORE
                and not name.endswith('.egg-info')
                and '.egg-info/' not in name]
 
@@ -249,7 +277,7 @@ def check_manifest(source_tree='.'):
         if not is_package(source_tree):
             raise Failure('This is not a Python project (no setup.py).')
         info_begin("listing source files under version control")
-        source_files = sorted(get_vcs_files())
+        source_files = sorted(strip_sdist_extras(get_vcs_files()))
         info_continue(": %d files and directories" % len(source_files))
         info_begin("building an sdist")
         with mkdtemp('-sdist') as tempdir:
@@ -260,10 +288,12 @@ def check_manifest(source_tree='.'):
                                     get_archive_file_list(sdist_filename))))
             info_continue(": %d files and directories" % len(sdist_files))
         if source_files != sdist_files:
-            error("version control files do not match sdist!\n%s"
+            error("files in version control do not match the sdist!\n%s"
                   % format_difference(source_files, sdist_files,
                                       "VCS", "sdist"))
             return False
+        else:
+            info("files in version control match files in the sdist")
         return True
 
 
