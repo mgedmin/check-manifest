@@ -20,12 +20,17 @@ Features currently implemented:
 
     * getting file list from Subversion (executes svn in a subprocess)
     * getting file list from Mercurial (executes hg in a subprocess)
+    * getting file list from Git (executes git in a subprocess)
+    * getting file list from Bazaar (executes bzr in a subprocess)
     * comparing it with the list of files in a .tar.gz source distribution
 
 It is currently usable for checking if you can produce complete source
 distributions for uploading to PyPI, provided that your package lives in SVN.
 
-It's not usable for checking the completeness of a MANIFEST.in.
+It's not usable for checking the completeness of a MANIFEST.in: the presence
+of the right setuptools plugin on your system might mean you're getting a
+complete sdist even without a complete MANIFEST.in.  (That's why the plan
+talks about a second sdist and/or VCS export.)
 
 The current implementation probably doesn't work on Windows.
 """
@@ -39,7 +44,7 @@ import tempfile
 from contextlib import contextmanager
 
 
-__version__ = '0.2'
+__version__ = '0.3'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
 __licence__ = 'GPL v2 or later' # or ask me for MIT
 __url__ = 'https://gist.github.com/4277075' # for now
@@ -212,8 +217,29 @@ def get_vcs_files():
         return get_svn_files()
     if os.path.exists('.hg'):
         return get_hg_files()
-    # XXX: support git/hg/bzr
-    raise Failure("This doesn't look like a Subversion checkout")
+    if os.path.exists('.git'):
+        return get_git_files()
+    if os.path.exists('.bzr'):
+        return get_bzr_files()
+    raise Failure("Couldn't find version control data (git/hg/bzr/svn supported)")
+
+
+def get_git_files():
+    """List all files versioned by git in the current directory."""
+    output = run(['git', 'ls-files'])
+    return add_directories(output.splitlines())
+
+
+def get_hg_files():
+    """List all files under Mercurial control in the current directory."""
+    output = run(['hg', 'status', '-ncam'])
+    return add_directories(output.splitlines())
+
+
+def get_bzr_files():
+    """List all files versioned in Bazaar in the current directory."""
+    output = run(['bzr', 'ls', '-VR'])
+    return strip_slashes(output.splitlines())
 
 
 def get_svn_files():
@@ -224,30 +250,33 @@ def get_svn_files():
     # again!
     # I should use svn st -v perhaps, or do an sdist from an svn export
     output = run(['svn', 'ls', '-R', '--non-interactive'])
-    return [name.rstrip('/') for name in output.splitlines()]
+    return strip_slashes(output.splitlines())
 
 
-def get_hg_files():
-    """List all files under Mercurial control in the current directory."""
-    output = run(['hg', 'status', '-ncam'])
-    # Mercurial omits directories, let's add them back
-    names = output.splitlines()
+def strip_slashes(names):
+    """Svn/Bzr print directory names with trailing slashes.  Strip them."""
+    return [name.rstrip('/') for name in names]
+
+
+def add_directories(names):
+    """Git/Mercurial omits directories, let's add them back."""
+    res = list(names)
     seen = set(names)
-    for name in list(names):
+    for name in names:
         while True:
             dir = os.path.dirname(name)
             if not dir or dir in seen:
                 break
-            names.append(dir)
+            res.append(dir)
             seen.add(dir)
-    return names
+    return res
 
 
 IGNORE = set([
     'PKG-INFO',  # always generated
     'setup.cfg', # always generated, sometimes also kept in source control
     # it's not a problem if the sdist is lacking these files:
-    '.hgtags', '.hgignore', '.gitignore',
+    '.hgtags', '.hgignore', '.gitignore', '.bzrignore',
 ])
 
 
