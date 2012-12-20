@@ -35,6 +35,7 @@ talks about a second sdist and/or VCS export.)
 The current implementation probably doesn't work on Windows.
 """
 
+import re
 import os
 import shutil
 import subprocess
@@ -44,7 +45,7 @@ import tempfile
 from contextlib import contextmanager
 
 
-__version__ = '0.3'
+__version__ = '0.4'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
 __licence__ = 'GPL v2 or later' # or ask me for MIT
 __url__ = 'https://gist.github.com/4277075' # for now
@@ -272,12 +273,27 @@ def add_directories(names):
     return res
 
 
+#
+# Packaging logic
+#
+
 IGNORE = set([
     'PKG-INFO',  # always generated
     'setup.cfg', # always generated, sometimes also kept in source control
     # it's not a problem if the sdist is lacking these files:
     '.hgtags', '.hgignore', '.gitignore', '.bzrignore',
 ])
+
+SUGGESTIONS = [(re.compile(pattern), suggestion) for pattern, suggestion in [
+    # regexp -> suggestion
+    ('^([^/]+[.]cfg)$',             r'include \1'),
+    ('^([A-Z]+)$',                  r'include \1'),
+    ('^[^/]+[.](txt|rst|py)$',      r'include *.\1'),
+    ('^([a-zA-Z_][a-zA-Z_0-9]*)/'
+     '.*[.](py|zcml|pt|mako|xml|txt|css|png|jpg|dot|po|pot|mo|ui|desktop)$',
+                                    r'recursive-include \1 *.\2'),
+]]
+
 
 
 def strip_sdist_extras(filelist):
@@ -286,6 +302,17 @@ def strip_sdist_extras(filelist):
             if name not in IGNORE
                and not name.endswith('.egg-info')
                and '.egg-info/' not in name]
+
+
+def find_suggestions(filelist):
+    """Suggest MANIFEST.in patterns for missing files."""
+    suggestions = set()
+    for filename in filelist:
+        for pattern, suggestion in SUGGESTIONS:
+            m = pattern.match(filename)
+            if m is not None:
+                suggestions.add(pattern.sub(suggestion, filename))
+    return sorted(suggestions)
 
 
 def is_package(source_tree='.'):
@@ -320,11 +347,20 @@ def check_manifest(source_tree='.'):
             error("files in version control do not match the sdist!\n%s"
                   % format_difference(source_files, sdist_files,
                                       "VCS", "sdist"))
+            missing_files = set(source_files) - set(sdist_files)
+            suggestions = find_suggestions(missing_files)
+            if suggestions:
+                info("suggested MANIFEST.in rules:\n%s"
+                     % format_list(suggestions))
             return False
         else:
             info("files in version control match files in the sdist")
         return True
 
+
+#
+# Main script
+#
 
 def main():
     # TODO: --help message, cmdline parsing for specifying the source tree
