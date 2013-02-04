@@ -35,6 +35,7 @@ talks about a second sdist and/or VCS export.)
 The current implementation probably doesn't work on Windows.
 """
 
+import argparse
 import re
 import os
 import shutil
@@ -45,7 +46,7 @@ import tempfile
 from contextlib import contextmanager
 
 
-__version__ = '0.4'
+__version__ = '0.5'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
 __licence__ = 'GPL v2 or later' # or ask me for MIT
 __url__ = 'https://gist.github.com/4277075' # for now
@@ -286,12 +287,14 @@ IGNORE = set([
 
 SUGGESTIONS = [(re.compile(pattern), suggestion) for pattern, suggestion in [
     # regexp -> suggestion
-    ('^([^/]+[.]cfg)$',             r'include \1'),
+    ('^([^/]+[.](cfg|ini))$',       r'include \1'),
     ('^([A-Z]+)$',                  r'include \1'),
     ('^[^/]+[.](txt|rst|py)$',      r'include *.\1'),
     ('^([a-zA-Z_][a-zA-Z_0-9]*)/'
-     '.*[.](py|zcml|pt|mako|xml|txt|css|png|jpg|dot|po|pot|mo|ui|desktop)$',
+     '.*[.](py|zcml|pt|mako|xml|txt|rst|css|png|jpg|dot|po|pot|mo|ui|desktop|bat)$',
                                     r'recursive-include \1 *.\2'),
+    ('^([a-zA-Z_][a-zA-Z_0-9]*)/(Makefile)$',
+                                    r'recursive-include \1 \2'),
 ]]
 
 
@@ -324,7 +327,7 @@ def is_package(source_tree='.'):
     return os.path.exists(os.path.join(source_tree, 'setup.py'))
 
 
-def check_manifest(source_tree='.'):
+def check_manifest(source_tree='.', create=False, update=False):
     """Compare a generated source distribution with list of files in a VCS.
 
     Returns True if the manifest is fine.
@@ -352,6 +355,14 @@ def check_manifest(source_tree='.'):
             if suggestions:
                 info("suggested MANIFEST.in rules:\n%s"
                      % format_list(suggestions))
+                if update or (create and not os.path.exists('MANIFEST.in')):
+                    with open('MANIFEST.in', 'a') as f:
+                        if f.tell() == 0:
+                            info("creating MANIFEST.in")
+                        else:
+                            info("updating MANIFEST.in")
+                            f.write('\n# added by check_manifest.py\n')
+                        f.write('\n'.join(suggestions) + '\n')
             return False
         else:
             info("files in version control match files in the sdist")
@@ -363,10 +374,19 @@ def check_manifest(source_tree='.'):
 #
 
 def main():
-    # TODO: --help message, cmdline parsing for specifying the source tree
-    source_tree = '.'
+    parser = argparse.ArgumentParser(
+        description="Check a Python MANIFEST.in file for completeness",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('source_tree', default='.', nargs='?',
+        help='location for the source tree')
+    parser.add_argument('-c', '--create', action='store_true',
+        help='create a MANIFEST.in if missing')
+    parser.add_argument('-u', '--update', action='store_true',
+        help='append suggestions to MANIFEST.in (implies --create)')
+    args = parser.parse_args()
     try:
-        if not check_manifest(source_tree):
+        if not check_manifest(args.source_tree, create=args.create,
+                              update=args.update):
             sys.exit(1)
     except Failure, e:
         error(e)
