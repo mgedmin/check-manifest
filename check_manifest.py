@@ -46,7 +46,7 @@ import tempfile
 from contextlib import contextmanager
 
 
-__version__ = '0.5'
+__version__ = '0.5.1'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
 __licence__ = 'GPL v2 or later' # or ask me for MIT
 __url__ = 'https://gist.github.com/4277075' # for now
@@ -266,11 +266,11 @@ def add_directories(names):
     seen = set(names)
     for name in names:
         while True:
-            dir = os.path.dirname(name)
-            if not dir or dir in seen:
+            name = os.path.dirname(name)
+            if not name or name in seen:
                 break
-            res.append(dir)
-            seen.add(dir)
+            res.append(name)
+            seen.add(name)
     return res
 
 
