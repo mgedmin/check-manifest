@@ -43,10 +43,11 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import zipfile
 from contextlib import contextmanager
 
 
-__version__ = '0.5.1'
+__version__ = '0.6'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
 __licence__ = 'GPL v2 or later' # or ask me for MIT
 __url__ = 'https://gist.github.com/4277075' # for now
@@ -190,10 +191,17 @@ def get_one_file_in(dirname):
 def get_archive_file_list(archive_filename):
     """Return the list of files in an archive.
 
-    Supports .tar.gz only, at the moment.
+    Supports .tar.gz and .zip.
     """
-    tf = tarfile.TarFile.open(archive_filename)
-    return tf.getnames()
+    if archive_filename.endswith('.zip'):
+        with zipfile.ZipFile(archive_filename) as zf:
+            return add_directories(zf.namelist())
+    elif archive_filename.endswith(('.tar.gz', '.tar.bz2', '.tar')):
+        with tarfile.open(archive_filename) as tf:
+            return tf.getnames()
+    else:
+        ext = os.path.splitext(archive_filename)[-1]
+        raise Failure('Unrecognized archive type: %s' % ext)
 
 
 def strip_toplevel_name(filelist):
@@ -202,15 +210,24 @@ def strip_toplevel_name(filelist):
         >>> strip_toplevel_name(['a', 'a/b', 'a/c', 'a/c/d'])
         ['b', 'c', 'c/d']
 
+        >>> strip_toplevel_name(['a/b', 'a/c', 'a/c/d'])
+        ['b', 'c', 'c/d']
+
     """
     if not filelist:
         return filelist
-    prefix = filelist[0] + '/'
-    for name in filelist[1:]:
+    prefix = filelist[0]
+    if '/' in prefix:
+        prefix = prefix.partition('/')[0] + '/'
+        names = filelist
+    else:
+        prefix = prefix + '/'
+        names = filelist[1:]
+    for name in names:
         if not name.startswith(prefix):
             raise Failure("File doesn't have the common prefix (%s): %s"
                           % (name, prefix))
-    return [name[len(prefix):] for name in filelist[1:]]
+    return [name[len(prefix):] for name in names]
 
 
 def get_vcs_files():
@@ -261,7 +278,7 @@ def strip_slashes(names):
 
 
 def add_directories(names):
-    """Git/Mercurial omits directories, let's add them back."""
+    """Git/Mercurial/zip files omit directories, let's add them back."""
     res = list(names)
     seen = set(names)
     for name in names:
@@ -271,7 +288,7 @@ def add_directories(names):
                 break
             res.append(name)
             seen.add(name)
-    return res
+    return sorted(res)
 
 
 #
@@ -291,7 +308,7 @@ SUGGESTIONS = [(re.compile(pattern), suggestion) for pattern, suggestion in [
     ('^([A-Z]+)$',                  r'include \1'),
     ('^[^/]+[.](txt|rst|py)$',      r'include *.\1'),
     ('^([a-zA-Z_][a-zA-Z_0-9]*)/'
-     '.*[.](py|zcml|pt|mako|xml|txt|rst|css|png|jpg|dot|po|pot|mo|ui|desktop|bat)$',
+     '.*[.](py|zcml|pt|mako|xml|html|txt|rst|css|png|jpg|dot|po|pot|mo|ui|desktop|bat)$',
                                     r'recursive-include \1 *.\2'),
     ('^([a-zA-Z_][a-zA-Z_0-9]*)/(Makefile)$',
                                     r'recursive-include \1 \2'),
