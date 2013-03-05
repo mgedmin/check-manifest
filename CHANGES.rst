@@ -13,3 +13,6 @@ Changelog
 * Added README.rst, CHANGES.rst, setup.py, tox.ini (but no real tests yet),
   MANIFEST.in, and a Makefile.
 
+* Fixed a bug in error reporting (when setup.py failed, the user would get
+  `TypeError: descriptor '__init__' requires a 'exceptions.Exception' object
+  but received a 'str'`).

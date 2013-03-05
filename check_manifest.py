@@ -127,7 +127,7 @@ def format_difference(seq_a, seq_b, name_a, name_b):
 
 class CommandFailed(Failure):
     def __init__(self, command, status, output):
-        Failure.__init__("%s failed (status %s):\n%s" % (
+        Failure.__init__(self, "%s failed (status %s):\n%s" % (
                                command, status, output))
 
 
