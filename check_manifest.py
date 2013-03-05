@@ -47,10 +47,10 @@ import zipfile
 from contextlib import contextmanager
 
 
-__version__ = '0.6'
+__version__ = '0.7.dev'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
 __licence__ = 'GPL v2 or later' # or ask me for MIT
-__url__ = 'https://gist.github.com/4277075' # for now
+__url__ = 'https://github.com/mgedmin/check-manifest'
 
 
 class Failure(Exception):
