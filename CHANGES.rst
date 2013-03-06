@@ -10,6 +10,11 @@ Changelog
 * When check-manifest -u (or -c) doesn't know how to write a rule matching a
   particular file, it now apologizes explicitly.
 
+* Copy the source tree to a temporary directory before running python setup.py
+  sdist to avoid side effects from setuptools plugins or stale
+  \*.egg-info/SOURCES.txt files
+  (`issue #1 <https://github.com/mgedmin/check-manifest/issues/1>`_).
+
 
 0.8 (2013-03-06)
 ----------------

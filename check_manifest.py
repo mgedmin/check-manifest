@@ -1,36 +1,17 @@
 #!/usr/bin/python
 """Check the MANIFEST.in file in a Python source package for completeness.
 
-Here's the plan:
-    This script works by building a source distribution archive (by running
-    setup.py sdist), then checking the file list in the archive against the
-    file list in version control (Subversion, Git, Mercurial, Bazaar are
-    supported).
+This script works by building a source distribution archive (by running
+setup.py sdist), then checking the file list in the archive against the
+file list in version control (Subversion, Git, Mercurial, Bazaar are
+supported).
 
-    Since the first check can fail to catch missing MANIFEST.in entries when
-    you've got the right setuptools plugins installed, the script performs a
-    second test: unpacks the source distribution into a temporary directory,
-    then builds a second source distribution, and compares the file list again.
-
-    Alternatively it may be a better idea to export the source tree into a
-    temporary directory, build an sdist there, then compare it with the version
-    control list?
-
-Features currently implemented:
-
-    * getting file list from Subversion (executes svn in a subprocess)
-    * getting file list from Mercurial (executes hg in a subprocess)
-    * getting file list from Git (executes git in a subprocess)
-    * getting file list from Bazaar (executes bzr in a subprocess)
-    * comparing it with the list of files in a .tar.gz source distribution
-
-It is currently usable for checking if you can produce complete source
-distributions for uploading to PyPI, provided that your package lives in SVN.
-
-It's not usable for checking the completeness of a MANIFEST.in: the presence
-of the right setuptools plugin on your system might mean you're getting a
-complete sdist even without a complete MANIFEST.in.  (That's why the plan
-talks about a second sdist and/or VCS export.)
+Since the first check can fail to catch missing MANIFEST.in entries when
+you've got the right setuptools version control system support plugins
+installed, the script copies all the versioned files into a temporary
+directory before building the source distribution.  This also avoids
+issues with stale egg-info/SOURCES.txt files that may cause files not mentioned
+in MANIFEST.in to be included nevertheless.
 
 The current implementation probably doesn't work on Windows.
 """
@@ -172,6 +153,24 @@ def mkdtemp(hint=''):
         yield dirname
     finally:
         shutil.rmtree(dirname)
+
+
+def copy_files(filelist, destdir):
+    """Copy a list of files to destdir, preserving directory structure.
+
+    File names should be relative to the current working directory.
+    """
+    for filename in filelist:
+        destfile = os.path.join(destdir, filename)
+        # filename should not be absolute, but let's double-check
+        assert destfile.startswith(destdir + os.path.sep)
+        destfiledir = os.path.dirname(destfile)
+        if not os.path.isdir(destfiledir):
+            os.makedirs(destfiledir)
+        if os.path.isdir(filename):
+            os.mkdir(destfile)
+        else:
+            shutil.copy2(filename, destfile)
 
 
 def get_one_file_in(dirname):
@@ -360,14 +359,18 @@ def check_manifest(source_tree='.', create=False, update=False):
         info_begin("listing source files under version control")
         source_files = sorted(strip_sdist_extras(get_vcs_files()))
         info_continue(": %d files and directories" % len(source_files))
-        info_begin("building an sdist")
-        with mkdtemp('-sdist') as tempdir:
-            run(['python', 'setup.py', 'sdist', '-d', tempdir])
-            sdist_filename = get_one_file_in(tempdir)
-            info_continue(": %s" % os.path.basename(sdist_filename))
-            sdist_files = sorted(strip_sdist_extras(strip_toplevel_name(
-                                    get_archive_file_list(sdist_filename))))
-            info_continue(": %d files and directories" % len(sdist_files))
+        info_begin("copying source files to a temporary directory")
+        with mkdtemp('-sources') as tempsourcedir:
+            copy_files(source_files, tempsourcedir)
+            info_begin("building an sdist")
+            with cd(tempsourcedir):
+                with mkdtemp('-sdist') as tempdir:
+                    run(['python', 'setup.py', 'sdist', '-d', tempdir])
+                    sdist_filename = get_one_file_in(tempdir)
+                    info_continue(": %s" % os.path.basename(sdist_filename))
+                    sdist_files = sorted(strip_sdist_extras(strip_toplevel_name(
+                                            get_archive_file_list(sdist_filename))))
+                    info_continue(": %d files and directories" % len(sdist_files))
         if source_files != sdist_files:
             error("files in version control do not match the sdist!\n%s"
                   % format_difference(source_files, sdist_files,
