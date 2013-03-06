@@ -15,6 +15,8 @@ Changelog
   \*.egg-info/SOURCES.txt files
   (`issue #1 <https://github.com/mgedmin/check-manifest/issues/1>`_).
 
+* Warn if `*.egg-info` is actually checked into the VCS.
+
 
 0.8 (2013-03-06)
 ----------------

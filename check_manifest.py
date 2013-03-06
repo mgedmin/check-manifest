@@ -81,6 +81,11 @@ def error(message):
     print >> sys.stderr, message
 
 
+def warning(message):
+    _check_tbc()
+    print >> sys.stderr, message
+
+
 def format_list(list_of_strings):
     return "\n".join("  " + s for s in list_of_strings)
 
@@ -353,11 +358,13 @@ def check_manifest(source_tree='.', create=False, update=False):
 
     Returns True if the manifest is fine.
     """
+    all_ok = True
     with cd(source_tree):
         if not is_package(source_tree):
             raise Failure('This is not a Python project (no setup.py).')
         info_begin("listing source files under version control")
-        source_files = sorted(strip_sdist_extras(get_vcs_files()))
+        all_source_files = sorted(get_vcs_files())
+        source_files = strip_sdist_extras(all_source_files)
         info_continue(": %d files and directories" % len(source_files))
         info_begin("copying source files to a temporary directory")
         with mkdtemp('-sources') as tempsourcedir:
@@ -371,7 +378,9 @@ def check_manifest(source_tree='.', create=False, update=False):
                     sdist_files = sorted(strip_sdist_extras(strip_toplevel_name(
                                             get_archive_file_list(sdist_filename))))
                     info_continue(": %d files and directories" % len(sdist_files))
-        if source_files != sdist_files:
+        if source_files == sdist_files:
+            info("files in version control match files in the sdist")
+        else:
             error("files in version control do not match the sdist!\n%s"
                   % format_difference(source_files, sdist_files,
                                       "VCS", "sdist"))
@@ -396,10 +405,14 @@ def check_manifest(source_tree='.', create=False, update=False):
             elif user_asked_for_help:
                 info("don't know how to come up with rules"
                      " matching any of the files, sorry!")
-            return False
-        else:
-            info("files in version control match files in the sdist")
-        return True
+            all_ok = False
+        bad_ideas = [fn for fn in all_source_files if fn.endswith('.egg-info')]
+        if bad_ideas:
+            warning("you have %s in source control!\nthat's a bad idea:"
+                    " auto-generated files should not be versioned"
+                    % bad_ideas[0])
+            all_ok = False
+    return all_ok
 
 
 #
