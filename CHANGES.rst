@@ -15,7 +15,10 @@ Changelog
   \*.egg-info/SOURCES.txt files
   (`issue #1 <https://github.com/mgedmin/check-manifest/issues/1>`_).
 
-* Warn if `*.egg-info` is actually checked into the VCS.
+* Warn if `*.egg-info` or `*.mo` is actually checked into the VCS.
+
+* Don't complain if `*.mo` files are present in the sdist but not in the VCS
+  (`issue #2 <https://github.com/mgedmin/check-manifest/issues/2>`_).
 
 
 0.8 (2013-03-06)

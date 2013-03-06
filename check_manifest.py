@@ -17,8 +17,9 @@ The current implementation probably doesn't work on Windows.
 """
 
 import argparse
-import re
+import fnmatch
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -299,12 +300,25 @@ def add_directories(names):
 # Packaging logic
 #
 
-IGNORE = set([
-    'PKG-INFO',  # always generated
-    'setup.cfg', # always generated, sometimes also kept in source control
+# it's fine if any of these are missing in the VCS or in the sdist
+IGNORE = [
+    'PKG-INFO',     # always generated
+    '*.egg-info',   # always generated
+    '*.egg-info/*', # always generated
+    'setup.cfg',    # always generated, sometimes also kept in source control
     # it's not a problem if the sdist is lacking these files:
     '.hgtags', '.hgignore', '.gitignore', '.bzrignore',
-])
+    # it's convenient to ship compiled .mo files in sdists, but they shouldn't
+    # be checked in
+    '*.mo',
+]
+
+WARN_ABOUT_FILES_IN_VCS = [
+    # generated files should not be committed into the VCS
+    'PKG-INFO',
+    '*.egg-info',
+    '*.mo',
+]
 
 SUGGESTIONS = [(re.compile(pattern), suggestion) for pattern, suggestion in [
     # regexp -> suggestion
@@ -321,12 +335,21 @@ SUGGESTIONS = [(re.compile(pattern), suggestion) for pattern, suggestion in [
 
 
 
+def file_matches(filename, patterns):
+    """Does this filename match any of the patterns?"""
+    return any(fnmatch.fnmatch(filename, pat) for pat in patterns)
+
+
 def strip_sdist_extras(filelist):
     """Strip generated files that are only present in source distributions."""
     return [name for name in filelist
-            if name not in IGNORE
-               and not name.endswith('.egg-info')
-               and '.egg-info/' not in name]
+            if not file_matches(name, IGNORE)]
+
+
+def find_bad_ideas(filelist):
+    """Find files matching WARN_ABOUT_FILES_IN_VCS patterns."""
+    return [name for name in filelist
+            if file_matches(name, WARN_ABOUT_FILES_IN_VCS)]
 
 
 def find_suggestions(filelist):
@@ -406,11 +429,14 @@ def check_manifest(source_tree='.', create=False, update=False):
                 info("don't know how to come up with rules"
                      " matching any of the files, sorry!")
             all_ok = False
-        bad_ideas = [fn for fn in all_source_files if fn.endswith('.egg-info')]
+        bad_ideas = find_bad_ideas(all_source_files)
         if bad_ideas:
             warning("you have %s in source control!\nthat's a bad idea:"
                     " auto-generated files should not be versioned"
                     % bad_ideas[0])
+            if len(bad_ideas) > 1:
+                warning("this also applies to the following:\n%s"
+                        % format_list(bad_ideas[1:]))
             all_ok = False
     return all_ok
 
