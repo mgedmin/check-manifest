@@ -29,7 +29,7 @@ import zipfile
 from contextlib import contextmanager
 
 
-__version__ = '0.9.dev'
+__version__ = '0.9'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
 __licence__ = 'GPL v2 or later' # or ask me for MIT
 __url__ = 'https://github.com/mgedmin/check-manifest'
