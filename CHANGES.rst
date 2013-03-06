@@ -5,7 +5,11 @@ Changelog
 0.8 (unreleased)
 ----------------
 
-* No changes yet.
+* Entry point for zest.releaser_.  If you install both zest.releaser and
+  check-manifest, you will be asked if you want to check your manifest during
+  ``fullrelease``.
+
+.. _zest.releaser: https://pypi.python.org/pypi/zest.releaser
 
 
 0.7 (2013-03-05)

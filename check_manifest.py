@@ -410,5 +410,30 @@ def main():
         sys.exit(2)
 
 
+#
+# zest.releaser integration
+#
+
+def zest_releaser_check(data):
+    """Check the completeness of MANIFEST.in before the release.
+
+    This is an entry point for zest.releaser.  See the documentation at
+    https://pypi.python.org/pypi/zest.releaser/3.3#entrypoints-documentation
+    """
+    from zest.releaser.utils import ask
+    if not ask("Do you want to run check-manifest?"):
+        return
+    try:
+        if not check_manifest(data['workingdir']):
+            if not ask("MANIFEST.in is not in order. "
+                       " Do you want to continue despite that?", default=False):
+                sys.exit(1)
+    except Failure, e:
+        error(e)
+        if not ask("Something bad happened. "
+                   " Do you want to continue despite that?", default=False):
+            sys.exit(2)
+
+
 if __name__ == '__main__':
     main()

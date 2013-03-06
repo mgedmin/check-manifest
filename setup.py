@@ -56,5 +56,8 @@ setup(
         'console_scripts': [
             'check-manifest = check_manifest:main',
         ],
+        'zest.releaser.prereleaser.before': [
+            'check-manifest = check_manifest:zest_releaser_check',
+        ],
     },
 )
