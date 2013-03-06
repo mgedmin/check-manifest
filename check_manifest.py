@@ -305,6 +305,7 @@ IGNORE = set([
 SUGGESTIONS = [(re.compile(pattern), suggestion) for pattern, suggestion in [
     # regexp -> suggestion
     ('^([^/]+[.](cfg|ini))$',       r'include \1'),
+    ('^([.]travis[.]yml)$',         r'include \1'),
     ('^([A-Z]+)$',                  r'include \1'),
     ('^[^/]+[.](txt|rst|py)$',      r'include *.\1'),
     ('^([a-zA-Z_][a-zA-Z_0-9]*)/'

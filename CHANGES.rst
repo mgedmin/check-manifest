@@ -5,7 +5,7 @@ Changelog
 0.9 (unreleased)
 ----------------
 
-* No changes yet.
+* Add suggestion pattern for `.travis.yml`.
 
 
 0.8 (2013-03-06)
