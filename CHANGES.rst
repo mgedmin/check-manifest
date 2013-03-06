@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.8 (unreleased)
+0.8 (2013-03-06)
 ----------------
 
 * Entry point for zest.releaser_.  If you install both zest.releaser and
