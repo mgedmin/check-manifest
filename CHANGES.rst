@@ -7,6 +7,9 @@ Changelog
 
 * Add suggestion pattern for `.travis.yml`.
 
+* When check-manifest -u (or -c) doesn't know how to write a rule matching a
+  particular file, it now apologizes explicitly.
+
 
 0.8 (2013-03-06)
 ----------------

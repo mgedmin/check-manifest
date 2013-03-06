@@ -328,12 +328,16 @@ def strip_sdist_extras(filelist):
 def find_suggestions(filelist):
     """Suggest MANIFEST.in patterns for missing files."""
     suggestions = set()
+    unknowns = []
     for filename in filelist:
         for pattern, suggestion in SUGGESTIONS:
             m = pattern.match(filename)
             if m is not None:
                 suggestions.add(pattern.sub(suggestion, filename))
-    return sorted(suggestions)
+                break
+        else:
+            unknowns.append(filename)
+    return sorted(suggestions), unknowns
 
 
 def is_package(source_tree='.'):
@@ -369,11 +373,13 @@ def check_manifest(source_tree='.', create=False, update=False):
                   % format_difference(source_files, sdist_files,
                                       "VCS", "sdist"))
             missing_files = set(source_files) - set(sdist_files)
-            suggestions = find_suggestions(missing_files)
+            suggestions, unknowns = find_suggestions(missing_files)
+            user_asked_for_help = update or (create and not
+                                                os.path.exists('MANIFEST.in'))
             if suggestions:
                 info("suggested MANIFEST.in rules:\n%s"
                      % format_list(suggestions))
-                if update or (create and not os.path.exists('MANIFEST.in')):
+                if user_asked_for_help:
                     with open('MANIFEST.in', 'a') as f:
                         if f.tell() == 0:
                             info("creating MANIFEST.in")
@@ -381,6 +387,12 @@ def check_manifest(source_tree='.', create=False, update=False):
                             info("updating MANIFEST.in")
                             f.write('\n# added by check_manifest.py\n')
                         f.write('\n'.join(suggestions) + '\n')
+                    if unknowns:
+                        info("don't know how to come up with rules matching\n%s"
+                             % format_list(unknowns))
+            elif user_asked_for_help:
+                info("don't know how to come up with rules"
+                     " matching any of the files, sorry!")
             return False
         else:
             info("files in version control match files in the sdist")
