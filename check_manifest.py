@@ -418,7 +418,7 @@ def zest_releaser_check(data):
     """Check the completeness of MANIFEST.in before the release.
 
     This is an entry point for zest.releaser.  See the documentation at
-    https://pypi.python.org/pypi/zest.releaser/3.3#entrypoints-documentation
+    http://zestreleaser.readthedocs.org/en/latest/entrypoints.html
     """
     from zest.releaser.utils import ask
     if not ask("Do you want to run check-manifest?"):
