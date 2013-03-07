@@ -7,6 +7,9 @@ Changelog
 
 * ``check-manifest --version`` now prints the version number.
 
+* Don't apologize for not adding rules for directories (especially after adding
+  rules that include files inside that directory).
+
 
 0.9 (2013-03-06)
 ----------------
