@@ -451,6 +451,8 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('source_tree', default='.', nargs='?',
         help='location for the source tree')
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s version ' + __version__)
     parser.add_argument('-c', '--create', action='store_true',
         help='create a MANIFEST.in if missing')
     parser.add_argument('-u', '--update', action='store_true',

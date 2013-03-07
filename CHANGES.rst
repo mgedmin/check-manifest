@@ -5,7 +5,7 @@ Changelog
 0.10 (unreleased)
 -----------------
 
-* No changes yet.
+* ``check-manifest --version`` now prints the version number.
 
 
 0.9 (2013-03-06)
