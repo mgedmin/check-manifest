@@ -129,7 +129,7 @@ def run(command):
     """
     pipe = subprocess.Popen(command, stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
-    output = pipe.communicate()[0].decode(locale.getpreferredencoding())
+    output = pipe.communicate()[0].decode(locale.getpreferredencoding(False))
     status = pipe.wait()
     if status != 0:
         raise CommandFailed(command, status, output)
