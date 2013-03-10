@@ -19,6 +19,7 @@ from __future__ import print_function
 
 import argparse
 import fnmatch
+import locale
 import os
 import re
 import shutil
@@ -128,7 +129,7 @@ def run(command):
     """
     pipe = subprocess.Popen(command, stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
-    output, _ = pipe.communicate()
+    output = pipe.communicate()[0].decode(locale.getpreferredencoding())
     status = pipe.wait()
     if status != 0:
         raise CommandFailed(command, status, output)
