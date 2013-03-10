@@ -15,6 +15,7 @@ in MANIFEST.in to be included nevertheless.
 
 The current implementation probably doesn't work on Windows.
 """
+from __future__ import print_function
 
 import argparse
 import fnmatch
@@ -47,13 +48,13 @@ _to_be_continued = False
 def _check_tbc():
     global _to_be_continued
     if _to_be_continued:
-        print
+        print()
         _to_be_continued = False
 
 
 def info(message):
     _check_tbc()
-    print message
+    print(message)
 
 
 def info_begin(message):
@@ -73,18 +74,18 @@ def info_continue(message):
 
 def info_end(message):
     global _to_be_continued
-    print message
+    print(message)
     _to_be_continued = False
 
 
 def error(message):
     _check_tbc()
-    print >> sys.stderr, message
+    print(message, file=sys.stderr)
 
 
 def warning(message):
     _check_tbc()
-    print >> sys.stderr, message
+    print(message, file=sys.stderr)
 
 
 def format_list(list_of_strings):
@@ -467,7 +468,7 @@ def main():
         if not check_manifest(args.source_tree, create=args.create,
                               update=args.update):
             sys.exit(1)
-    except Failure, e:
+    except Failure as e:
         error(e)
         sys.exit(2)
 
@@ -490,7 +491,7 @@ def zest_releaser_check(data):
             if not ask("MANIFEST.in is not in order. "
                        " Do you want to continue despite that?", default=False):
                 sys.exit(1)
-    except Failure, e:
+    except Failure as e:
         error(e)
         if not ask("Something bad happened. "
                    " Do you want to continue despite that?", default=False):
