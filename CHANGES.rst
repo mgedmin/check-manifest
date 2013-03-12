@@ -10,6 +10,8 @@ Changelog
 * Don't apologize for not adding rules for directories (especially after adding
   rules that include files inside that directory).
 
+* Python 3 support contributed by Steven Myint.
+
 
 0.9 (2013-03-06)
 ----------------
