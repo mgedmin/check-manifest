@@ -92,5 +92,5 @@ ignore-default-rules
     ignore list instead of adding to it.
 
 
-.. |buildstatus| image:: https://api.travis-ci.org/mgedmin/irclog2html.png?branch=master
-.. _buildstatus: https://travis-ci.org/mgedmin/irclog2html
+.. |buildstatus| image:: https://api.travis-ci.org/mgedmin/check-manifest.png?branch=master
+.. _buildstatus: https://travis-ci.org/mgedmin/check-manifest
