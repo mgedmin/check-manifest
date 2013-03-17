@@ -1,6 +1,8 @@
 check-manifest
 ==============
 
+|buildstatus|_
+
 Are you a Python developer?  Have you uploaded packages to the Python Package
 Index?  Have you accidentally uploaded *broken* packages with some files
 missing?  If so, check-manifest is for you.
@@ -89,3 +91,6 @@ ignore-default-rules
     If set to ``true``, your ``ignore`` patterns will replace the default
     ignore list instead of adding to it.
 
+
+.. |buildstatus| image:: https://api.travis-ci.org/mgedmin/check-manifest.png?branch=master
+.. _buildstatus: https://travis-ci.org/mgedmin/check-manifest
