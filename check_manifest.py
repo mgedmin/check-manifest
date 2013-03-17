@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """Check the MANIFEST.in file in a Python source package for completeness.
 
 This script works by building a source distribution archive (by running
