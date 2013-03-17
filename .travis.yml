@@ -6,5 +6,6 @@ python:
     - pypy
 script:
     - python setup.py test -q
+    - python check_manifest.py
 notifications:
     email: false
