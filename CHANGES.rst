@@ -12,6 +12,9 @@ Changelog
 
 * Python 3 support contributed by Steven Myint.
 
+* Default ignore patterns can be configured in ``setup.cfg``
+  (`issue #3 <https://github.com/mgedmin/check-manifest/issues/3>`_).
+
 
 0.9 (2013-03-06)
 ----------------

@@ -57,3 +57,35 @@ Command-line reference
                     False)
 
 
+Configuration
+-------------
+
+You can tell check-manifest to ignore certain file patterns by adding a
+``check-manifest`` section to your package's ``setup.cfg``.  Example::
+
+    [check-manifest]
+    ignore =
+        .travis.yml
+
+The following options are recognized:
+
+ignore
+    A list of newline separated filename patterns that will be ignored by
+    check-manifest.  Use this if you want to keep files in your version
+    control system that shouldn't be included in your source distributions.
+    The default ignore list is ::
+
+        PKG-INFO
+        *.egg-info
+        *.egg-info/*
+        setup.cfg
+        .hgtags
+        .hgignore
+        .gitignore
+        .bzrignore
+        *.mo
+
+ignore-default-rules
+    If set to ``true``, your ``ignore`` patterns will replace the default
+    ignore list instead of adding to it.
+

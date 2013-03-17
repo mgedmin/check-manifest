@@ -30,6 +30,12 @@ import tempfile
 import zipfile
 from contextlib import contextmanager
 
+try:
+    import ConfigParser
+except ImportError:
+    # Python 3.x
+    import configparser as ConfigParser
+
 
 __version__ = '0.10.dev'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
@@ -336,6 +342,21 @@ SUGGESTIONS = [(re.compile(pattern), suggestion) for pattern, suggestion in [
 ]]
 
 
+def read_config():
+    """Read configuration from setup.cfg."""
+    # XXX modifies global state, which is kind of evil
+    config = ConfigParser.ConfigParser()
+    config.read(['setup.cfg'])
+    if not config.has_section('check-manifest'):
+        return
+    if (config.has_option('check-manifest', 'ignore-default-rules')
+            and config.getboolean('check-manifest', 'ignore-default-rules')):
+        del IGNORE[:]
+    if config.has_option('check-manifest', 'ignore'):
+        patterns = [p.strip() for p in config.get('check-manifest',
+                                                  'ignore').splitlines()]
+        IGNORE.extend(p for p in patterns if p)
+
 
 def file_matches(filename, patterns):
     """Does this filename match any of the patterns?"""
@@ -392,6 +413,7 @@ def check_manifest(source_tree='.', create=False, update=False):
     with cd(source_tree):
         if not is_package(source_tree):
             raise Failure('This is not a Python project (no setup.py).')
+        read_config()
         info_begin("listing source files under version control")
         all_source_files = sorted(get_vcs_files())
         source_files = strip_sdist_extras(all_source_files)
