@@ -56,11 +56,4 @@ Command-line reference
       -u, --update  append suggestions to MANIFEST.in (implies --create) (default:
                     False)
 
-Known bugs
-----------
 
-* If you've got a setuptools plugin (e.g. setuptools_git) installed,
-  check-manifest may not notice that your MANIFEST.in is incomplete.
-
-* check-manifest -u doesn't say that it cannot add directives for files
-  that don't match any of its known patterns
