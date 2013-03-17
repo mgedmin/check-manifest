@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.10 (unreleased)
+0.10 (2013-03-17)
 -----------------
 
 * ``check-manifest --version`` now prints the version number.
