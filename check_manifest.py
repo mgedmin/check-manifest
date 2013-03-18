@@ -421,6 +421,8 @@ def check_manifest(source_tree='.', create=False, update=False):
         info_begin("copying source files to a temporary directory")
         with mkdtemp('-sources') as tempsourcedir:
             copy_files(source_files, tempsourcedir)
+            if os.path.exists('MANIFEST.in') and 'MANIFEST.in' not in source_files:
+                copy_files(['MANIFEST.in'], tempsourcedir)
             info_begin("building an sdist")
             with cd(tempsourcedir):
                 with mkdtemp('-sdist') as tempdir:

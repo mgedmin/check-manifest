@@ -5,7 +5,8 @@ Changelog
 0.11 (unreleased)
 -----------------
 
-* No changes yet
+* Make sure ``MANIFEST.in`` is not ignored even if it hasn't been added to the
+  VCS yet (`issue #7 <https://github.com/mgedmin/check-manifest/issues/7>`_).
 
 
 0.10 (2013-03-17)
