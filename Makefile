@@ -16,6 +16,7 @@ dist:
 
 .PHONY: distcheck
 distcheck:
+	$(PYTHON) check_manifest.py
 	# Bit of a chicken-and-egg here, but if the tree is unclean, make
 	# distcheck will fail.
 	@test -z "`git status -s 2>&1`" || { echo; echo "Your working tree is not clean" 1>&2; git status; exit 1; }
