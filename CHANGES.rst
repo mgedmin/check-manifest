@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.11 (unreleased)
+0.11 (2013-03-20)
 -----------------
 
 * Make sure ``MANIFEST.in`` is not ignored even if it hasn't been added to the
