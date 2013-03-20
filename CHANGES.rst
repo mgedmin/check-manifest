@@ -5,7 +5,7 @@ Changelog
 0.12 (unreleased)
 -----------------
 
-* No changes yet.
+* Add suggestion pattern for `Makefile`.
 
 
 0.11 (2013-03-20)

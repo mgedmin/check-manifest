@@ -333,6 +333,7 @@ SUGGESTIONS = [(re.compile(pattern), suggestion) for pattern, suggestion in [
     ('^([^/]+[.](cfg|ini))$',       r'include \1'),
     ('^([.]travis[.]yml)$',         r'include \1'),
     ('^([A-Z]+)$',                  r'include \1'),
+    ('^(Makefile)$',                r'include \1'),
     ('^[^/]+[.](txt|rst|py)$',      r'include *.\1'),
     ('^([a-zA-Z_][a-zA-Z_0-9]*)/'
      '.*[.](py|zcml|pt|mako|xml|html|txt|rst|css|png|jpg|dot|po|pot|mo|ui|desktop|bat)$',
