@@ -7,6 +7,8 @@ Changelog
 
 * Add suggestion pattern for `Makefile`.
 
+* More generic suggestion patterns, should cover almost anything.
+
 
 0.11 (2013-03-20)
 -----------------

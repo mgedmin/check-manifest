@@ -340,6 +340,12 @@ SUGGESTIONS = [(re.compile(pattern), suggestion) for pattern, suggestion in [
                                     r'recursive-include \1 *.\2'),
     ('^([a-zA-Z_][a-zA-Z_0-9]*)/(Makefile)$',
                                     r'recursive-include \1 \2'),
+    # catch-all rules that actually cover some of the above; somewhat
+    # experimental: I fear false positives
+    ('^([a-zA-Z_0-9]+)$',           r'include \1'),
+    ('^[^/]+[.]([a-zA-Z_0-9]+)$',   r'include *.\1'),
+    ('^([a-zA-Z_][a-zA-Z_0-9]*)/.*[.]([a-zA-Z_0-9]+)$',
+                                    r'recursive-include \1 *.\2'),
 ]]
 
 

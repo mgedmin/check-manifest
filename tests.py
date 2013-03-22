@@ -69,8 +69,8 @@ class TestFileMatching(unittest.TestCase):
         from check_manifest import find_suggestions
         self.assertEqual(find_suggestions(['buildout.cfg']),
                          (['include buildout.cfg'], []))
-        self.assertEqual(find_suggestions(['unknown.file']),
-                         ([], ['unknown.file']))
+        self.assertEqual(find_suggestions(['unknown.file~']),
+                         ([], ['unknown.file~']))
         self.assertEqual(find_suggestions(['README.txt', 'CHANGES.txt']),
                          (['include *.txt'], []))
         filelist = [
@@ -88,3 +88,11 @@ class TestFileMatching(unittest.TestCase):
         self.assertEqual(find_suggestions(filelist),
                          (expected_rules, expected_unknowns))
 
+    def test_find_suggestions_generic_fallback_rules(self):
+        from check_manifest import find_suggestions
+        self.assertEqual(find_suggestions(['Changelog']),
+                         (['include Changelog'], []))
+        self.assertEqual(find_suggestions(['id-lang.map']),
+                         (['include *.map'], []))
+        self.assertEqual(find_suggestions(['src/id-lang.map']),
+                         (['recursive-include src *.map'], []))
