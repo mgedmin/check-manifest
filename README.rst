@@ -1,7 +1,7 @@
 check-manifest
 ==============
 
-|buildstatus|_
+|buildstatus|_ |coverage|_
 
 Are you a Python developer?  Have you uploaded packages to the Python Package
 Index?  Have you accidentally uploaded *broken* packages with some files
@@ -94,3 +94,7 @@ ignore-default-rules
 
 .. |buildstatus| image:: https://api.travis-ci.org/mgedmin/check-manifest.png?branch=master
 .. _buildstatus: https://travis-ci.org/mgedmin/check-manifest
+
+.. |coverage| image:: https://coveralls.io/repos/mgedmin/check-manifest/badge.png?branch=master
+.. _coverage: https://coveralls.io/r/mgedmin/check-manifest
+
