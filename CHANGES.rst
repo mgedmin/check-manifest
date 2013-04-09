@@ -5,6 +5,8 @@ Changelog
 0.12 (unreleased)
 -----------------
 
+* Add argparse as requirement when on Python 2.6 or lower.
+
 * Add suggestion pattern for `Makefile`.
 
 * More generic suggestion patterns, should cover almost anything.

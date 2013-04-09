@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os, re, ast, email.utils
+import os, re, ast, email.utils, sys
 from setuptools import setup
 
 here = os.path.dirname(__file__)
@@ -19,6 +19,9 @@ version = metadata['__version__']
 author, author_email = email.utils.parseaddr(metadata['__author__'])
 url = metadata['__url__']
 licence = metadata['__licence__']
+install_requires = []
+if sys.version_info < (2, 7):
+    install_requires.append('argparse')
 
 setup(
     name='check-manifest',
@@ -51,7 +54,7 @@ setup(
     py_modules=['check_manifest'],
     zip_safe=False,
     test_suite='tests',
-    install_requires=[],
+    install_requires=install_requires,
     entry_points={
         'console_scripts': [
             'check-manifest = check_manifest:main',
