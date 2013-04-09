@@ -4,8 +4,12 @@ python:
     - 3.2
     - 3.3
     - pypy
+install:
+    - pip install coverage coveralls
 script:
-    - python setup.py test -q
+    - coverage run --source=check_manifest setup.py test -q
     - python check_manifest.py
+after_script:
+    - coveralls
 notifications:
     email: false
