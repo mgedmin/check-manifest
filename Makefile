@@ -10,6 +10,10 @@ all:
 check test:
 	detox
 
+.PHONY: coverage
+coverage:
+	tox -e coverage
+
 .PHONY: dist
 dist:
 	$(PYTHON) setup.py sdist

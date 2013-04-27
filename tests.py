@@ -1,7 +1,44 @@
+import doctest
 import unittest
 
 
-class TestFileMatching(unittest.TestCase):
+class Tests(unittest.TestCase):
+
+    def test_format_list(self):
+        from check_manifest import format_list
+        self.assertEqual(format_list([]), "")
+        self.assertEqual(format_list(['a']), "  a")
+        self.assertEqual(format_list(['a', 'b']), "  a\n  b")
+
+    def test_format_difference(self):
+        from check_manifest import format_difference
+        self.assertEqual(
+            format_difference(["a", "b"], ["a", "b"], "1st", "2nd"),
+            "")
+        self.assertEqual(
+            format_difference(["a", "b"], ["b", "c"], "1st", "2nd"),
+            "missing from 1st:\n"
+            "  c\n"
+            "missing from 2nd:\n"
+            "  a")
+
+    def test_strip_toplevel_name_empty_list(self):
+        from check_manifest import strip_toplevel_name
+        self.assertEqual(strip_toplevel_name([]), [])
+
+    def test_strip_toplevel_name_no_common_prefix(self):
+        from check_manifest import strip_toplevel_name, Failure
+        self.assertRaises(Failure, strip_toplevel_name, ["a/b", "c/d"])
+
+    def test_strip_slashes(self):
+        from check_manifest import strip_slashes
+        self.assertEqual(strip_slashes(["a", "b/", "c/d", "e/f/"]),
+                         ["a", "b", "c/d", "e/f"])
+
+    def test_add_directories(self):
+        from check_manifest import add_directories
+        self.assertEqual(add_directories(["a", "b", "c/d", "e/f"]),
+                         ["a", "b", "c", "c/d", "e", "e/f"])
 
     def test_file_matches(self):
         from check_manifest import file_matches
@@ -11,7 +48,6 @@ class TestFileMatching(unittest.TestCase):
         self.assertTrue(file_matches('src/zope.foo.egg-info', patterns))
         self.assertTrue(file_matches('src/zope.foo.egg-info/SOURCES.txt',
                                      patterns))
-
 
     def test_strip_sdist_extras(self):
         from check_manifest import strip_sdist_extras
@@ -96,3 +132,11 @@ class TestFileMatching(unittest.TestCase):
                          (['include *.map'], []))
         self.assertEqual(find_suggestions(['src/id-lang.map']),
                          (['recursive-include src *.map'], []))
+
+
+def test_suite():
+    return unittest.TestSuite([
+        unittest.makeSuite(Tests),
+        doctest.DocTestSuite('check_manifest'),
+    ])
+
