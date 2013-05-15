@@ -516,10 +516,16 @@ def zest_releaser_check(data):
     http://zestreleaser.readthedocs.org/en/latest/entrypoints.html
     """
     from zest.releaser.utils import ask
+    source_tree = data['workingdir']
+    if not is_package(source_tree):
+        # You can use zest.releaser on things that are not Python packages.
+        # It's pointless to run check-manifest in those circumstances.
+        # See https://github.com/mgedmin/check-manifest/issues/9 for details.
+        return
     if not ask("Do you want to run check-manifest?"):
         return
     try:
-        if not check_manifest(data['workingdir']):
+        if not check_manifest(source_tree):
             if not ask("MANIFEST.in is not in order. "
                        " Do you want to continue despite that?", default=False):
                 sys.exit(1)

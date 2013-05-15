@@ -9,12 +9,15 @@ Changelog
 
 * More generic suggestion patterns, should cover almost anything.
 
+* zest.releaser_ integration: skip check-release for non-Python packages
+  (`issue #9 <https://github.com/mgedmin/check-manifest/issues/9>`__).
+
 
 0.11 (2013-03-20)
 -----------------
 
 * Make sure ``MANIFEST.in`` is not ignored even if it hasn't been added to the
-  VCS yet (`issue #7 <https://github.com/mgedmin/check-manifest/issues/7>`_).
+  VCS yet (`issue #7 <https://github.com/mgedmin/check-manifest/issues/7>`__).
 
 
 0.10 (2013-03-17)
