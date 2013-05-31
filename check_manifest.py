@@ -495,7 +495,13 @@ def main():
         help='create a MANIFEST.in if missing')
     parser.add_argument('-u', '--update', action='store_true',
         help='append suggestions to MANIFEST.in (implies --create)')
+    parser.add_argument('--ignore', metavar='patterns', default='',
+                        help='ignore files/directories matching these '
+                             'comma-separated patterns')
     args = parser.parse_args()
+
+    IGNORE.extend(args.ignore.split(','))
+
     try:
         if not check_manifest(args.source_tree, create=args.create,
                               update=args.update):
