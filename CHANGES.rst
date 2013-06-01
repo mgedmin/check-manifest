@@ -2,8 +2,10 @@ Changelog
 =========
 
 
-0.12.1 (unreleased)
--------------------
+0.13 (unreleased)
+-----------------
+
+* New command line option: --ignore.
 
 
 0.12 (2013-05-15)
