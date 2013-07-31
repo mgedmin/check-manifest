@@ -433,7 +433,7 @@ def check_manifest(source_tree='.', create=False, update=False):
             info_begin("building an sdist")
             with cd(tempsourcedir):
                 with mkdtemp('-sdist') as tempdir:
-                    run(['python', 'setup.py', 'sdist', '-d', tempdir])
+                    run([sys.executable, 'setup.py', 'sdist', '-d', tempdir])
                     sdist_filename = get_one_file_in(tempdir)
                     info_continue(": %s" % os.path.basename(sdist_filename))
                     sdist_files = sorted(strip_sdist_extras(strip_toplevel_name(
