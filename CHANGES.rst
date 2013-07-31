@@ -7,6 +7,10 @@ Changelog
 
 * New command line option: --ignore.
 
+* New command line option: -p, --python.  Defaults to the Python you used to
+  run check-manifest.  Fixes issues with packages that require Python 3 to run
+  setup.py (`issue #13 <https://github.com/mgedmin/check-manifest/issues/13>`__).
+
 
 0.12 (2013-05-15)
 -----------------

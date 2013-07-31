@@ -45,18 +45,26 @@ Command-line reference
 ::
 
     $ check-manifest --help
-    usage: check-manifest [-h] [-c] [-u] [source_tree]
+    usage: check-manifest [-h] [--version] [-c] [-u] [-p PYTHON]
+                          [--ignore patterns]
+                          [source_tree]
 
     Check a Python MANIFEST.in file for completeness
 
     positional arguments:
-      source_tree   location for the source tree (default: .)
+      source_tree           location for the source tree (default: .)
 
     optional arguments:
-      -h, --help    show this help message and exit
-      -c, --create  create a MANIFEST.in if missing (default: False)
-      -u, --update  append suggestions to MANIFEST.in (implies --create) (default:
-                    False)
+      -h, --help            show this help message and exit
+      --version             show program's version number and exit
+      -c, --create          create a MANIFEST.in if missing (default: False)
+      -u, --update          append suggestions to MANIFEST.in (implies --create)
+                            (default: False)
+      -p PYTHON, --python PYTHON
+                            use this Python interpreter for running setup.py sdist
+                            (default: /home/mg/.venv/bin/python)
+      --ignore patterns     ignore files/directories matching these comma-
+                            separated patterns (default: None)
 
 
 Configuration

@@ -411,7 +411,8 @@ def is_package(source_tree='.'):
     return os.path.exists(os.path.join(source_tree, 'setup.py'))
 
 
-def check_manifest(source_tree='.', create=False, update=False):
+def check_manifest(source_tree='.', create=False, update=False,
+                   python=sys.executable):
     """Compare a generated source distribution with list of files in a VCS.
 
     Returns True if the manifest is fine.
@@ -433,7 +434,7 @@ def check_manifest(source_tree='.', create=False, update=False):
             info_begin("building an sdist")
             with cd(tempsourcedir):
                 with mkdtemp('-sdist') as tempdir:
-                    run([sys.executable, 'setup.py', 'sdist', '-d', tempdir])
+                    run([python, 'setup.py', 'sdist', '-d', tempdir])
                     sdist_filename = get_one_file_in(tempdir)
                     info_continue(": %s" % os.path.basename(sdist_filename))
                     sdist_files = sorted(strip_sdist_extras(strip_toplevel_name(
@@ -495,6 +496,8 @@ def main():
         help='create a MANIFEST.in if missing')
     parser.add_argument('-u', '--update', action='store_true',
         help='append suggestions to MANIFEST.in (implies --create)')
+    parser.add_argument('-p', '--python', default=sys.executable,
+        help='use this Python interpreter for running setup.py sdist')
     parser.add_argument('--ignore', metavar='patterns', default=None,
                         help='ignore files/directories matching these'
                              ' comma-separated patterns')
@@ -505,7 +508,7 @@ def main():
 
     try:
         if not check_manifest(args.source_tree, create=args.create,
-                              update=args.update):
+                              update=args.update, python=args.python):
             sys.exit(1)
     except Failure as e:
         error(e)
