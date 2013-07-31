@@ -11,7 +11,9 @@ Changelog
 0.13 (2013-07-31)
 -----------------
 
-* New command line option: --ignore.
+* New command line option: --ignore
+  (`issue #11 <https://github.com/mgedmin/check-manifest/issues/11>`__).
+  Contributed by Steven Myint.
 
 * New command line option: -p, --python.  Defaults to the Python you used to
   run check-manifest.  Fixes issues with packages that require Python 3 to run
