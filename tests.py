@@ -194,6 +194,8 @@ class TestGit(VCSMixin, unittest.TestCase):
 
     def _init_vcs(self):
         self._run('git', 'init')
+        self._run('git', 'config', 'user.name', 'Unit Test')
+        self._run('git', 'config', 'user.email', 'test@example.com')
 
     def _add_to_vcs(self, filenames):
         self._run('git', 'add', '--', *filenames)
@@ -206,6 +208,7 @@ class TestBzr(VCSMixin, unittest.TestCase):
 
     def _init_vcs(self):
         self._run('bzr', 'init')
+        self._run('bzr', 'whoami', '--branch', 'Unit Test <test@example.com>')
 
     def _add_to_vcs(self, filenames):
         self._run('bzr', 'add', '--', *filenames)
@@ -218,6 +221,8 @@ class TestHg(VCSMixin, unittest.TestCase):
 
     def _init_vcs(self):
         self._run('hg', 'init')
+        with open('.hg/hgrc', 'a') as f:
+            f.write('\n[ui]\nusername = Unit Test <test@example.com\n')
 
     def _add_to_vcs(self, filenames):
         self._run('hg', 'add', '--', *filenames)
