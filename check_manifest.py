@@ -286,11 +286,6 @@ class Subversion(VCS):
     @staticmethod
     def get_versioned_files():
         """List all files under SVN control in the current directory."""
-        # XXX: augh, this does network traffic... and only looks at the files
-        # in the last revision you got when you svn up'ed -- if you svn add new
-        # files, they won't be shown, even after commit, until you do an update
-        # again!
-        # I should use svn st -v perhaps, or do an sdist from an svn export
         output = run(['svn', 'st', '-vq'])
         return sorted(line[41:] for line in output.splitlines()
                       if line[41:] != '.')
