@@ -1,4 +1,8 @@
 import doctest
+import os
+import shutil
+import subprocess
+import tempfile
 import unittest
 
 
@@ -134,9 +138,123 @@ class Tests(unittest.TestCase):
                          (['recursive-include src *.map'], []))
 
 
+class VCSMixin(object):
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix='test-', suffix='-check-manifest')
+        self.olddir = os.getcwd()
+        os.chdir(self.tmpdir)
+
+    def tearDown(self):
+        os.chdir(self.olddir)
+        shutil.rmtree(self.tmpdir)
+
+    def _run(self, *command):
+        try:
+            subprocess.check_output(command, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            print(' '.join(command))
+            print(e.output)
+            raise
+
+    def _create_file(self, filename):
+        assert not os.path.isabs(filename)
+        basedir = os.path.dirname(filename)
+        if basedir and not os.path.isdir(basedir):
+            os.makedirs(basedir)
+        open(filename, 'w').close()
+
+    def _create_files(self, filenames):
+        for filename in filenames:
+            self._create_file(filename)
+
+    def _create_and_add_to_vcs(self, filenames):
+        self._create_files(filenames)
+        self._add_to_vcs(filenames)
+
+    def test_get_vcs_files(self):
+        from check_manifest import get_vcs_files
+        self._init_vcs()
+        self._create_and_add_to_vcs(['a.txt', 'b/b.txt', 'b/c/d.txt'])
+        self._commit()
+        self._create_files(['b/x.txt', 'd/d.txt', 'i.txt'])
+        self.assertEqual(get_vcs_files(),
+                         ['a.txt', 'b', 'b/b.txt', 'b/c', 'b/c/d.txt'])
+
+    def test_get_vcs_files_added_but_uncommitted(self):
+        from check_manifest import get_vcs_files
+        self._init_vcs()
+        self._create_and_add_to_vcs(['a.txt', 'b/b.txt', 'b/c/d.txt'])
+        self._create_files(['b/x.txt', 'd/d.txt', 'i.txt'])
+        self.assertEqual(get_vcs_files(),
+                         ['a.txt', 'b', 'b/b.txt', 'b/c', 'b/c/d.txt'])
+
+
+class TestGit(VCSMixin, unittest.TestCase):
+
+    def _init_vcs(self):
+        self._run('git', 'init')
+
+    def _add_to_vcs(self, filenames):
+        self._run('git', 'add', '--', *filenames)
+
+    def _commit(self):
+        self._run('git', 'commit', '-m', 'Initial')
+
+
+class TestBzr(VCSMixin, unittest.TestCase):
+
+    def _init_vcs(self):
+        self._run('bzr', 'init')
+
+    def _add_to_vcs(self, filenames):
+        self._run('bzr', 'add', '--', *filenames)
+
+    def _commit(self):
+        self._run('bzr', 'commit', '-m', 'Initial')
+
+
+class TestHg(VCSMixin, unittest.TestCase):
+
+    def _init_vcs(self):
+        self._run('hg', 'init')
+
+    def _add_to_vcs(self, filenames):
+        self._run('hg', 'add', '--', *filenames)
+
+    def _commit(self):
+        self._run('hg', 'commit', '-m', 'Initial')
+
+
+class TestSvn(VCSMixin, unittest.TestCase):
+
+    def _init_vcs(self):
+        self._run('svnadmin', 'create', 'repo')
+        self._run('svn', 'co', 'file:///' + os.path.abspath('repo'), 'checkout')
+        os.chdir('checkout')
+
+    def _add_to_vcs(self, filenames):
+        from check_manifest import add_directories
+        self._run('svn', 'add', '-N', '--', *add_directories(filenames))
+
+    def _commit(self):
+        self._run('svn', 'commit', '-m', 'Initial')
+        # Comment this out to see bug #2, where svn ls doesn't see
+        # files you just committed until you run svn up
+        self._run('svn', 'up')
+
+    def test_get_vcs_files_added_but_uncommitted(self):
+        # This is broken with svn, see the XXX in get_svn_files
+        pass
+
+
 def test_suite():
     return unittest.TestSuite([
         unittest.makeSuite(Tests),
+        unittest.makeSuite(TestGit),
+        unittest.makeSuite(TestBzr),
+        unittest.makeSuite(TestHg),
+        unittest.makeSuite(TestSvn),
         doctest.DocTestSuite('check_manifest'),
     ])
 
