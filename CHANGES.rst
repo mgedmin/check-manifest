@@ -8,6 +8,9 @@ Changelog
 * Supports packages that do not live in the root of a version control
   repository (`issue #15 <https://github.com/mgedmin/check-manifest/issues/15>`__).
 
+* More reliable svn support: detect files that have been added but not
+  committed (or committed but not updated).
+
 
 0.13 (2013-07-31)
 -----------------

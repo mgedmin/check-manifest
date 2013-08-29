@@ -291,8 +291,9 @@ class Subversion(VCS):
         # files, they won't be shown, even after commit, until you do an update
         # again!
         # I should use svn st -v perhaps, or do an sdist from an svn export
-        output = run(['svn', 'ls', '-R', '--non-interactive'])
-        return strip_slashes(output.splitlines())
+        output = run(['svn', 'st', '-vq'])
+        return sorted(line[41:] for line in output.splitlines()
+                      if line[41:] != '.')
 
 
 def detect_vcs():

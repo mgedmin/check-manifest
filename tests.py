@@ -253,13 +253,6 @@ class TestSvn(VCSMixin, unittest.TestCase):
 
     def _commit(self):
         self._run('svn', 'commit', '-m', 'Initial')
-        # Comment this out to see bug #2, where svn ls doesn't see
-        # files you just committed until you run svn up
-        self._run('svn', 'up')
-
-    def test_get_vcs_files_added_but_uncommitted(self):
-        # This is broken with svn, see the XXX in get_svn_files
-        pass
 
 
 def test_suite():
@@ -271,4 +264,3 @@ def test_suite():
         unittest.makeSuite(TestSvn),
         doctest.DocTestSuite('check_manifest'),
     ])
-
