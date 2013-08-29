@@ -2,7 +2,13 @@ Changelog
 =========
 
 
-0.14 (2013-08-29)
+0.15 (unreleased)
+-----------------
+
+* No changes yet.
+
+
+0.14 (2013-08-28)
 -----------------
 
 * Supports packages that do not live in the root of a version control
