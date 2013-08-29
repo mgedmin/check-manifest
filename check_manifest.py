@@ -243,46 +243,76 @@ def strip_toplevel_name(filelist):
     return [name[len(prefix):] for name in names]
 
 
+class VCS(object):
+
+    @classmethod
+    def detect(cls, location):
+        return os.path.isdir(os.path.join(location, cls.metadata_name))
+
+
+class Git(VCS):
+    metadata_name = '.git'
+
+    @staticmethod
+    def get_versioned_files():
+        """List all files versioned by git in the current directory."""
+        output = run(['git', 'ls-files'])
+        return add_directories(output.splitlines())
+
+
+class Mercurial(VCS):
+    metadata_name = '.hg'
+
+    @staticmethod
+    def get_versioned_files():
+        """List all files under Mercurial control in the current directory."""
+        output = run(['hg', 'status', '-ncam', '.'])
+        return add_directories(output.splitlines())
+
+
+class Bazaar(VCS):
+    metadata_name = '.bzr'
+
+    @staticmethod
+    def get_versioned_files():
+        """List all files versioned in Bazaar in the current directory."""
+        output = run(['bzr', 'ls', '-VR'])
+        return strip_slashes(output.splitlines())
+
+
+class Subversion(VCS):
+    metadata_name = '.svn'
+
+    @staticmethod
+    def get_versioned_files():
+        """List all files under SVN control in the current directory."""
+        # XXX: augh, this does network traffic... and only looks at the files
+        # in the last revision you got when you svn up'ed -- if you svn add new
+        # files, they won't be shown, even after commit, until you do an update
+        # again!
+        # I should use svn st -v perhaps, or do an sdist from an svn export
+        output = run(['svn', 'ls', '-R', '--non-interactive'])
+        return strip_slashes(output.splitlines())
+
+
+def detect_vcs():
+    """Detect the version control system used for the current directory."""
+    location = os.path.abspath('.')
+    while True:
+        for vcs in Git, Mercurial, Bazaar, Subversion:
+            if vcs.detect(location):
+                return vcs
+        parent = os.path.dirname(location)
+        if parent == location:
+            raise Failure("Couldn't find version control data"
+                          " (git/hg/bzr/svn supported)")
+        location = parent
+
+
 def get_vcs_files():
     """List all files under version control in the current directory."""
-    if os.path.exists('.svn'):
-        return get_svn_files()
-    if os.path.exists('.hg'):
-        return get_hg_files()
-    if os.path.exists('.git'):
-        return get_git_files()
-    if os.path.exists('.bzr'):
-        return get_bzr_files()
-    raise Failure("Couldn't find version control data (git/hg/bzr/svn supported)")
-
-
-def get_git_files():
-    """List all files versioned by git in the current directory."""
-    output = run(['git', 'ls-files'])
-    return add_directories(output.splitlines())
-
-
-def get_hg_files():
-    """List all files under Mercurial control in the current directory."""
-    output = run(['hg', 'status', '-ncam'])
-    return add_directories(output.splitlines())
-
-
-def get_bzr_files():
-    """List all files versioned in Bazaar in the current directory."""
-    output = run(['bzr', 'ls', '-VR'])
-    return strip_slashes(output.splitlines())
-
-
-def get_svn_files():
-    """List all files under SVN control in the current directory."""
-    # XXX: augh, this does network traffic... and only looks at the files
-    # in the last revision you got when you svn up'ed -- if you svn add new
-    # files, they won't be shown, even after commit, until you do an update
-    # again!
-    # I should use svn st -v perhaps, or do an sdist from an svn export
-    output = run(['svn', 'ls', '-R', '--non-interactive'])
-    return strip_slashes(output.splitlines())
+    vcs = detect_vcs()
+    return vcs.get_versioned_files()
 
 
 def strip_slashes(names):

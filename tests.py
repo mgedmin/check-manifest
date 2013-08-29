@@ -189,6 +189,15 @@ class VCSMixin(object):
         self.assertEqual(get_vcs_files(),
                          ['a.txt', 'b', 'b/b.txt', 'b/c', 'b/c/d.txt'])
 
+    def test_get_vcs_files_in_a_subdir(self):
+        from check_manifest import get_vcs_files
+        self._init_vcs()
+        self._create_and_add_to_vcs(['a.txt', 'b/b.txt', 'b/c/d.txt'])
+        self._commit()
+        self._create_files(['b/x.txt', 'd/d.txt', 'i.txt'])
+        os.chdir('b')
+        self.assertEqual(get_vcs_files(), ['b.txt', 'c', 'c/d.txt'])
+
 
 class TestGit(VCSMixin, unittest.TestCase):
 
