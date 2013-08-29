@@ -11,6 +11,9 @@ Changelog
 * More reliable svn support: detect files that have been added but not
   committed (or committed but not updated).
 
+* Licence changed from GPL (v2 or later) to MIT
+  (`issue #12 <https://github.com/mgedmin/check-manifest/issues/12>`__).
+
 
 0.13 (2013-07-31)
 -----------------
