@@ -277,7 +277,7 @@ class Bazaar(VCS):
     def get_versioned_files():
         """List all files versioned in Bazaar in the current directory."""
         output = run(['bzr', 'ls', '-VR'])
-        return strip_slashes(output.splitlines())
+        return output.splitlines()
 
 
 class Subversion(VCS):
@@ -308,12 +308,15 @@ def detect_vcs():
 def get_vcs_files():
     """List all files under version control in the current directory."""
     vcs = detect_vcs()
-    return vcs.get_versioned_files()
+    return normalize_names(vcs.get_versioned_files())
 
 
-def strip_slashes(names):
-    """Svn/Bzr print directory names with trailing slashes.  Strip them."""
-    return [name.rstrip('/') for name in names]
+def normalize_names(names):
+    """Some VCS print directory names with trailing slashes.  Strip them.
+
+    Easiest is to normalize the path.
+    """
+    return [os.path.normpath(name) for name in names]
 
 
 def add_directories(names):
@@ -463,8 +466,8 @@ def check_manifest(source_tree='.', create=False, update=False,
                     run([python, 'setup.py', 'sdist', '-d', tempdir])
                     sdist_filename = get_one_file_in(tempdir)
                     info_continue(": %s" % os.path.basename(sdist_filename))
-                    sdist_files = sorted(strip_sdist_extras(strip_toplevel_name(
-                                            get_archive_file_list(sdist_filename))))
+                    sdist_files = sorted(normalize_names(strip_sdist_extras(
+                        strip_toplevel_name(get_archive_file_list(sdist_filename)))))
                     info_continue(": %d files and directories" % len(sdist_files))
         if source_files == sdist_files:
             info("files in version control match files in the sdist")
