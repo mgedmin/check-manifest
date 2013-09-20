@@ -253,6 +253,14 @@ class TestSvn(VCSMixin, unittest.TestCase):
 
     def _commit(self):
         self._run('svn', 'commit', '-m', 'Initial')
+        # Update the information in the local copy, otherwise 'svn
+        # list --recursive' gives no results.
+        self._run('svn', 'up')
+
+    def test_get_vcs_files_added_but_uncommitted(self):
+        # For Subversion you have to commit the files and do an svn up
+        # before it has effect.
+        pass
 
 
 def test_suite():

@@ -5,6 +5,11 @@ Changelog
 0.15 (unreleased)
 -----------------
 
+* Use ``svn list --recursive`` to list the known subversion files.
+  Note that you need to do an ``svn update`` after you have added new
+  files.
+  [maurits]
+
 * Normalize the paths of all files, avoiding some duplicate misses of
   directories.
   [maurits]
