@@ -5,7 +5,9 @@ Changelog
 0.15 (unreleased)
 -----------------
 
-* No changes yet.
+* Normalize the paths of all files, avoiding some duplicate misses of
+  directories.
+  [maurits]
 
 
 0.14 (2013-08-28)
