@@ -2,11 +2,11 @@ Changelog
 =========
 
 
-0.15 (unreleased)
+0.15 (2013-09-20)
 -----------------
 
 * Normalize the paths of all files, avoiding some duplicate misses of
-  directories.
+  directories.  (`issue #16 <https://github.com/mgedmin/check-manifest/issues/16>`__).
   [maurits]
 
 
