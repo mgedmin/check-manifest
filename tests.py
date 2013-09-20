@@ -34,10 +34,10 @@ class Tests(unittest.TestCase):
         from check_manifest import strip_toplevel_name, Failure
         self.assertRaises(Failure, strip_toplevel_name, ["a/b", "c/d"])
 
-    def test_strip_slashes(self):
-        from check_manifest import strip_slashes
-        self.assertEqual(strip_slashes(["a", "b/", "c/d", "e/f/"]),
-                         ["a", "b", "c/d", "e/f"])
+    def test_normalize_names(self):
+        from check_manifest import normalize_names
+        self.assertEqual(normalize_names(["a", "b/", "c/d", "e/f/", "g/h/../i"]),
+                         ["a", "b", "c/d", "e/f", "g/i"])
 
     def test_add_directories(self):
         from check_manifest import add_directories
