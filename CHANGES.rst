@@ -5,6 +5,8 @@ Changelog
 0.16 (unreleased)
 -----------------
 
+* Fix Subversion status parsing in the presence of svn usernames longer than 12
+  characters (`issue #18 <https://github.com/mgedmin/check-manifest/issues/18>`__).
 
 
 0.15 (2013-09-20)

@@ -287,8 +287,8 @@ class Subversion(VCS):
     def get_versioned_files():
         """List all files under SVN control in the current directory."""
         output = run(['svn', 'st', '-vq'])
-        return sorted(line[41:] for line in output.splitlines()
-                      if line[41:] != '.')
+        return sorted(line[12:].split(None, 3)[-1]
+                      for line in output.splitlines()[1:])
 
 
 def detect_vcs():
