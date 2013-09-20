@@ -286,9 +286,8 @@ class Subversion(VCS):
     @staticmethod
     def get_versioned_files():
         """List all files under SVN control in the current directory."""
-        output = run(['svn', 'st', '-vq'])
-        return sorted(line[41:] for line in output.splitlines()
-                      if line[41:] != '.')
+        output = run(['svn', 'list', '--recursive'])
+        return sorted(output.splitlines())
 
 
 def detect_vcs():
