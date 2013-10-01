@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.16 (unreleased)
+0.16 (2013-10-01)
 -----------------
 
 * Fix Subversion status parsing in the presence of svn usernames longer than 12
