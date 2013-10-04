@@ -139,32 +139,40 @@ class Tests(unittest.TestCase):
 
     def test_get_ignore_from_manifest(self):
         from check_manifest import _get_ignore_from_manifest as parse
-        self.assertEqual(parse(''), [])
-        self.assertEqual(parse('      \n        '), [])
-        # TODO: exclude and global-exclude are treated equally at the
-        # moment, which is wrong.
-        self.assertEqual(parse('exclude *.cfg'), ['*.cfg'])
-        self.assertEqual(parse('#exclude *.cfg'), [])
+        # The return value is a tuple with two lists:
+        # ([<list of filename ignores>], [<list of regular expressions>])
+        self.assertEqual(parse(''),
+                         ([], []))
+        self.assertEqual(parse('      \n        '),
+                         ([], []))
+        self.assertEqual(parse('exclude *.cfg'),
+                         ([], ['[^/]*.cfg']))
+        self.assertEqual(parse('#exclude *.cfg'),
+                         ([], []))
         self.assertEqual(parse('exclude          *.cfg'),
-                         ['*.cfg'])
+                         ([], ['[^/]*.cfg']))
         self.assertEqual(parse('exclude *.cfg foo.*   bar.txt'),
-                         ['*.cfg', 'foo.*', 'bar.txt'])
-        self.assertEqual(parse('include *.cfg'), [])
+                         (['bar.txt'], ['[^/]*.cfg', 'foo.[^/]*']))
+        self.assertEqual(parse('exclude some/directory/*.cfg'),
+                         ([], ['some/directory/[^/]*.cfg']))
+        self.assertEqual(parse('include *.cfg'),
+                         ([], []))
         self.assertEqual(parse('global-exclude *.pyc'),
-                         ['*.pyc'])
+                         (['*.pyc'], []))
         self.assertEqual(parse('global-exclude *.pyc *.sh'),
-                         ['*.pyc', '*.sh'])
+                         (['*.pyc', '*.sh'], []))
         self.assertEqual(parse('recursive-exclude dir *.pyc'),
-                         ['dir/*.pyc'])
+                         (['dir/*.pyc'], []))
         self.assertEqual(parse('recursive-exclude dir *.pyc *.sh'),
-                         ['dir/*.pyc', 'dir/*.sh'])
+                         (['dir/*.pyc', 'dir/*.sh'], []))
         self.assertEqual(parse('prune dir'),
-                         ['dir', 'dir/*'])
+                         (['dir', 'dir/*'], []))
         text = """
 #exclude *.01
 exclude *.02
 exclude *.03 04.*   bar.txt
 exclude          *.05
+exclude some/directory/*.cfg
 global-exclude *.10 *.11
 global-exclude *.12
 include *.20
@@ -174,11 +182,8 @@ recursive-exclude 42 *.43 44.*
 """
         self.assertEqual(
             parse(text),
-            ['*.02',
-             '*.03',
-             '04.*',
+            ([
              'bar.txt',
-             '*.05',
              '*.10',
              '*.11',
              '*.12',
@@ -187,7 +192,14 @@ recursive-exclude 42 *.43 44.*
              '40/*.41',
              '42/*.43',
              '42/44.*',
-             ])
+             ],
+             [
+             '[^/]*.02',
+             '[^/]*.03',
+             '04.[^/]*',
+             '[^/]*.05',
+             'some/directory/[^/]*.cfg',
+             ]))
 
 
 class VCSMixin(object):

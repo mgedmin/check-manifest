@@ -350,6 +350,12 @@ IGNORE = [
     '*.mo',
 ]
 
+IGNORE_REGEXPS = [
+    # Regular expressions for filename to ignore.  This is useful for
+    # filename patterns where the '*' part must not search in
+    # directories.
+    ]
+
 WARN_ABOUT_FILES_IN_VCS = [
     # generated files should not be committed into the VCS
     'PKG-INFO',
@@ -403,19 +409,34 @@ def read_manifest():
     if not os.path.isfile('MANIFEST.in'):
         return
     contents = open('MANIFEST.in').read()
-    IGNORE.extend(_get_ignore_from_manifest(contents))
+    ignore, ignore_regexps = _get_ignore_from_manifest(contents)
+    IGNORE.extend(ignore)
+    IGNORE_REGEXPS.extend(ignore_regexps)
 
 
 def _get_ignore_from_manifest(contents):
-    # Gather the various ignore patterns from MANIFEST.in.
-    # 'contents' should be a string, which may contain newlines.
+    """Gather the various ignore patterns from MANIFEST.in.
+
+    'contents' should be a string, which may contain newlines.
+
+    Returns a list of standard ignore patterns and a list of regular
+    expressions to ignore.
+    """
     ignore = []
+    ignore_regexps = []
     for line in contents.splitlines():
         if line.startswith('exclude '):
+            # An exclude of 'dirname/*css' can match 'dirname/foo.css'
+            # but not 'dirname/subdir/bar.css'.  We need a regular
+            # expression for that.
             rest = line[len('exclude '):].strip().split()
-            # TODO: *.cfg must only match in the top level directory,
-            # otherwise the user should have used global-exclude.
-            ignore.extend(rest)
+            for pat in rest:
+                if '*' in pat:
+                    pat = pat.replace('*', '[^/]*')
+                    ignore_regexps.append(pat)
+                else:
+                    # No need for special handling.
+                    ignore.append(pat)
         elif line.startswith('global-exclude '):
             rest = line[len('global-exclude '):].strip().split()
             ignore.extend(rest)
@@ -428,12 +449,17 @@ def _get_ignore_from_manifest(contents):
             dirname = line[len('prune '):].strip()
             ignore.append(dirname)
             ignore.append(dirname + os.path.sep + '*')
-    return ignore
+    return ignore, ignore_regexps
 
 
 def file_matches(filename, patterns):
     """Does this filename match any of the patterns?"""
     return any(fnmatch.fnmatch(filename, pat) for pat in patterns)
+
+
+def file_matches_regexps(filename, patterns):
+    """Does this filename match any of the regular expressions?"""
+    return any(re.match(pat, filename) for pat in patterns)
 
 
 def strip_sdist_extras(filelist):
@@ -443,7 +469,8 @@ def strip_sdist_extras(filelist):
     command line arguments, setup.cfg rules or MANIFEST.in rules.
     """
     return [name for name in filelist
-            if not file_matches(name, IGNORE)]
+            if not file_matches(name, IGNORE)
+            and not file_matches_regexps(name, IGNORE_REGEXPS)]
 
 
 def find_bad_ideas(filelist):
