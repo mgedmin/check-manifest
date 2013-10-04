@@ -82,6 +82,69 @@ class Tests(unittest.TestCase):
         ]
         self.assertEqual(strip_sdist_extras(filelist), expected)
 
+    def test_strip_sdist_extras_with_manifest(self):
+        import check_manifest
+        from check_manifest import strip_sdist_extras
+        from check_manifest import _get_ignore_from_manifest as parse
+        orig_ignore = check_manifest.IGNORE
+        orig_ignore_regexps = check_manifest.IGNORE_REGEXPS
+        manifest_in = """
+graft src
+exclude *.cfg
+global-exclude *.mo
+prune src/dump
+recursive-exclude src/zope *.sh
+"""
+        filelist = [
+            '.gitignore',
+            'setup.py',
+            'setup.cfg',
+            'MANIFEST.in',
+            'README.txt',
+            'src',
+            'src/helper.sh',
+            'src/dump',
+            'src/dump/__init__.py',
+            'src/zope',
+            'src/zope/__init__.py',
+            'src/zope/zopehelper.sh',
+            'src/zope/foo',
+            'src/zope/foo/__init__.py',
+            'src/zope/foo/language.po',
+            'src/zope/foo/language.mo',
+            'src/zope/foo/config.cfg',
+            'src/zope/foo/foohelper.sh',
+            'src/zope.foo.egg-info',
+            'src/zope.foo.egg-info/SOURCES.txt',
+        ]
+        expected = [
+            'setup.py',
+            'MANIFEST.in',
+            'README.txt',
+            'src',
+            'src/helper.sh',
+            'src/zope',
+            'src/zope/__init__.py',
+            'src/zope/foo',
+            'src/zope/foo/__init__.py',
+            'src/zope/foo/language.po',
+            'src/zope/foo/config.cfg',
+        ]
+
+        # This will change the definitions.
+        try:
+            # This is normally done in read_manifest:
+            ignore, ignore_regexps = parse(manifest_in)
+            check_manifest.IGNORE.extend(ignore)
+            check_manifest.IGNORE_REGEXPS.extend(ignore_regexps)
+            # Filter the file list.
+            result = strip_sdist_extras(filelist)
+        finally:
+            # Restore the original definitions
+            check_manifest.IGNORE = orig_ignore
+            check_manifest.IGNORE_REGEXPS = orig_ignore_regexps
+        self.assertEqual(result, expected)
+
     def test_find_bad_ideas(self):
         from check_manifest import find_bad_ideas
         filelist = [
