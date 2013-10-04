@@ -137,6 +137,58 @@ class Tests(unittest.TestCase):
         self.assertEqual(find_suggestions(['src/id-lang.map']),
                          (['recursive-include src *.map'], []))
 
+    def test_get_ignore_from_manifest(self):
+        from check_manifest import _get_ignore_from_manifest as parse
+        self.assertEqual(parse(''), [])
+        self.assertEqual(parse('      \n        '), [])
+        # TODO: exclude and global-exclude are treated equally at the
+        # moment, which is wrong.
+        self.assertEqual(parse('exclude *.cfg'), ['*.cfg'])
+        self.assertEqual(parse('#exclude *.cfg'), [])
+        self.assertEqual(parse('exclude          *.cfg'),
+                         ['*.cfg'])
+        self.assertEqual(parse('exclude *.cfg foo.*   bar.txt'),
+                         ['*.cfg', 'foo.*', 'bar.txt'])
+        self.assertEqual(parse('include *.cfg'), [])
+        self.assertEqual(parse('global-exclude *.pyc'),
+                         ['*.pyc'])
+        self.assertEqual(parse('global-exclude *.pyc *.sh'),
+                         ['*.pyc', '*.sh'])
+        self.assertEqual(parse('recursive-exclude dir *.pyc'),
+                         ['dir/*.pyc'])
+        self.assertEqual(parse('recursive-exclude dir *.pyc *.sh'),
+                         ['dir/*.pyc', 'dir/*.sh'])
+        self.assertEqual(parse('prune dir'),
+                         ['dir', 'dir/*'])
+        text = """
+#exclude *.01
+exclude *.02
+exclude *.03 04.*   bar.txt
+exclude          *.05
+global-exclude *.10 *.11
+global-exclude *.12
+include *.20
+prune 30
+recursive-exclude    40      *.41
+recursive-exclude 42 *.43 44.*
+"""
+        self.assertEqual(
+            parse(text),
+            ['*.02',
+             '*.03',
+             '04.*',
+             'bar.txt',
+             '*.05',
+             '*.10',
+             '*.11',
+             '*.12',
+             '30',
+             '30/*',
+             '40/*.41',
+             '42/*.43',
+             '42/44.*',
+             ])
+
 
 class VCSMixin(object):
 

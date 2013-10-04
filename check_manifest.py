@@ -394,13 +394,54 @@ def read_config():
         IGNORE.extend(p for p in patterns if p)
 
 
+def read_manifest():
+    """Read existing configuration from MANIFEST.in.
+
+    We use that to ignore anything the MANIFEST.in ignores.
+    """
+    # XXX modifies global state, which is kind of evil
+    if not os.path.isfile('MANIFEST.in'):
+        return
+    contents = open('MANIFEST.in').read()
+    IGNORE.extend(_get_ignore_from_manifest(contents))
+
+
+def _get_ignore_from_manifest(contents):
+    # Gather the various ignore patterns from MANIFEST.in.
+    # 'contents' should be a string, which may contain newlines.
+    ignore = []
+    for line in contents.splitlines():
+        if line.startswith('exclude '):
+            rest = line[len('exclude '):].strip().split()
+            # TODO: *.cfg must only match in the top level directory,
+            # otherwise the user should have used global-exclude.
+            ignore.extend(rest)
+        elif line.startswith('global-exclude '):
+            rest = line[len('global-exclude '):].strip().split()
+            ignore.extend(rest)
+        elif line.startswith('recursive-exclude '):
+            rest = line[len('recursive-exclude '):].strip()
+            dirname, patterns = rest.split(' ', 1)
+            for pattern in patterns.strip().split():
+                ignore.append(dirname + os.path.sep + pattern)
+        elif line.startswith('prune '):
+            dirname = line[len('prune '):].strip()
+            ignore.append(dirname)
+            ignore.append(dirname + os.path.sep + '*')
+    return ignore
+
+
 def file_matches(filename, patterns):
     """Does this filename match any of the patterns?"""
     return any(fnmatch.fnmatch(filename, pat) for pat in patterns)
 
 
 def strip_sdist_extras(filelist):
-    """Strip generated files that are only present in source distributions."""
+    """Strip generated files that are only present in source distributions.
+
+    We also strip files that are ignored for other reasons, like
+    command line arguments, setup.cfg rules or MANIFEST.in rules.
+    """
     return [name for name in filelist
             if not file_matches(name, IGNORE)]
 
@@ -451,6 +492,7 @@ def check_manifest(source_tree='.', create=False, update=False,
         if not is_package(source_tree):
             raise Failure('This is not a Python project (no setup.py).')
         read_config()
+        read_manifest()
         info_begin("listing source files under version control")
         all_source_files = sorted(get_vcs_files())
         source_files = strip_sdist_extras(all_source_files)
