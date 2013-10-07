@@ -3,6 +3,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import textwrap
 import unittest
 
 
@@ -231,18 +232,21 @@ recursive-exclude src/zope *.sh
         self.assertEqual(parse('prune dir'),
                          (['dir', 'dir/*'], []))
         text = """
-#exclude *.01
-exclude *.02
-exclude *.03 04.*   bar.txt
-exclude          *.05
-exclude some/directory/*.cfg
-global-exclude *.10 *.11
-global-exclude *.12
-include *.20
-prune 30
-recursive-exclude    40      *.41
-recursive-exclude 42 *.43 44.*
-"""
+        #exclude *.01
+        exclude *.02
+        exclude *.03 04.*   bar.txt
+        exclude          *.05
+        exclude some/directory/*.cfg
+        global-exclude *.10 *.11
+        global-exclude *.12
+        include *.20
+        prune 30
+        recursive-exclude    40      *.41
+        recursive-exclude 42 *.43 44.*
+        """
+        # Keep the indentation visually clear in the test, but remove
+        # leading whitespace programmatically.
+        text = textwrap.dedent(text)
         self.assertEqual(
             parse(text),
             ([
