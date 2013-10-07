@@ -434,6 +434,8 @@ def _get_ignore_from_manifest(contents):
             for pat in rest:
                 if '*' in pat:
                     pat = pat.replace('*', '[^/]*')
+                    # Do not make a dot into a magical wildcard character.
+                    pat = pat.replace('.', '\.')
                     ignore_regexps.append(pat)
                 else:
                     # No need for special handling.

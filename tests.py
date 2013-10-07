@@ -209,15 +209,15 @@ recursive-exclude src/zope *.sh
         self.assertEqual(parse('      \n        '),
                          ([], []))
         self.assertEqual(parse('exclude *.cfg'),
-                         ([], ['[^/]*.cfg']))
+                         ([], ['[^/]*\.cfg']))
         self.assertEqual(parse('#exclude *.cfg'),
                          ([], []))
         self.assertEqual(parse('exclude          *.cfg'),
-                         ([], ['[^/]*.cfg']))
+                         ([], ['[^/]*\.cfg']))
         self.assertEqual(parse('exclude *.cfg foo.*   bar.txt'),
-                         (['bar.txt'], ['[^/]*.cfg', 'foo.[^/]*']))
+                         (['bar.txt'], ['[^/]*\.cfg', 'foo\.[^/]*']))
         self.assertEqual(parse('exclude some/directory/*.cfg'),
-                         ([], ['some/directory/[^/]*.cfg']))
+                         ([], ['some/directory/[^/]*\.cfg']))
         self.assertEqual(parse('include *.cfg'),
                          ([], []))
         self.assertEqual(parse('global-exclude *.pyc'),
@@ -257,11 +257,11 @@ recursive-exclude 42 *.43 44.*
              '42/44.*',
              ],
              [
-             '[^/]*.02',
-             '[^/]*.03',
-             '04.[^/]*',
-             '[^/]*.05',
-             'some/directory/[^/]*.cfg',
+             '[^/]*\.02',
+             '[^/]*\.03',
+             '04\.[^/]*',
+             '[^/]*\.05',
+             'some/directory/[^/]*\.cfg',
              ]))
 
 
