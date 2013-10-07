@@ -430,7 +430,7 @@ def _get_ignore_from_manifest(contents):
             # An exclude of 'dirname/*css' can match 'dirname/foo.css'
             # but not 'dirname/subdir/bar.css'.  We need a regular
             # expression for that.
-            rest = line[len('exclude '):].strip().split()
+            rest = line[len('exclude '):].split()
             for pat in rest:
                 if '*' in pat:
                     pat = pat.replace('*', '[^/]*')
