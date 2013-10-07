@@ -408,7 +408,8 @@ def read_manifest():
     # XXX modifies global state, which is kind of evil
     if not os.path.isfile('MANIFEST.in'):
         return
-    contents = open('MANIFEST.in').read()
+    with open('MANIFEST.in') as manifest:
+        contents = manifest.read()
     ignore, ignore_regexps = _get_ignore_from_manifest(contents)
     IGNORE.extend(ignore)
     IGNORE_REGEXPS.extend(ignore_regexps)
