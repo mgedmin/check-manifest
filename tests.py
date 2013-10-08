@@ -90,12 +90,15 @@ class Tests(unittest.TestCase):
         orig_ignore = check_manifest.IGNORE
         orig_ignore_regexps = check_manifest.IGNORE_REGEXPS
         manifest_in = """
-graft src
-exclude *.cfg
-global-exclude *.mo
-prune src/dump
-recursive-exclude src/zope *.sh
-"""
+        graft src
+        exclude *.cfg
+        global-exclude *.mo
+        prune src/dump
+        recursive-exclude src/zope *.sh
+        """
+        # Keep the indentation visually clear in the test, but remove
+        # leading whitespace programmatically.
+        manifest_in = textwrap.dedent(manifest_in)
         filelist = [
             '.gitignore',
             'setup.py',
