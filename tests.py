@@ -231,6 +231,10 @@ recursive-exclude src/zope *.sh
                          (['dir/*.pyc', 'dir/*.sh'], []))
         self.assertEqual(parse('prune dir'),
                          (['dir', 'dir/*'], []))
+        # You should not add a slash at the end of a prune, but let's
+        # not fail over it or end up with double slashes.
+        self.assertEqual(parse('prune dir/'),
+                         (['dir', 'dir/*'], []))
         text = """
         #exclude *.01
         exclude *.02

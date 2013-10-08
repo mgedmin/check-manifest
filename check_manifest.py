@@ -451,7 +451,11 @@ def _get_ignore_from_manifest(contents):
             for pattern in patterns.split():
                 ignore.append(dirname + os.path.sep + pattern)
         elif cmd == 'prune':
-            # rest is considered to be a directory name
+            # rest is considered to be a directory name.  It should
+            # not contain a path separator, as it actually has no
+            # effect in that case, but that could differ per python
+            # version.  We strip it here to avoid double separators.
+            rest = rest.rstrip(os.path.sep)
             ignore.append(rest)
             ignore.append(rest + os.path.sep + '*')
     return ignore, ignore_regexps
