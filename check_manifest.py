@@ -354,7 +354,7 @@ IGNORE_REGEXPS = [
     # Regular expressions for filename to ignore.  This is useful for
     # filename patterns where the '*' part must not search in
     # directories.
-    ]
+]
 
 WARN_ABOUT_FILES_IN_VCS = [
     # generated files should not be committed into the VCS
@@ -441,12 +441,12 @@ def _get_ignore_from_manifest(contents):
                     # No need for special handling.
                     ignore.append(pat)
         elif line.startswith('global-exclude '):
-            rest = line[len('global-exclude '):].strip().split()
+            rest = line[len('global-exclude '):].split()
             ignore.extend(rest)
         elif line.startswith('recursive-exclude '):
             rest = line[len('recursive-exclude '):].strip()
             dirname, patterns = rest.split(' ', 1)
-            for pattern in patterns.strip().split():
+            for pattern in patterns.split():
                 ignore.append(dirname + os.path.sep + pattern)
         elif line.startswith('prune '):
             dirname = line[len('prune '):].strip()
