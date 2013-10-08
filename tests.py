@@ -215,7 +215,7 @@ recursive-exclude src/zope *.sh
                          ([], []))
         self.assertEqual(parse('exclude          *.cfg'),
                          ([], ['[^/]*\.cfg']))
-        self.assertEqual(parse('exclude *.cfg foo.*   bar.txt'),
+        self.assertEqual(parse('\texclude\t*.cfg foo.*   bar.txt'),
                          (['bar.txt'], ['[^/]*\.cfg', 'foo\.[^/]*']))
         self.assertEqual(parse('exclude some/directory/*.cfg'),
                          ([], ['some/directory/[^/]*\.cfg']))

@@ -426,12 +426,16 @@ def _get_ignore_from_manifest(contents):
     ignore = []
     ignore_regexps = []
     for line in contents.splitlines():
-        if line.startswith('exclude '):
+        try:
+            cmd, rest = line.split(None, 1)
+        except ValueError:
+            # no whitespace, so not interesting
+            continue
+        if cmd == 'exclude':
             # An exclude of 'dirname/*css' can match 'dirname/foo.css'
             # but not 'dirname/subdir/bar.css'.  We need a regular
             # expression for that.
-            rest = line[len('exclude '):].split()
-            for pat in rest:
+            for pat in rest.split():
                 if '*' in pat:
                     pat = pat.replace('*', '[^/]*')
                     # Do not make a dot into a magical wildcard character.
@@ -440,18 +444,16 @@ def _get_ignore_from_manifest(contents):
                 else:
                     # No need for special handling.
                     ignore.append(pat)
-        elif line.startswith('global-exclude '):
-            rest = line[len('global-exclude '):].split()
-            ignore.extend(rest)
-        elif line.startswith('recursive-exclude '):
-            rest = line[len('recursive-exclude '):].strip()
-            dirname, patterns = rest.split(' ', 1)
+        elif cmd == 'global-exclude':
+            ignore.extend(rest.split())
+        elif cmd == 'recursive-exclude':
+            dirname, patterns = rest.split(None, 1)
             for pattern in patterns.split():
                 ignore.append(dirname + os.path.sep + pattern)
-        elif line.startswith('prune '):
-            dirname = line[len('prune '):].strip()
-            ignore.append(dirname)
-            ignore.append(dirname + os.path.sep + '*')
+        elif cmd == 'prune':
+            # rest is considered to be a directory name
+            ignore.append(rest)
+            ignore.append(rest + os.path.sep + '*')
     return ignore, ignore_regexps
 
 
