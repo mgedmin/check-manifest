@@ -447,7 +447,14 @@ def _get_ignore_from_manifest(contents):
         elif cmd == 'global-exclude':
             ignore.extend(rest.split())
         elif cmd == 'recursive-exclude':
-            dirname, patterns = rest.split(None, 1)
+            try:
+                dirname, patterns = rest.split(None, 1)
+            except ValueError:
+                # Wrong MANIFEST.in line.
+                warning("You have a wrong line in MANIFEST.in: %r\n"
+                        "'recursive-exclude' expects <dir> <pattern1> "
+                        "<pattern2> ..." % line)
+                continue
             for pattern in patterns.split():
                 ignore.append(dirname + os.path.sep + pattern)
         elif cmd == 'prune':

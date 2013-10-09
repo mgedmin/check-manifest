@@ -232,6 +232,9 @@ class Tests(unittest.TestCase):
                          (['dir/*.pyc'], []))
         self.assertEqual(parse('recursive-exclude dir *.pyc *.sh'),
                          (['dir/*.pyc', 'dir/*.sh'], []))
+        # We should not fail when a recursive-exclude line is wrong:
+        self.assertEqual(parse('recursive-exclude dirwithoutpattern'),
+                         ([], []))
         self.assertEqual(parse('prune dir'),
                          (['dir', 'dir/*'], []))
         # You should not add a slash at the end of a prune, but let's
