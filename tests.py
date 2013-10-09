@@ -232,6 +232,8 @@ class Tests(unittest.TestCase):
                          (['dir/*.pyc'], []))
         self.assertEqual(parse('recursive-exclude dir *.pyc *.sh'),
                          (['dir/*.pyc', 'dir/*.sh'], []))
+        self.assertEqual(parse('recursive-exclude dir nopattern.xml'),
+                         (['dir/nopattern.xml', 'dir/*/nopattern.xml'], []))
         # We should not fail when a recursive-exclude line is wrong:
         self.assertEqual(parse('recursive-exclude dirwithoutpattern'),
                          ([], []))

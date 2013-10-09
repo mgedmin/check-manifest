@@ -455,8 +455,20 @@ def _get_ignore_from_manifest(contents):
                         "'recursive-exclude' expects <dir> <pattern1> "
                         "<pattern2> ..." % line)
                 continue
+            # Strip path separator for clarity.
+            dirname = dirname.rstrip(os.path.sep)
             for pattern in patterns.split():
-                ignore.append(dirname + os.path.sep + pattern)
+                if '*' in pattern:
+                    ignore.append(dirname + os.path.sep + pattern)
+                else:
+                    # 'recursive-exclude plone metadata.xml' should
+                    # exclude plone/metadata.xml and
+                    # plone/*/metadata.xml, where * can be any number
+                    # of sub directories.  We could use a regexp, but
+                    # two ignores seems easier.
+                    ignore.append(dirname + os.path.sep + pattern)
+                    ignore.append(dirname + os.path.sep + '*' + os.path.sep +
+                                  pattern)
         elif cmd == 'prune':
             # rest is considered to be a directory name.  It should
             # not contain a path separator, as it actually has no
