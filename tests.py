@@ -230,8 +230,8 @@ class Tests(unittest.TestCase):
                          (['*.pyc', '*.sh'], []))
         self.assertEqual(parse('recursive-exclude dir *.pyc'),
                          (['dir/*.pyc'], []))
-        self.assertEqual(parse('recursive-exclude dir *.pyc *.sh'),
-                         (['dir/*.pyc', 'dir/*.sh'], []))
+        self.assertEqual(parse('recursive-exclude dir *.pyc foo*.sh'),
+                         (['dir/*.pyc', 'dir/foo*.sh', 'dir/*/foo*.sh'], []))
         self.assertEqual(parse('recursive-exclude dir nopattern.xml'),
                          (['dir/nopattern.xml', 'dir/*/nopattern.xml'], []))
         # We should not fail when a recursive-exclude line is wrong:
@@ -271,6 +271,7 @@ class Tests(unittest.TestCase):
              '40/*.41',
              '42/*.43',
              '42/44.*',
+             '42/*/44.*',
              ],
              [
              '[^/]*\.02',

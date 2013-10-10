@@ -458,7 +458,7 @@ def _get_ignore_from_manifest(contents):
             # Strip path separator for clarity.
             dirname = dirname.rstrip(os.path.sep)
             for pattern in patterns.split():
-                if '*' in pattern:
+                if pattern.startswith('*'):
                     ignore.append(dirname + os.path.sep + pattern)
                 else:
                     # 'recursive-exclude plone metadata.xml' should
