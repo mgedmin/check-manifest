@@ -27,6 +27,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import warnings
 import zipfile
 from contextlib import contextmanager
 
@@ -92,7 +93,7 @@ def error(message):
 
 def warning(message):
     _check_tbc()
-    print(message, file=sys.stderr)
+    warnings.warn(message)
 
 
 def format_list(list_of_strings):
@@ -350,6 +351,12 @@ IGNORE = [
     '*.mo',
 ]
 
+IGNORE_REGEXPS = [
+    # Regular expressions for filename to ignore.  This is useful for
+    # filename patterns where the '*' part must not search in
+    # directories.
+]
+
 WARN_ABOUT_FILES_IN_VCS = [
     # generated files should not be committed into the VCS
     'PKG-INFO',
@@ -394,15 +401,105 @@ def read_config():
         IGNORE.extend(p for p in patterns if p)
 
 
+def read_manifest():
+    """Read existing configuration from MANIFEST.in.
+
+    We use that to ignore anything the MANIFEST.in ignores.
+    """
+    # XXX modifies global state, which is kind of evil
+    if not os.path.isfile('MANIFEST.in'):
+        return
+    with open('MANIFEST.in') as manifest:
+        contents = manifest.read()
+    ignore, ignore_regexps = _get_ignore_from_manifest(contents)
+    IGNORE.extend(ignore)
+    IGNORE_REGEXPS.extend(ignore_regexps)
+
+
+def _get_ignore_from_manifest(contents):
+    """Gather the various ignore patterns from MANIFEST.in.
+
+    'contents' should be a string, which may contain newlines.
+
+    Returns a list of standard ignore patterns and a list of regular
+    expressions to ignore.
+    """
+    ignore = []
+    ignore_regexps = []
+    for line in contents.splitlines():
+        try:
+            cmd, rest = line.split(None, 1)
+        except ValueError:
+            # no whitespace, so not interesting
+            continue
+        if cmd == 'exclude':
+            # An exclude of 'dirname/*css' can match 'dirname/foo.css'
+            # but not 'dirname/subdir/bar.css'.  We need a regular
+            # expression for that.
+            for pat in rest.split():
+                if '*' in pat:
+                    pat = pat.replace('*', '[^/]*')
+                    # Do not make a dot into a magical wildcard character.
+                    pat = pat.replace('.', '\.')
+                    ignore_regexps.append(pat)
+                else:
+                    # No need for special handling.
+                    ignore.append(pat)
+        elif cmd == 'global-exclude':
+            ignore.extend(rest.split())
+        elif cmd == 'recursive-exclude':
+            try:
+                dirname, patterns = rest.split(None, 1)
+            except ValueError:
+                # Wrong MANIFEST.in line.
+                warning("You have a wrong line in MANIFEST.in: %r\n"
+                        "'recursive-exclude' expects <dir> <pattern1> "
+                        "<pattern2> ..." % line)
+                continue
+            # Strip path separator for clarity.
+            dirname = dirname.rstrip(os.path.sep)
+            for pattern in patterns.split():
+                if pattern.startswith('*'):
+                    ignore.append(dirname + os.path.sep + pattern)
+                else:
+                    # 'recursive-exclude plone metadata.xml' should
+                    # exclude plone/metadata.xml and
+                    # plone/*/metadata.xml, where * can be any number
+                    # of sub directories.  We could use a regexp, but
+                    # two ignores seems easier.
+                    ignore.append(dirname + os.path.sep + pattern)
+                    ignore.append(dirname + os.path.sep + '*' + os.path.sep +
+                                  pattern)
+        elif cmd == 'prune':
+            # rest is considered to be a directory name.  It should
+            # not contain a path separator, as it actually has no
+            # effect in that case, but that could differ per python
+            # version.  We strip it here to avoid double separators.
+            rest = rest.rstrip(os.path.sep)
+            ignore.append(rest)
+            ignore.append(rest + os.path.sep + '*')
+    return ignore, ignore_regexps
+
+
 def file_matches(filename, patterns):
     """Does this filename match any of the patterns?"""
     return any(fnmatch.fnmatch(filename, pat) for pat in patterns)
 
 
+def file_matches_regexps(filename, patterns):
+    """Does this filename match any of the regular expressions?"""
+    return any(re.match(pat, filename) for pat in patterns)
+
+
 def strip_sdist_extras(filelist):
-    """Strip generated files that are only present in source distributions."""
+    """Strip generated files that are only present in source distributions.
+
+    We also strip files that are ignored for other reasons, like
+    command line arguments, setup.cfg rules or MANIFEST.in rules.
+    """
     return [name for name in filelist
-            if not file_matches(name, IGNORE)]
+            if not file_matches(name, IGNORE)
+            and not file_matches_regexps(name, IGNORE_REGEXPS)]
 
 
 def find_bad_ideas(filelist):
@@ -451,6 +548,7 @@ def check_manifest(source_tree='.', create=False, update=False,
         if not is_package(source_tree):
             raise Failure('This is not a Python project (no setup.py).')
         read_config()
+        read_manifest()
         info_begin("listing source files under version control")
         all_source_files = sorted(get_vcs_files())
         source_files = strip_sdist_extras(all_source_files)

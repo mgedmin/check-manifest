@@ -3,7 +3,9 @@ import os
 import shutil
 import subprocess
 import tempfile
+import textwrap
 import unittest
+import warnings
 
 
 class Tests(unittest.TestCase):
@@ -82,6 +84,72 @@ class Tests(unittest.TestCase):
         ]
         self.assertEqual(strip_sdist_extras(filelist), expected)
 
+    def test_strip_sdist_extras_with_manifest(self):
+        import check_manifest
+        from check_manifest import strip_sdist_extras
+        from check_manifest import _get_ignore_from_manifest as parse
+        orig_ignore = check_manifest.IGNORE
+        orig_ignore_regexps = check_manifest.IGNORE_REGEXPS
+        manifest_in = """
+        graft src
+        exclude *.cfg
+        global-exclude *.mo
+        prune src/dump
+        recursive-exclude src/zope *.sh
+        """
+        # Keep the indentation visually clear in the test, but remove
+        # leading whitespace programmatically.
+        manifest_in = textwrap.dedent(manifest_in)
+        filelist = [
+            '.gitignore',
+            'setup.py',
+            'setup.cfg',
+            'MANIFEST.in',
+            'README.txt',
+            'src',
+            'src/helper.sh',
+            'src/dump',
+            'src/dump/__init__.py',
+            'src/zope',
+            'src/zope/__init__.py',
+            'src/zope/zopehelper.sh',
+            'src/zope/foo',
+            'src/zope/foo/__init__.py',
+            'src/zope/foo/language.po',
+            'src/zope/foo/language.mo',
+            'src/zope/foo/config.cfg',
+            'src/zope/foo/foohelper.sh',
+            'src/zope.foo.egg-info',
+            'src/zope.foo.egg-info/SOURCES.txt',
+        ]
+        expected = [
+            'setup.py',
+            'MANIFEST.in',
+            'README.txt',
+            'src',
+            'src/helper.sh',
+            'src/zope',
+            'src/zope/__init__.py',
+            'src/zope/foo',
+            'src/zope/foo/__init__.py',
+            'src/zope/foo/language.po',
+            'src/zope/foo/config.cfg',
+        ]
+
+        # This will change the definitions.
+        try:
+            # This is normally done in read_manifest:
+            ignore, ignore_regexps = parse(manifest_in)
+            check_manifest.IGNORE.extend(ignore)
+            check_manifest.IGNORE_REGEXPS.extend(ignore_regexps)
+            # Filter the file list.
+            result = strip_sdist_extras(filelist)
+        finally:
+            # Restore the original definitions
+            check_manifest.IGNORE = orig_ignore
+            check_manifest.IGNORE_REGEXPS = orig_ignore_regexps
+        self.assertEqual(result, expected)
+
     def test_find_bad_ideas(self):
         from check_manifest import find_bad_ideas
         filelist = [
@@ -136,6 +204,85 @@ class Tests(unittest.TestCase):
                          (['include *.map'], []))
         self.assertEqual(find_suggestions(['src/id-lang.map']),
                          (['recursive-include src *.map'], []))
+
+    def test_get_ignore_from_manifest(self):
+        from check_manifest import _get_ignore_from_manifest as parse
+        # The return value is a tuple with two lists:
+        # ([<list of filename ignores>], [<list of regular expressions>])
+        self.assertEqual(parse(''),
+                         ([], []))
+        self.assertEqual(parse('      \n        '),
+                         ([], []))
+        self.assertEqual(parse('exclude *.cfg'),
+                         ([], ['[^/]*\.cfg']))
+        self.assertEqual(parse('#exclude *.cfg'),
+                         ([], []))
+        self.assertEqual(parse('exclude          *.cfg'),
+                         ([], ['[^/]*\.cfg']))
+        self.assertEqual(parse('\texclude\t*.cfg foo.*   bar.txt'),
+                         (['bar.txt'], ['[^/]*\.cfg', 'foo\.[^/]*']))
+        self.assertEqual(parse('exclude some/directory/*.cfg'),
+                         ([], ['some/directory/[^/]*\.cfg']))
+        self.assertEqual(parse('include *.cfg'),
+                         ([], []))
+        self.assertEqual(parse('global-exclude *.pyc'),
+                         (['*.pyc'], []))
+        self.assertEqual(parse('global-exclude *.pyc *.sh'),
+                         (['*.pyc', '*.sh'], []))
+        self.assertEqual(parse('recursive-exclude dir *.pyc'),
+                         (['dir/*.pyc'], []))
+        self.assertEqual(parse('recursive-exclude dir *.pyc foo*.sh'),
+                         (['dir/*.pyc', 'dir/foo*.sh', 'dir/*/foo*.sh'], []))
+        self.assertEqual(parse('recursive-exclude dir nopattern.xml'),
+                         (['dir/nopattern.xml', 'dir/*/nopattern.xml'], []))
+        # We should not fail when a recursive-exclude line is wrong:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.assertEqual(parse('recursive-exclude dirwithoutpattern'),
+                             ([], []))
+        self.assertEqual(parse('prune dir'),
+                         (['dir', 'dir/*'], []))
+        # You should not add a slash at the end of a prune, but let's
+        # not fail over it or end up with double slashes.
+        self.assertEqual(parse('prune dir/'),
+                         (['dir', 'dir/*'], []))
+        text = """
+        #exclude *.01
+        exclude *.02
+        exclude *.03 04.*   bar.txt
+        exclude          *.05
+        exclude some/directory/*.cfg
+        global-exclude *.10 *.11
+        global-exclude *.12
+        include *.20
+        prune 30
+        recursive-exclude    40      *.41
+        recursive-exclude 42 *.43 44.*
+        """
+        # Keep the indentation visually clear in the test, but remove
+        # leading whitespace programmatically.
+        text = textwrap.dedent(text)
+        self.assertEqual(
+            parse(text),
+            ([
+             'bar.txt',
+             '*.10',
+             '*.11',
+             '*.12',
+             '30',
+             '30/*',
+             '40/*.41',
+             '42/*.43',
+             '42/44.*',
+             '42/*/44.*',
+             ],
+             [
+             '[^/]*\.02',
+             '[^/]*\.03',
+             '04\.[^/]*',
+             '[^/]*\.05',
+             'some/directory/[^/]*\.cfg',
+             ]))
 
 
 class VCSMixin(object):
