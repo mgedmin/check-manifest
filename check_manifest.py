@@ -440,6 +440,8 @@ def _get_ignore_from_manifest(contents):
                     pat = pat.replace('*', '[^/]*')
                     # Do not make a dot into a magical wildcard character.
                     pat = pat.replace('.', '\.')
+                    # XXX: we should handle other special glob and regexp characters,
+                    # i.e. ?, +, (, ), |, ^, $, {, }, \
                     ignore_regexps.append(pat)
                 else:
                     # No need for special handling.
