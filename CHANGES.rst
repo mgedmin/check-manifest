@@ -2,10 +2,11 @@ Changelog
 =========
 
 
-0.17 (unreleased)
+0.17 (2013-10-10)
 -----------------
 
-* Read the existing MANIFEST.in file for files to ignore.
+* Read the existing MANIFEST.in file for files to ignore
+  (`issue #19 <https://github.com/mgedmin/check-manifest/issues/19>`__).
 
 
 0.16 (2013-10-01)
