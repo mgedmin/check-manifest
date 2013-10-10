@@ -5,10 +5,19 @@ import subprocess
 import tempfile
 import textwrap
 import unittest
-import warnings
 
 
 class Tests(unittest.TestCase):
+
+    def setUp(self):
+        import check_manifest
+        self.warnings = []
+        self._real_warning = check_manifest.warning
+        check_manifest.warning = self.warnings.append
+
+    def tearDown(self):
+        import check_manifest
+        check_manifest.warning = self._real_warning
 
     def test_format_list(self):
         from check_manifest import format_list
@@ -236,10 +245,8 @@ class Tests(unittest.TestCase):
         self.assertEqual(parse('recursive-exclude dir nopattern.xml'),
                          (['dir/nopattern.xml', 'dir/*/nopattern.xml'], []))
         # We should not fail when a recursive-exclude line is wrong:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            self.assertEqual(parse('recursive-exclude dirwithoutpattern'),
-                             ([], []))
+        self.assertEqual(parse('recursive-exclude dirwithoutpattern'),
+                         ([], []))
         self.assertEqual(parse('prune dir'),
                          (['dir', 'dir/*'], []))
         # You should not add a slash at the end of a prune, but let's
