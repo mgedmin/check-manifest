@@ -5,6 +5,8 @@ Changelog
 0.17 (unreleased)
 -----------------
 
+* Read the existing MANIFEST.in file for files to ignore.
+
 
 0.16 (2013-10-01)
 -----------------
