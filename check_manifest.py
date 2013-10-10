@@ -27,6 +27,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import warnings
 import zipfile
 from contextlib import contextmanager
 
@@ -92,7 +93,7 @@ def error(message):
 
 def warning(message):
     _check_tbc()
-    print(message, file=sys.stderr)
+    warnings.warn(message)
 
 
 def format_list(list_of_strings):
