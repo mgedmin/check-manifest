@@ -5,7 +5,7 @@ python:
     - 3.3
     - pypy
 install:
-    - pip install coverage coveralls
+    - pip install coverage coveralls mock
 script:
     - coverage run --source=check_manifest setup.py test -q
     - coverage run --append check_manifest.py

@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 import textwrap
 import unittest
+import mock
 
 
 class Tests(unittest.TestCase):
@@ -18,6 +19,71 @@ class Tests(unittest.TestCase):
     def tearDown(self):
         import check_manifest
         check_manifest.warning = self._real_warning
+
+    def test_run_success(self):
+        from check_manifest import run
+        self.assertEqual(run(["true"]), "")
+
+    def test_run_failure(self):
+        from check_manifest import run, CommandFailed
+        with self.assertRaises(CommandFailed) as cm:
+            run(["false"])
+        self.assertEqual(str(cm.exception),
+                         "['false'] failed (status 1):\n")
+
+    def test_run_no_such_program(self):
+        from check_manifest import run, Failure
+        with self.assertRaises(Failure) as cm:
+            run(["there-is-really-no-such-program"])
+        self.assertTrue(
+            str(cm.exception).startswith(
+                "could not run ['there-is-really-no-such-program']:"
+                " [Errno 2] No such file or directory"))
+
+    def test_copy_files(self):
+        from check_manifest import copy_files
+        actions = []
+        with mock.patch('os.path.isdir', lambda d: d in ('b', '/dest/dir')), \
+             mock.patch('os.makedirs', lambda d: actions.append('makedirs %s' % d)), \
+             mock.patch('os.mkdir', lambda d: actions.append('mkdir %s' % d)), \
+             mock.patch('shutil.copy2', lambda s, d: actions.append('cp %s %s' % (s, d))):
+            copy_files(['a', 'b', 'c/d/e'], '/dest/dir')
+        self.assertEqual(
+            actions,
+            [
+                'cp a /dest/dir/a',
+                'mkdir /dest/dir/b',
+                'makedirs /dest/dir/c/d',
+                'cp c/d/e /dest/dir/c/d/e',
+            ])
+
+    def test_get_one_file_in(self):
+        from check_manifest import get_one_file_in
+        with mock.patch('os.listdir', lambda dir: ['a']):
+            self.assertEqual(get_one_file_in('/some/dir'),
+                             '/some/dir/a')
+
+    def test_get_one_file_in_empty_directory(self):
+        from check_manifest import get_one_file_in, Failure
+        with mock.patch('os.listdir', lambda dir: []):
+            with self.assertRaises(Failure) as cm:
+                get_one_file_in('/some/dir')
+            self.assertEqual(str(cm.exception),
+                             "No files found in /some/dir")
+
+    def test_get_one_file_in_too_many(self):
+        from check_manifest import get_one_file_in, Failure
+        with mock.patch('os.listdir', lambda dir: ['b', 'a']):
+            with self.assertRaises(Failure) as cm:
+                get_one_file_in('/some/dir')
+            self.assertEqual(str(cm.exception),
+                             "More than one file exists in /some/dir:\na\nb")
+
+    def test_get_archive_file_list_unrecognized_archive(self):
+        from check_manifest import get_archive_file_list, Failure
+        with self.assertRaises(Failure) as cm:
+            get_archive_file_list('archive.rar')
+        self.assertEqual(str(cm.exception), 'Unrecognized archive type: .rar')
 
     def test_format_list(self):
         from check_manifest import format_list
@@ -44,6 +110,15 @@ class Tests(unittest.TestCase):
     def test_strip_toplevel_name_no_common_prefix(self):
         from check_manifest import strip_toplevel_name, Failure
         self.assertRaises(Failure, strip_toplevel_name, ["a/b", "c/d"])
+
+    def test_detect_vcs_no_vcs(self):
+        from check_manifest import detect_vcs, Failure
+        with mock.patch('check_manifest.VCS.detect', staticmethod(lambda *a: False)):
+            with self.assertRaises(Failure) as cm:
+                detect_vcs()
+            self.assertEqual(str(cm.exception),
+                             "Couldn't find version control data"
+                             " (git/hg/bzr/svn supported)")
 
     def test_normalize_names(self):
         from check_manifest import normalize_names

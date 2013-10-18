@@ -52,6 +52,7 @@ setup(
     zip_safe=False,
     test_suite='tests.test_suite',
     install_requires=[],
+    tests_require=['mock'],
     entry_points={
         'console_scripts': [
             'check-manifest = check_manifest:main',

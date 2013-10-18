@@ -133,8 +133,11 @@ def run(command):
 
     Raises CommandFailed in cases of error.
     """
-    pipe = subprocess.Popen(command, stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT)
+    try:
+        pipe = subprocess.Popen(command, stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
+    except OSError as e:
+        raise Failure("could not run %s: %s" % (command, e))
     output = pipe.communicate()[0].decode(locale.getpreferredencoding(False))
     status = pipe.wait()
     if status != 0:
