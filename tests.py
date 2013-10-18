@@ -254,17 +254,17 @@ class Tests(unittest.TestCase):
         self.assertEqual(parse('prune dir/'),
                          (['dir', 'dir/*'], []))
         text = """
-        #exclude *.01
-        exclude *.02
-        exclude *.03 04.*   bar.txt
-        exclude          *.05
-        exclude some/directory/*.cfg
-        global-exclude *.10 *.11
-        global-exclude *.12
-        include *.20
-        prune 30
-        recursive-exclude    40      *.41
-        recursive-exclude 42 *.43 44.*
+            #exclude *.01
+            exclude *.02
+            exclude *.03 04.*   bar.txt
+            exclude          *.05
+            exclude some/directory/*.cfg
+            global-exclude *.10 *.11
+            global-exclude *.12
+            include *.20
+            prune 30
+            recursive-exclude    40      *.41
+            recursive-exclude 42 *.43 44.*
         """
         # Keep the indentation visually clear in the test, but remove
         # leading whitespace programmatically.
@@ -272,24 +272,23 @@ class Tests(unittest.TestCase):
         self.assertEqual(
             parse(text),
             ([
-             'bar.txt',
-             '*.10',
-             '*.11',
-             '*.12',
-             '30',
-             '30/*',
-             '40/*.41',
-             '42/*.43',
-             '42/44.*',
-             '42/*/44.*',
-             ],
-             [
-             '[^/]*\.02',
-             '[^/]*\.03',
-             '04\.[^/]*',
-             '[^/]*\.05',
-             'some/directory/[^/]*\.cfg',
-             ]))
+                'bar.txt',
+                '*.10',
+                '*.11',
+                '*.12',
+                '30',
+                '30/*',
+                '40/*.41',
+                '42/*.43',
+                '42/44.*',
+                '42/*/44.*',
+            ], [
+                '[^/]*\.02',
+                '[^/]*\.03',
+                '04\.[^/]*',
+                '[^/]*\.05',
+                'some/directory/[^/]*\.cfg',
+            ]))
 
 
 class VCSMixin(object):
