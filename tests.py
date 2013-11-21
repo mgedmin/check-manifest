@@ -2,9 +2,16 @@ import doctest
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import textwrap
 import unittest
+
+try:
+    from cStringIO import StringIO  # Python 2.x
+except ImportError:
+    from io import StringIO         # Python 3.x
+
 import mock
 
 
@@ -483,6 +490,83 @@ class TestSvn(VCSMixin, unittest.TestCase):
         self._run('svn', 'commit', '-m', 'Initial')
 
 
+class TestUserInterface(unittest.TestCase):
+
+    def setUp(self):
+        self.real_stdout = sys.stdout
+        self.real_stderr = sys.stderr
+        sys.stdout = StringIO()
+        sys.stderr = StringIO()
+
+    def tearDown(self):
+        sys.stderr = self.real_stderr
+        sys.stdout = self.real_stdout
+
+    def test_info(self):
+        from check_manifest import info
+        info("Reticulating splines")
+        self.assertEqual(sys.stdout.getvalue(),
+                         "Reticulating splines\n")
+
+    def test_info_begin_continue_end(self):
+        from check_manifest import info_begin, info_continue, info_end
+        info_begin("Reticulating splines...")
+        info_continue(" nearly done...")
+        info_continue(" almost done...")
+        info_end(" done!")
+        self.assertEqual(
+            sys.stdout.getvalue(),
+            "Reticulating splines... nearly done... almost done... done!\n")
+
+    def test_info_emits_newline_when_needed(self):
+        from check_manifest import info_begin, info
+        info_begin("Computering...")
+        info("Forgot to turn the gas off!")
+        self.assertEqual(
+            sys.stdout.getvalue(),
+            "Computering...\n"
+            "Forgot to turn the gas off!\n")
+
+    def test_warning(self):
+        from check_manifest import info_begin, warning
+        info_begin("Computering...")
+        warning("Forgot to turn the gas off!")
+        self.assertEqual(
+            sys.stdout.getvalue(),
+            "Computering...\n")
+        self.assertEqual(
+            sys.stderr.getvalue(),
+            "Forgot to turn the gas off!\n")
+
+    def test_error(self):
+        from check_manifest import info_begin, error
+        info_begin("Computering...")
+        error("Forgot to turn the gas off!")
+        self.assertEqual(
+            sys.stdout.getvalue(),
+            "Computering...\n")
+        self.assertEqual(
+            sys.stderr.getvalue(),
+            "Forgot to turn the gas off!\n")
+
+
+def doctest_ui_messages():
+    r"""Tests for user interface messages.
+
+        >>> from check_manifest import (info, info_begin, info_continue,
+        ...                             info_end, error, warning)
+
+    Here are the basic blocks:
+
+        >>> info_begin('About to do something'); \
+        ... info_continue('...doing something...'); \
+        ... info_end('done it!')
+
+
+
+    """
+
+
 def test_suite():
     return unittest.TestSuite([
         unittest.makeSuite(Tests),
@@ -490,5 +574,6 @@ def test_suite():
         unittest.makeSuite(TestBzr),
         unittest.makeSuite(TestHg),
         unittest.makeSuite(TestSvn),
+        unittest.makeSuite(TestUserInterface),
         doctest.DocTestSuite('check_manifest'),
     ])
