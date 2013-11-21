@@ -561,6 +561,11 @@ def check_manifest(source_tree='.', create=False, update=False,
         with mkdtemp('-sources') as tempsourcedir:
             copy_files(source_files, tempsourcedir)
             if os.path.exists('MANIFEST.in') and 'MANIFEST.in' not in source_files:
+                # See https://github.com/mgedmin/check-manifest/issues/7
+                # if do this, we will emit a warning about MANIFEST.in not
+                # being in source control, if we don't do this, the user
+                # gets confused about their new manifest rules being
+                # ignored.
                 copy_files(['MANIFEST.in'], tempsourcedir)
             info_begin("building an sdist")
             with cd(tempsourcedir):
