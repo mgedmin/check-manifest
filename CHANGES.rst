@@ -5,6 +5,9 @@ Changelog
 0.18 (unreleased)
 -----------------
 
+* Friendlier error message when an external command cannot be found
+  (`issue #21 <https://github.com/mgedmin/check-manifest/issues/21>`__).
+
 
 0.17 (2013-10-10)
 -----------------
