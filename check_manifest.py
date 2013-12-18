@@ -370,6 +370,7 @@ SUGGESTIONS = [(re.compile(pattern), suggestion) for pattern, suggestion in [
     # regexp -> suggestion
     ('^([^/]+[.](cfg|ini))$',       r'include \1'),
     ('^([.]travis[.]yml)$',         r'include \1'),
+    ('^([.]coveragerc)$',           r'include \1'),
     ('^([A-Z]+)$',                  r'include \1'),
     ('^(Makefile)$',                r'include \1'),
     ('^[^/]+[.](txt|rst|py)$',      r'include *.\1'),

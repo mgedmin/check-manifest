@@ -7,6 +7,7 @@ Changelog
 
 * Friendlier error message when an external command cannot be found
   (`issue #21 <https://github.com/mgedmin/check-manifest/issues/21>`__).
+* Add suggestion pattern for `.coveragerc`.
 
 
 0.17 (2013-10-10)
