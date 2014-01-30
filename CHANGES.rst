@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.18 (unreleased)
+0.18 (2014-01-30)
 -----------------
 
 * Friendlier error message when an external command cannot be found
