@@ -5,6 +5,8 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import zipfile
+
 try:
     import unittest2 as unittest    # Python 2.6
 except ImportError:
@@ -29,6 +31,16 @@ class Tests(unittest.TestCase):
     def tearDown(self):
         import check_manifest
         check_manifest.warning = self._real_warning
+
+    def make_temp_dir(self):
+        tmpdir = tempfile.mkdtemp(prefix='test-', suffix='-check-manifest')
+        self.addCleanup(shutil.rmtree, tmpdir)
+        return tmpdir
+
+    def create_zip_file(self, filename, filenames):
+        zf = zipfile.ZipFile(filename, 'w')
+        for fn in filenames:
+            zf.writestr(fn, '')
 
     def test_run_success(self):
         from check_manifest import run
@@ -97,6 +109,13 @@ class Tests(unittest.TestCase):
         with self.assertRaises(Failure) as cm:
             get_archive_file_list('archive.rar')
         self.assertEqual(str(cm.exception), 'Unrecognized archive type: .rar')
+
+    def test_get_archive_file_list_zip(self):
+        from check_manifest import get_archive_file_list
+        filename = os.path.join(self.make_temp_dir(), 'archive.zip')
+        self.create_zip_file(filename, ['a', 'b/c'])
+        self.assertEqual(get_archive_file_list(filename),
+                         ['a', 'b', 'b/c'])
 
     def test_format_list(self):
         from check_manifest import format_list
