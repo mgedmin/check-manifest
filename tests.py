@@ -6,6 +6,7 @@ import sys
 import tempfile
 import textwrap
 import zipfile
+from contextlib import closing
 
 try:
     import unittest2 as unittest    # Python 2.6
@@ -38,9 +39,9 @@ class Tests(unittest.TestCase):
         return tmpdir
 
     def create_zip_file(self, filename, filenames):
-        zf = zipfile.ZipFile(filename, 'w')
-        for fn in filenames:
-            zf.writestr(fn, '')
+        with closing(zipfile.ZipFile(filename, 'w')) as zf:
+            for fn in filenames:
+                zf.writestr(fn, '')
 
     def test_run_success(self):
         from check_manifest import run
