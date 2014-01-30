@@ -550,23 +550,6 @@ class TestUserInterface(unittest.TestCase):
             "Forgot to turn the gas off!\n")
 
 
-def doctest_ui_messages():
-    r"""Tests for user interface messages.
-
-        >>> from check_manifest import (info, info_begin, info_continue,
-        ...                             info_end, error, warning)
-
-    Here are the basic blocks:
-
-        >>> info_begin('About to do something'); \
-        ... info_continue('...doing something...'); \
-        ... info_end('done it!')
-
-
-
-    """
-
-
 def test_suite():
     return unittest.TestSuite([
         unittest.makeSuite(Tests),
