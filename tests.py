@@ -5,7 +5,10 @@ import subprocess
 import sys
 import tempfile
 import textwrap
-import unittest
+try:
+    import unittest2 as unittest    # Python 2.6
+except ImportError:
+    import unittest
 
 try:
     from cStringIO import StringIO  # Python 2.x
@@ -50,11 +53,14 @@ class Tests(unittest.TestCase):
     def test_copy_files(self):
         from check_manifest import copy_files
         actions = []
-        with mock.patch('os.path.isdir', lambda d: d in ('b', '/dest/dir')), \
-             mock.patch('os.makedirs', lambda d: actions.append('makedirs %s' % d)), \
-             mock.patch('os.mkdir', lambda d: actions.append('mkdir %s' % d)), \
-             mock.patch('shutil.copy2', lambda s, d: actions.append('cp %s %s' % (s, d))):
-            copy_files(['a', 'b', 'c/d/e'], '/dest/dir')
+        with mock.patch('os.path.isdir', lambda d: d in ('b', '/dest/dir')):
+            with mock.patch('os.makedirs',
+                            lambda d: actions.append('makedirs %s' % d)):
+                with mock.patch('os.mkdir',
+                                lambda d: actions.append('mkdir %s' % d)):
+                    with mock.patch('shutil.copy2',
+                                    lambda s, d: actions.append('cp %s %s' % (s, d))):
+                        copy_files(['a', 'b', 'c/d/e'], '/dest/dir')
         self.assertEqual(
             actions,
             [
@@ -385,12 +391,14 @@ class VCSMixin(object):
         shutil.rmtree(self.tmpdir)
 
     def _run(self, *command):
-        try:
-            subprocess.check_output(command, stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
+        p = subprocess.Popen(command, stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+        stdout, stderr = p.communicate()
+        rc = p.wait()
+        if rc:
             print(' '.join(command))
-            print(e.output)
-            raise
+            print(stdout)
+            raise subprocess.CalledProcessError(rc, command[0], output=stdout)
 
     def _create_file(self, filename):
         assert not os.path.isabs(filename)

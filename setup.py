@@ -1,6 +1,11 @@
 #!/usr/bin/env python
-import os, re, ast, email.utils
+import os, re, ast, email.utils, sys
 from setuptools import setup
+
+if sys.version_info < (2, 6):
+    sys.exit("Python 2.6 or newer is required for check-manifest")
+
+PY26 = (sys.version_info[:2] == (2, 6))
 
 here = os.path.dirname(__file__)
 
@@ -40,6 +45,7 @@ setup(
         'License :: uhh, dunno',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
+        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
@@ -51,8 +57,8 @@ setup(
     py_modules=['check_manifest'],
     zip_safe=False,
     test_suite='tests.test_suite',
-    install_requires=[],
-    tests_require=['mock'],
+    install_requires=['argparse'] if PY26 else [],
+    tests_require=['mock'] + (['unittest2'] if PY26 else []),
     entry_points={
         'console_scripts': [
             'check-manifest = check_manifest:main',

@@ -8,6 +8,8 @@ Changelog
 * Friendlier error message when an external command cannot be found
   (`issue #21 <https://github.com/mgedmin/check-manifest/issues/21>`__).
 * Add suggestion pattern for `.coveragerc`.
+* Python 2.6 support
+  (`issue #22 <https://github.com/mgedmin/check-manifest/issues/22>`__).
 
 
 0.17 (2013-10-10)
