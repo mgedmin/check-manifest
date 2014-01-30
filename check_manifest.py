@@ -28,7 +28,7 @@ import sys
 import tarfile
 import tempfile
 import zipfile
-from contextlib import contextmanager
+from contextlib import contextmanager, closing
 
 try:
     import ConfigParser
@@ -213,7 +213,7 @@ def get_archive_file_list(archive_filename):
         with zipfile.ZipFile(archive_filename) as zf:
             return add_directories(zf.namelist())
     elif archive_filename.endswith(('.tar.gz', '.tar.bz2', '.tar')):
-        with tarfile.open(archive_filename) as tf:
+        with closing(tarfile.open(archive_filename)) as tf:
             return tf.getnames()
     else:
         ext = os.path.splitext(archive_filename)[-1]
