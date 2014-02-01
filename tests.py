@@ -81,21 +81,22 @@ class Tests(unittest.TestCase):
     def test_copy_files(self):
         from check_manifest import copy_files
         actions = []
-        with mock.patch('os.path.isdir', lambda d: d in ('b', '/dest/dir')):
+        n = os.path.normpath
+        with mock.patch('os.path.isdir', lambda d: d in ('b', n('/dest/dir'))):
             with mock.patch('os.makedirs',
                             lambda d: actions.append('makedirs %s' % d)):
                 with mock.patch('os.mkdir',
                                 lambda d: actions.append('mkdir %s' % d)):
                     with mock.patch('shutil.copy2',
                                     lambda s, d: actions.append('cp %s %s' % (s, d))):
-                        copy_files(['a', 'b', 'c/d/e'], '/dest/dir')
+                        copy_files(['a', 'b', n('c/d/e')], n('/dest/dir'))
         self.assertEqual(
             actions,
             [
-                'cp a /dest/dir/a',
-                'mkdir /dest/dir/b',
-                'makedirs /dest/dir/c/d',
-                'cp c/d/e /dest/dir/c/d/e',
+                'cp a %s' % n('/dest/dir/a'),
+                'mkdir %s' % n('/dest/dir/b'),
+                'makedirs %s' % n('/dest/dir/c/d'),
+                'cp %s %s' % (n('c/d/e'), n('/dest/dir/c/d/e')),
             ])
 
     def test_get_one_file_in(self):
