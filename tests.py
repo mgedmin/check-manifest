@@ -21,6 +21,21 @@ except ImportError:
 import mock
 
 
+def rmtree(path):
+    """A version of rmtree that can remove read-only files on Windows.
+
+    Needed because the stock shutil.rmtree() fails with an access error
+    due to the files in .git/objects being read-only.
+    """
+    def onerror(func, path, exc_info):
+        if func is os.remove:
+            os.chmod(path, 0o644)
+            os.remove(path)
+        else:
+            raise
+    shutil.rmtree(path, onerror=onerror)
+
+
 class Tests(unittest.TestCase):
 
     def setUp(self):
@@ -35,7 +50,7 @@ class Tests(unittest.TestCase):
 
     def make_temp_dir(self):
         tmpdir = tempfile.mkdtemp(prefix='test-', suffix='-check-manifest')
-        self.addCleanup(shutil.rmtree, tmpdir)
+        self.addCleanup(rmtree, tmpdir)
         return tmpdir
 
     def create_zip_file(self, filename, filenames):
@@ -408,7 +423,7 @@ class VCSMixin(object):
 
     def tearDown(self):
         os.chdir(self.olddir)
-        shutil.rmtree(self.tmpdir)
+        rmtree(self.tmpdir)
 
     def _run(self, *command):
         p = subprocess.Popen(command, stdout=subprocess.PIPE,
