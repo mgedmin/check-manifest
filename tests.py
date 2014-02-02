@@ -538,6 +538,57 @@ class TestConfiguration(unittest.TestCase):
                          ['default-ignore-regexps', g2r('*.gif')])
 
 
+class TestMain(unittest.TestCase):
+
+    def setUp(self):
+        import check_manifest
+        self._cm_patcher = mock.patch('check_manifest.check_manifest')
+        self._check_manifest = self._cm_patcher.start()
+        self._se_patcher = mock.patch('sys.exit')
+        self._sys_exit = self._se_patcher.start()
+        self._error_patcher = mock.patch('check_manifest.error')
+        self._error = self._error_patcher.start()
+        self._orig_sys_argv = sys.argv
+        sys.argv = ['check-manifest']
+        self.OLD_IGNORE = check_manifest.IGNORE
+        self.OLD_IGNORE_REGEXPS = check_manifest.IGNORE_REGEXPS
+        check_manifest.IGNORE = ['default-ignore-rules']
+        check_manifest.IGNORE_REGEXPS = ['default-ignore-regexps']
+
+    def tearDown(self):
+        import check_manifest
+        check_manifest.IGNORE = self.OLD_IGNORE
+        check_manifest.IGNORE_REGEXPS = self.OLD_IGNORE_REGEXPS
+        sys.argv = self._orig_sys_argv
+        self._se_patcher.stop()
+        self._cm_patcher.stop()
+        self._error_patcher.stop()
+
+    def test(self):
+        from check_manifest import main
+        main()
+
+    def test_exit_code_1_on_error(self):
+        from check_manifest import main
+        self._check_manifest.return_value = False
+        main()
+        self._sys_exit.assert_called_with(1)
+
+    def test_exit_code_2_on_failure(self):
+        from check_manifest import main, Failure
+        self._check_manifest.side_effect = Failure('msg')
+        main()
+        self._error.assert_called_with('msg')
+        self._sys_exit.assert_called_with(2)
+
+    def test_extra_ignore_args(self):
+        import check_manifest
+        sys.argv.append('--ignore=x,y,z')
+        check_manifest.main()
+        self.assertEqual(check_manifest.IGNORE,
+                         ['default-ignore-rules', 'x', 'y', 'z'])
+
+
 class VCSMixin(object):
 
     def setUp(self):

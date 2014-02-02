@@ -657,7 +657,7 @@ def main():
                               update=args.update, python=args.python):
             sys.exit(1)
     except Failure as e:
-        error(e)
+        error(str(e))
         sys.exit(2)
 
 
