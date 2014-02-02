@@ -260,8 +260,8 @@ class Git(VCS):
     @staticmethod
     def get_versioned_files():
         """List all files versioned by git in the current directory."""
-        output = run(['git', 'ls-files'])
-        return add_directories(output.splitlines())
+        output = run(['git', 'ls-files', '-z'])
+        return add_directories(output.split('\0')[:-1])
 
 
 class Mercurial(VCS):
