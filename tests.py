@@ -473,11 +473,14 @@ class TestConfiguration(unittest.TestCase):
         self.tmpdir = tempfile.mkdtemp(prefix='test-', suffix='-check-manifest')
         os.chdir(self.tmpdir)
         self.OLD_IGNORE = check_manifest.IGNORE
+        self.OLD_IGNORE_REGEXPS = check_manifest.IGNORE_REGEXPS
         check_manifest.IGNORE = ['default-ignore-rules']
+        check_manifest.IGNORE_REGEXPS = ['default-ignore-regexps']
 
     def tearDown(self):
         import check_manifest
         check_manifest.IGNORE = self.OLD_IGNORE
+        check_manifest.IGNORE_REGEXPS = self.OLD_IGNORE_REGEXPS
         os.chdir(self.oldpwd)
         shutil.rmtree(self.tmpdir)
 
@@ -516,6 +519,23 @@ class TestConfiguration(unittest.TestCase):
         check_manifest.read_config()
         self.assertEqual(check_manifest.IGNORE,
                          ['foo', 'bar'])
+
+    def test_read_manifest_no_manifest(self):
+        import check_manifest
+        check_manifest.read_manifest()
+        self.assertEqual(check_manifest.IGNORE, ['default-ignore-rules'])
+
+    def test_read_manifest(self):
+        import check_manifest
+        from check_manifest import _glob_to_regexp as g2r
+        with open('MANIFEST.in', 'w') as f:
+            f.write('exclude *.gif\n')
+            f.write('global-exclude *.png\n')
+        check_manifest.read_manifest()
+        self.assertEqual(check_manifest.IGNORE,
+                         ['default-ignore-rules', '*.png'])
+        self.assertEqual(check_manifest.IGNORE_REGEXPS,
+                         ['default-ignore-regexps', g2r('*.gif')])
 
 
 class VCSMixin(object):
