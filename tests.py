@@ -344,8 +344,20 @@ class Tests(unittest.TestCase):
         self.assertEqual(find_suggestions(['src/id-lang.map']),
                          (['recursive-include src *.map'], []))
 
+    def test_glob_to_regexp(self):
+        from check_manifest import _glob_to_regexp as g2r
+        sep = r'\\' if os.path.sep == '\\' else os.path.sep
+        self.assertEqual(g2r('foo.py'), r'foo\.py\Z(?ms)')
+        self.assertEqual(g2r('foo/bar.py'), r'foo\/bar\.py\Z(?ms)')
+        self.assertEqual(g2r('foo*.py'), r'foo[^%s]*\.py\Z(?ms)' % sep)
+        self.assertEqual(g2r('foo?.py'), r'foo[^%s]\.py\Z(?ms)' % sep)
+        self.assertEqual(g2r('foo[123].py'), r'foo[123]\.py\Z(?ms)')
+        self.assertEqual(g2r('foo[!123].py'), r'foo[^123]\.py\Z(?ms)')
+        self.assertEqual(g2r('foo/*.py'), r'foo\/[^%s]*\.py\Z(?ms)' % sep)
+
     def test_get_ignore_from_manifest(self):
         from check_manifest import _get_ignore_from_manifest as parse
+        from check_manifest import _glob_to_regexp as g2r
         j = os.path.join
         # The return value is a tuple with two lists:
         # ([<list of filename ignores>], [<list of regular expressions>])
@@ -354,15 +366,15 @@ class Tests(unittest.TestCase):
         self.assertEqual(parse('      \n        '),
                          ([], []))
         self.assertEqual(parse('exclude *.cfg'),
-                         ([], ['[^/]*\.cfg']))
+                         ([], [g2r('*.cfg')]))
         self.assertEqual(parse('#exclude *.cfg'),
                          ([], []))
         self.assertEqual(parse('exclude          *.cfg'),
-                         ([], ['[^/]*\.cfg']))
+                         ([], [g2r('*.cfg')]))
         self.assertEqual(parse('\texclude\t*.cfg foo.*   bar.txt'),
-                         (['bar.txt'], ['[^/]*\.cfg', 'foo\.[^/]*']))
+                         (['bar.txt'], [g2r('*.cfg'), g2r('foo.*')]))
         self.assertEqual(parse('exclude some/directory/*.cfg'),
-                         ([], ['some/directory/[^/]*\.cfg']))
+                         ([], [g2r('some/directory/*.cfg')]))
         self.assertEqual(parse('include *.cfg'),
                          ([], []))
         self.assertEqual(parse('global-exclude *.pyc'),
@@ -372,9 +384,11 @@ class Tests(unittest.TestCase):
         self.assertEqual(parse('recursive-exclude dir *.pyc'),
                          ([j('dir', '*.pyc')], []))
         self.assertEqual(parse('recursive-exclude dir *.pyc foo*.sh'),
-                         ([j('dir', '*.pyc'), j('dir', 'foo*.sh'), j('dir', '*', 'foo*.sh')], []))
+                         ([j('dir', '*.pyc'), j('dir', 'foo*.sh'),
+                           j('dir', '*', 'foo*.sh')], []))
         self.assertEqual(parse('recursive-exclude dir nopattern.xml'),
-                         ([j('dir', 'nopattern.xml'), j('dir', '*', 'nopattern.xml')], []))
+                         ([j('dir', 'nopattern.xml'),
+                           j('dir', '*', 'nopattern.xml')], []))
         # We should not fail when a recursive-exclude line is wrong:
         self.assertEqual(parse('recursive-exclude dirwithoutpattern'),
                          ([], []))
@@ -384,7 +398,8 @@ class Tests(unittest.TestCase):
         # not fail over it or end up with double slashes.
         self.assertEqual(parse('prune dir/'),
                          (['dir', j('dir', '*')], []))
-        text = """
+        # And a mongo test case of everything at the end
+        text = textwrap.dedent("""
             #exclude *.01
             exclude *.02
             exclude *.03 04.*   bar.txt
@@ -396,10 +411,7 @@ class Tests(unittest.TestCase):
             prune 30
             recursive-exclude    40      *.41
             recursive-exclude 42 *.43 44.*
-        """
-        # Keep the indentation visually clear in the test, but remove
-        # leading whitespace programmatically.
-        text = textwrap.dedent(text)
+        """)
         self.assertEqual(
             parse(text),
             ([
@@ -414,11 +426,11 @@ class Tests(unittest.TestCase):
                 j('42', '44.*'),
                 j('42', '*', '44.*'),
             ], [
-                '[^/]*\.02',
-                '[^/]*\.03',
-                '04\.[^/]*',
-                '[^/]*\.05',
-                j('some', 'directory', '[^/]*\.cfg'),
+                g2r('*.02'),
+                g2r('*.03'),
+                g2r('04.*'),
+                g2r('*.05'),
+                g2r('some/directory/*.cfg'),
             ]))
 
 

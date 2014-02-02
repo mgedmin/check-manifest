@@ -28,6 +28,7 @@ import sys
 import tarfile
 import tempfile
 import zipfile
+from distutils.filelist import glob_to_re
 from contextlib import contextmanager, closing
 
 try:
@@ -419,6 +420,16 @@ def read_manifest():
     IGNORE_REGEXPS.extend(ignore_regexps)
 
 
+def _glob_to_regexp(pat):
+    """Compile a glob pattern into a regexp.
+
+    We need to do this because fnmatch allows * to match /, which we
+    don't want.  E.g. an MANIFEST.in exclude of 'dirname/*css' should
+    match 'dirname/foo.css' but not 'dirname/subdir/bar.css'.
+    """
+    return glob_to_re(pat)
+
+
 def _get_ignore_from_manifest(contents):
     """Gather the various ignore patterns from MANIFEST.in.
 
@@ -438,15 +449,11 @@ def _get_ignore_from_manifest(contents):
         if cmd == 'exclude':
             # An exclude of 'dirname/*css' can match 'dirname/foo.css'
             # but not 'dirname/subdir/bar.css'.  We need a regular
-            # expression for that.
+            # expression for that, since fnmatch doesn't pay attention to
+            # directory separators.
             for pat in rest.split():
-                if '*' in pat:
-                    pat = pat.replace('*', '[^/]*')
-                    # Do not make a dot into a magical wildcard character.
-                    pat = pat.replace('.', '\.')
-                    # XXX: we should handle other special glob and regexp characters,
-                    # i.e. ?, +, (, ), |, ^, $, {, }, \
-                    ignore_regexps.append(pat)
+                if '*' in pat or '?' in pat or '[!' in pat:
+                    ignore_regexps.append(_glob_to_regexp(pat))
                 else:
                     # No need for special handling.
                     ignore.append(pat)

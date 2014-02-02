@@ -5,6 +5,8 @@ Changelog
 0.19 (unreleased)
 -----------------
 
+* More correct MANIFEST.in parsing for exclusion rules.
+
 
 0.18 (2014-01-30)
 -----------------
