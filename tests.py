@@ -465,6 +465,59 @@ class Tests(unittest.TestCase):
             ]))
 
 
+class TestConfiguration(unittest.TestCase):
+
+    def setUp(self):
+        import check_manifest
+        self.oldpwd = os.getcwd()
+        self.tmpdir = tempfile.mkdtemp(prefix='test-', suffix='-check-manifest')
+        os.chdir(self.tmpdir)
+        self.OLD_IGNORE = check_manifest.IGNORE
+        check_manifest.IGNORE = ['default-ignore-rules']
+
+    def tearDown(self):
+        import check_manifest
+        check_manifest.IGNORE = self.OLD_IGNORE
+        os.chdir(self.oldpwd)
+        shutil.rmtree(self.tmpdir)
+
+    def test_read_config_no_config(self):
+        import check_manifest
+        check_manifest.read_config()
+        self.assertEqual(check_manifest.IGNORE, ['default-ignore-rules'])
+
+    def test_read_config_no_section(self):
+        import check_manifest
+        with open('setup.cfg', 'w') as f:
+            f.write('[pep8]\nignore =\n')
+        check_manifest.read_config()
+        self.assertEqual(check_manifest.IGNORE, ['default-ignore-rules'])
+
+    def test_read_config_no_option(self):
+        import check_manifest
+        with open('setup.cfg', 'w') as f:
+            f.write('[check-manifest]\n')
+        check_manifest.read_config()
+        self.assertEqual(check_manifest.IGNORE, ['default-ignore-rules'])
+
+    def test_read_config_extra_ignores(self):
+        import check_manifest
+        with open('setup.cfg', 'w') as f:
+            f.write('[check-manifest]\nignore = foo\n  bar\n')
+        check_manifest.read_config()
+        self.assertEqual(check_manifest.IGNORE,
+                         ['default-ignore-rules', 'foo', 'bar'])
+
+    def test_read_config_override_ignores(self):
+        import check_manifest
+        with open('setup.cfg', 'w') as f:
+            f.write('[check-manifest]\nignore = foo\n\n  bar\n')
+            f.write('ignore-default-rules = yes\n')
+        check_manifest.read_config()
+        self.assertEqual(check_manifest.IGNORE,
+                         ['foo', 'bar'])
+
+
 class VCSMixin(object):
 
     def setUp(self):
@@ -651,11 +704,6 @@ class TestUserInterface(unittest.TestCase):
 
 def test_suite():
     return unittest.TestSuite([
-        unittest.makeSuite(Tests),
-        unittest.makeSuite(TestGit),
-        unittest.makeSuite(TestBzr),
-        unittest.makeSuite(TestHg),
-        unittest.makeSuite(TestSvn),
-        unittest.makeSuite(TestUserInterface),
+        unittest.defaultTestLoader.loadTestsFromName(__name__),
         doctest.DocTestSuite('check_manifest'),
     ])
