@@ -3,10 +3,12 @@ import os
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 import textwrap
 import zipfile
 from contextlib import closing
+from io import BytesIO
 
 try:
     import unittest2 as unittest    # Python 2.6
@@ -57,6 +59,11 @@ class Tests(unittest.TestCase):
         with closing(zipfile.ZipFile(filename, 'w')) as zf:
             for fn in filenames:
                 zf.writestr(fn, '')
+
+    def create_tar_file(self, filename, filenames):
+        with closing(tarfile.TarFile(filename, 'w')) as tf:
+            for fn in filenames:
+                tf.addfile(tarfile.TarInfo(fn), BytesIO())
 
     def test_run_success(self):
         from check_manifest import run
@@ -134,6 +141,13 @@ class Tests(unittest.TestCase):
         from check_manifest import get_archive_file_list
         filename = os.path.join(self.make_temp_dir(), 'archive.zip')
         self.create_zip_file(filename, ['a', 'b/c'])
+        self.assertEqual(get_archive_file_list(filename),
+                         ['a', 'b', 'b/c'])
+
+    def test_get_archive_file_list_tar(self):
+        from check_manifest import get_archive_file_list
+        filename = os.path.join(self.make_temp_dir(), 'archive.tar')
+        self.create_tar_file(filename, ['a', 'b/c'])
         self.assertEqual(get_archive_file_list(filename),
                          ['a', 'b', 'b/c'])
 
