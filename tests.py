@@ -76,7 +76,8 @@ class Tests(unittest.TestCase):
         self.assertTrue(
             str(cm.exception).startswith(
                 "could not run ['there-is-really-no-such-program']:"
-                " [Errno 2] No such file or directory"))
+                " [Errno 2] No such file or directory"),
+            cm.exception)
 
     def test_copy_files(self):
         from check_manifest import copy_files
