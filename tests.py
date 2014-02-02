@@ -533,7 +533,7 @@ class TestSvn(VCSMixin, unittest.TestCase):
 
     def _init_vcs(self):
         self._run('svnadmin', 'create', 'repo')
-        self._run('svn', 'co', 'file:///' + os.path.abspath('repo'), 'checkout')
+        self._run('svn', 'co', 'file:///' + os.path.abspath('repo').replace(os.path.sep, '/'), 'checkout')
         os.chdir('checkout')
 
     def _add_to_vcs(self, filenames):
