@@ -102,8 +102,8 @@ class Tests(unittest.TestCase):
     def test_get_one_file_in(self):
         from check_manifest import get_one_file_in
         with mock.patch('os.listdir', lambda dir: ['a']):
-            self.assertEqual(get_one_file_in('/some/dir'),
-                             '/some/dir/a')
+            self.assertEqual(get_one_file_in(os.path.normpath('/some/dir')),
+                             os.path.normpath('/some/dir/a'))
 
     def test_get_one_file_in_empty_directory(self):
         from check_manifest import get_one_file_in, Failure
@@ -171,8 +171,11 @@ class Tests(unittest.TestCase):
 
     def test_normalize_names(self):
         from check_manifest import normalize_names
-        self.assertEqual(normalize_names(["a", "b/", "c/d", "e/f/", "g/h/../i"]),
-                         ["a", "b", "c/d", "e/f", "g/i"])
+        j = os.path.join
+        self.assertEqual(normalize_names(["a", j("b", ""), j("c", "d"),
+                                          j("e", "f", ""),
+                                          j("g", "h", "..", "i")]),
+                         ["a", "b", j("c", "d"), j("e", "f"), j("g", "i")])
 
     def test_add_directories(self):
         from check_manifest import add_directories
@@ -457,16 +460,20 @@ class VCSMixin(object):
         self._create_and_add_to_vcs(['a.txt', 'b/b.txt', 'b/c/d.txt'])
         self._commit()
         self._create_files(['b/x.txt', 'd/d.txt', 'i.txt'])
+        j = os.path.join
         self.assertEqual(get_vcs_files(),
-                         ['a.txt', 'b', 'b/b.txt', 'b/c', 'b/c/d.txt'])
+                         ['a.txt', 'b', j('b', 'b.txt'), j('b', 'c'),
+                          j('b', 'c', 'd.txt')])
 
     def test_get_vcs_files_added_but_uncommitted(self):
         from check_manifest import get_vcs_files
         self._init_vcs()
         self._create_and_add_to_vcs(['a.txt', 'b/b.txt', 'b/c/d.txt'])
         self._create_files(['b/x.txt', 'd/d.txt', 'i.txt'])
+        j = os.path.join
         self.assertEqual(get_vcs_files(),
-                         ['a.txt', 'b', 'b/b.txt', 'b/c', 'b/c/d.txt'])
+                         ['a.txt', 'b', j('b', 'b.txt'), j('b', 'c'),
+                          j('b', 'c', 'd.txt')])
 
     def test_get_vcs_files_in_a_subdir(self):
         from check_manifest import get_vcs_files
@@ -475,7 +482,8 @@ class VCSMixin(object):
         self._commit()
         self._create_files(['b/x.txt', 'd/d.txt', 'i.txt'])
         os.chdir('b')
-        self.assertEqual(get_vcs_files(), ['b.txt', 'c', 'c/d.txt'])
+        j = os.path.join
+        self.assertEqual(get_vcs_files(), ['b.txt', 'c', j('c', 'd.txt')])
 
 
 class TestGit(VCSMixin, unittest.TestCase):
