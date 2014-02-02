@@ -1016,10 +1016,10 @@ class TestCheckManifest(unittest.TestCase):
     def test_bad_ideas(self):
         from check_manifest import check_manifest
         self._create_repo_with_code()
-        self._add_to_vcs('PKG-INFO')
+        self._add_to_vcs('foo.egg-info')
         self._add_to_vcs('moo.mo')
         self.assertFalse(check_manifest())
-        self.assertIn("you have PKG-INFO in source control!",
+        self.assertIn("you have foo.egg-info in source control!",
                       sys.stderr.getvalue())
         self.assertIn("this also applies to the following:\n  moo.mo",
                       sys.stderr.getvalue())
