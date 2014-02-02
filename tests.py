@@ -74,8 +74,8 @@ class Tests(unittest.TestCase):
         with self.assertRaises(Failure) as cm:
             run(["there-is-really-no-such-program"])
         # Linux says "[Errno 2] No such file or directory"
-        # Windows says "[Errno 2] The system cannot find the file specified"
-        should_start_with = "could not run ['there-is-really-no-such-program']: [Errno 2]"
+        # Windows says "[Error 2] The system cannot find the file specified"
+        should_start_with = "could not run ['there-is-really-no-such-program']: [Err"
         self.assertTrue(
             str(cm.exception).startswith(should_start_with),
             '\n%r does not start with\n%r' % (str(cm.exception),
