@@ -182,21 +182,27 @@ class Tests(unittest.TestCase):
 
     def test_add_directories(self):
         from check_manifest import add_directories
-        self.assertEqual(add_directories(["a", "b", "c/d", "e/f"]),
-                         ["a", "b", "c", "c/d", "e", "e/f"])
+        j = os.path.join
+        self.assertEqual(add_directories(['a', 'b', j('c', 'd'), j('e', 'f')]),
+                         ['a', 'b', 'c', j('c', 'd'), 'e', j('e', 'f')])
 
     def test_file_matches(self):
         from check_manifest import file_matches
+        # On Windows we might get the pattern list from setup.cfg using / as
+        # the directory separator, but the filenames we're matching against
+        # will use os.path.sep
         patterns = ['setup.cfg', '*.egg-info', '*.egg-info/*']
+        j = os.path.join
         self.assertFalse(file_matches('setup.py', patterns))
         self.assertTrue(file_matches('setup.cfg', patterns))
-        self.assertTrue(file_matches('src/zope.foo.egg-info', patterns))
-        self.assertTrue(file_matches('src/zope.foo.egg-info/SOURCES.txt',
-                                     patterns))
+        self.assertTrue(file_matches(j('src', 'zope.foo.egg-info'), patterns))
+        self.assertTrue(
+            file_matches(j('src', 'zope.foo.egg-info', 'SOURCES.txt'),
+                         patterns))
 
     def test_strip_sdist_extras(self):
         from check_manifest import strip_sdist_extras
-        filelist = [
+        filelist = list(map(os.path.normpath, [
             '.gitignore',
             'setup.py',
             'setup.cfg',
@@ -210,8 +216,8 @@ class Tests(unittest.TestCase):
             'src/zope/foo/language.mo',
             'src/zope.foo.egg-info',
             'src/zope.foo.egg-info/SOURCES.txt',
-        ]
-        expected = [
+        ]))
+        expected = list(map(os.path.normpath, [
             'setup.py',
             'README.txt',
             'src',
@@ -220,7 +226,7 @@ class Tests(unittest.TestCase):
             'src/zope/foo',
             'src/zope/foo/__init__.py',
             'src/zope/foo/language.po',
-        ]
+        ]))
         self.assertEqual(strip_sdist_extras(filelist), expected)
 
     def test_strip_sdist_extras_with_manifest(self):
@@ -236,7 +242,7 @@ class Tests(unittest.TestCase):
             prune src/dump
             recursive-exclude src/zope *.sh
         """)
-        filelist = [
+        filelist = list(map(os.path.normpath, [
             '.gitignore',
             'setup.py',
             'setup.cfg',
@@ -257,8 +263,8 @@ class Tests(unittest.TestCase):
             'src/zope/foo/foohelper.sh',
             'src/zope.foo.egg-info',
             'src/zope.foo.egg-info/SOURCES.txt',
-        ]
-        expected = [
+        ]))
+        expected = list(map(os.path.normpath, [
             'setup.py',
             'MANIFEST.in',
             'README.txt',
@@ -270,7 +276,7 @@ class Tests(unittest.TestCase):
             'src/zope/foo/__init__.py',
             'src/zope/foo/language.po',
             'src/zope/foo/config.cfg',
-        ]
+        ]))
 
         # This will change the definitions.
         try:
@@ -288,7 +294,7 @@ class Tests(unittest.TestCase):
 
     def test_find_bad_ideas(self):
         from check_manifest import find_bad_ideas
-        filelist = [
+        filelist = list(map(os.path.normpath, [
             '.gitignore',
             'setup.py',
             'setup.cfg',
@@ -302,11 +308,11 @@ class Tests(unittest.TestCase):
             'src/zope/foo/language.mo',
             'src/zope.foo.egg-info',
             'src/zope.foo.egg-info/SOURCES.txt',
-        ]
-        expected = [
+        ]))
+        expected = list(map(os.path.normpath, [
             'src/zope/foo/language.mo',
             'src/zope.foo.egg-info',
-        ]
+        ]))
         self.assertEqual(find_bad_ideas(filelist), expected)
 
     def test_find_suggestions(self):
@@ -317,28 +323,29 @@ class Tests(unittest.TestCase):
                          ([], ['unknown.file~']))
         self.assertEqual(find_suggestions(['README.txt', 'CHANGES.txt']),
                          (['include *.txt'], []))
-        filelist = [
+        filelist = list(map(os.path.normpath, [
             'docs/index.rst',
             'docs/image.png',
             'docs/Makefile',
             'docs/unknown-file',
-        ]
+        ]))
         expected_rules = [
             'recursive-include docs *.png',
             'recursive-include docs *.rst',
             'recursive-include docs Makefile',
         ]
-        expected_unknowns = ['docs/unknown-file']
+        expected_unknowns = [os.path.normpath('docs/unknown-file')]
         self.assertEqual(find_suggestions(filelist),
                          (expected_rules, expected_unknowns))
 
     def test_find_suggestions_generic_fallback_rules(self):
         from check_manifest import find_suggestions
+        n = os.path.normpath
         self.assertEqual(find_suggestions(['Changelog']),
                          (['include Changelog'], []))
         self.assertEqual(find_suggestions(['id-lang.map']),
                          (['include *.map'], []))
-        self.assertEqual(find_suggestions(['src/id-lang.map']),
+        self.assertEqual(find_suggestions([n('src/id-lang.map')]),
                          (['recursive-include src *.map'], []))
 
     def test_glob_to_regexp(self):
