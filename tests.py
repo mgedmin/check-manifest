@@ -343,6 +343,7 @@ class Tests(unittest.TestCase):
 
     def test_get_ignore_from_manifest(self):
         from check_manifest import _get_ignore_from_manifest as parse
+        j = os.path.join
         # The return value is a tuple with two lists:
         # ([<list of filename ignores>], [<list of regular expressions>])
         self.assertEqual(parse(''),
@@ -366,20 +367,20 @@ class Tests(unittest.TestCase):
         self.assertEqual(parse('global-exclude *.pyc *.sh'),
                          (['*.pyc', '*.sh'], []))
         self.assertEqual(parse('recursive-exclude dir *.pyc'),
-                         (['dir/*.pyc'], []))
+                         ([j('dir', '*.pyc')], []))
         self.assertEqual(parse('recursive-exclude dir *.pyc foo*.sh'),
-                         (['dir/*.pyc', 'dir/foo*.sh', 'dir/*/foo*.sh'], []))
+                         ([j('dir', '*.pyc'), j('dir', 'foo*.sh'), j('dir', '*', 'foo*.sh')], []))
         self.assertEqual(parse('recursive-exclude dir nopattern.xml'),
-                         (['dir/nopattern.xml', 'dir/*/nopattern.xml'], []))
+                         ([j('dir', 'nopattern.xml'), j('dir', '*', 'nopattern.xml')], []))
         # We should not fail when a recursive-exclude line is wrong:
         self.assertEqual(parse('recursive-exclude dirwithoutpattern'),
                          ([], []))
         self.assertEqual(parse('prune dir'),
-                         (['dir', 'dir/*'], []))
+                         (['dir', j('dir', '*')], []))
         # You should not add a slash at the end of a prune, but let's
         # not fail over it or end up with double slashes.
         self.assertEqual(parse('prune dir/'),
-                         (['dir', 'dir/*'], []))
+                         (['dir', j('dir', '*')], []))
         text = """
             #exclude *.01
             exclude *.02
@@ -404,17 +405,17 @@ class Tests(unittest.TestCase):
                 '*.11',
                 '*.12',
                 '30',
-                '30/*',
-                '40/*.41',
-                '42/*.43',
-                '42/44.*',
-                '42/*/44.*',
+                j('30', '*'),
+                j('40', '*.41'),
+                j('42', '*.43'),
+                j('42', '44.*'),
+                j('42', '*', '44.*'),
             ], [
                 '[^/]*\.02',
                 '[^/]*\.03',
                 '04\.[^/]*',
                 '[^/]*\.05',
-                'some/directory/[^/]*\.cfg',
+                j('some', 'directory', '[^/]*\.cfg'),
             ]))
 
 
