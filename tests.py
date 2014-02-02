@@ -678,16 +678,7 @@ class TestZestIntegration(unittest.TestCase):
         sys_exit.assert_not_called()
 
 
-class VCSMixin(object):
-
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp(prefix='test-', suffix='-check-manifest')
-        self.olddir = os.getcwd()
-        os.chdir(self.tmpdir)
-
-    def tearDown(self):
-        os.chdir(self.olddir)
-        rmtree(self.tmpdir)
+class VCSHelper(object):
 
     def _run(self, *command):
         p = subprocess.Popen(command, stdout=subprocess.PIPE,
@@ -699,6 +690,18 @@ class VCSMixin(object):
             print(stdout)
             raise subprocess.CalledProcessError(rc, command[0], output=stdout)
 
+
+class VCSMixin(object):
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix='test-', suffix='-check-manifest')
+        self.olddir = os.getcwd()
+        os.chdir(self.tmpdir)
+
+    def tearDown(self):
+        os.chdir(self.olddir)
+        rmtree(self.tmpdir)
+
     def _create_file(self, filename):
         assert not os.path.isabs(filename)
         basedir = os.path.dirname(filename)
@@ -709,6 +712,15 @@ class VCSMixin(object):
     def _create_files(self, filenames):
         for filename in filenames:
             self._create_file(filename)
+
+    def _init_vcs(self):
+        self.vcs._init_vcs()
+
+    def _add_to_vcs(self, filenames):
+        self.vcs._add_to_vcs(filenames)
+
+    def _commit(self):
+        self.vcs._commit()
 
     def _create_and_add_to_vcs(self, filenames):
         self._create_files(filenames)
@@ -746,7 +758,7 @@ class VCSMixin(object):
         self.assertEqual(get_vcs_files(), ['b.txt', 'c', j('c', 'd.txt')])
 
 
-class TestGit(VCSMixin, unittest.TestCase):
+class GitHelper(VCSHelper):
 
     def _init_vcs(self):
         self._run('git', 'init')
@@ -760,7 +772,11 @@ class TestGit(VCSMixin, unittest.TestCase):
         self._run('git', 'commit', '-m', 'Initial')
 
 
-class TestBzr(VCSMixin, unittest.TestCase):
+class TestGit(VCSMixin, unittest.TestCase):
+    vcs = GitHelper()
+
+
+class BzrHelper(VCSHelper):
 
     def _init_vcs(self):
         self._run('bzr', 'init')
@@ -773,7 +789,11 @@ class TestBzr(VCSMixin, unittest.TestCase):
         self._run('bzr', 'commit', '-m', 'Initial')
 
 
-class TestHg(VCSMixin, unittest.TestCase):
+class TestBzr(VCSMixin, unittest.TestCase):
+    vcs = BzrHelper()
+
+
+class HgHelper(VCSHelper):
 
     def _init_vcs(self):
         self._run('hg', 'init')
@@ -787,7 +807,11 @@ class TestHg(VCSMixin, unittest.TestCase):
         self._run('hg', 'commit', '-m', 'Initial')
 
 
-class TestSvn(VCSMixin, unittest.TestCase):
+class TestHg(VCSMixin, unittest.TestCase):
+    vcs = HgHelper()
+
+
+class SvnHelper(VCSHelper):
 
     def _init_vcs(self):
         self._run('svnadmin', 'create', 'repo')
@@ -800,6 +824,10 @@ class TestSvn(VCSMixin, unittest.TestCase):
 
     def _commit(self):
         self._run('svn', 'commit', '-m', 'Initial')
+
+
+class TestSvn(VCSMixin, unittest.TestCase):
+    vcs = SvnHelper()
 
 
 class TestUserInterface(unittest.TestCase):
