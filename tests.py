@@ -227,18 +227,15 @@ class Tests(unittest.TestCase):
         import check_manifest
         from check_manifest import strip_sdist_extras
         from check_manifest import _get_ignore_from_manifest as parse
-        orig_ignore = check_manifest.IGNORE
-        orig_ignore_regexps = check_manifest.IGNORE_REGEXPS
-        manifest_in = """
-        graft src
-        exclude *.cfg
-        global-exclude *.mo
-        prune src/dump
-        recursive-exclude src/zope *.sh
-        """
-        # Keep the indentation visually clear in the test, but remove
-        # leading whitespace programmatically.
-        manifest_in = textwrap.dedent(manifest_in)
+        orig_ignore = check_manifest.IGNORE[:]
+        orig_ignore_regexps = check_manifest.IGNORE_REGEXPS[:]
+        manifest_in = textwrap.dedent("""
+            graft src
+            exclude *.cfg
+            global-exclude *.mo
+            prune src/dump
+            recursive-exclude src/zope *.sh
+        """)
         filelist = [
             '.gitignore',
             'setup.py',
@@ -285,8 +282,8 @@ class Tests(unittest.TestCase):
             result = strip_sdist_extras(filelist)
         finally:
             # Restore the original definitions
-            check_manifest.IGNORE = orig_ignore
-            check_manifest.IGNORE_REGEXPS = orig_ignore_regexps
+            check_manifest.IGNORE[:] = orig_ignore
+            check_manifest.IGNORE_REGEXPS[:] = orig_ignore_regexps
         self.assertEqual(result, expected)
 
     def test_find_bad_ideas(self):
