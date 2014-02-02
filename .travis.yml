@@ -9,7 +9,7 @@ install:
     - pip install coverage coveralls mock
 script:
     - coverage run --source=check_manifest setup.py test -q
-    - coverage run --append check_manifest.py
+    - coverage run --source=check_manifest --append check_manifest.py
 after_script:
     - coveralls
 notifications:
