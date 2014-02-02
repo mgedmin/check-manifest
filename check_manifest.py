@@ -600,8 +600,9 @@ def check_manifest(source_tree='.', create=False, update=False,
                 info("suggested MANIFEST.in rules:\n%s"
                      % format_list(suggestions))
                 if user_asked_for_help:
+                    existed = os.path.exists('MANIFEST.in')
                     with open('MANIFEST.in', 'a') as f:
-                        if f.tell() == 0:
+                        if not existed:
                             info("creating MANIFEST.in")
                         else:
                             info("updating MANIFEST.in")
