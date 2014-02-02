@@ -75,11 +75,11 @@ class Tests(unittest.TestCase):
             run(["there-is-really-no-such-program"])
         # Linux says "[Errno 2] No such file or directory"
         # Windows says "[Errno 2] The system cannot find the file specified"
+        should_start_with = "could not run ['there-is-really-no-such-program']: [Errno 2]"
         self.assertTrue(
-            str(cm.exception).startswith(
-                "could not run ['there-is-really-no-such-program']:"
-                " [Errno 2]"),
-            cm.exception)
+            str(cm.exception).startswith(should_start_with),
+            '%r does not start with\n%r' % (str(cm.exception),
+                                            should_start_with))
 
     def test_copy_files(self):
         from check_manifest import copy_files
