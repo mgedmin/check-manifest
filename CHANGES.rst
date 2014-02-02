@@ -6,6 +6,7 @@ Changelog
 -----------------
 
 * More correct MANIFEST.in parsing for exclusion rules.
+* Some effort was expended towards Windows compatibility.
 
 
 0.18 (2014-01-30)

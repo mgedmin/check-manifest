@@ -367,7 +367,9 @@ WARN_ABOUT_FILES_IN_VCS = [
     '*.mo',
 ]
 
-SUGGESTIONS = [(re.compile(pattern), suggestion) for pattern, suggestion in [
+_sep = r'\\' if os.path.sep == '\\' else os.path.sep
+
+SUGGESTIONS = [(re.compile(pattern.replace('/', _sep)), suggestion) for pattern, suggestion in [
     # regexp -> suggestion
     ('^([^/]+[.](cfg|ini))$',       r'include \1'),
     ('^([.]travis[.]yml)$',         r'include \1'),
