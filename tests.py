@@ -73,10 +73,12 @@ class Tests(unittest.TestCase):
         from check_manifest import run, Failure
         with self.assertRaises(Failure) as cm:
             run(["there-is-really-no-such-program"])
+        # Linux says "[Errno 2] No such file or directory"
+        # Windows says "[Errno 2] The system cannot find the file specified"
         self.assertTrue(
             str(cm.exception).startswith(
                 "could not run ['there-is-really-no-such-program']:"
-                " [Errno 2] No such file or directory"),
+                " [Errno 2]"),
             cm.exception)
 
     def test_copy_files(self):
