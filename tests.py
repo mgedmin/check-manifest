@@ -890,6 +890,141 @@ class TestUserInterface(unittest.TestCase):
             "Forgot to turn the gas off!\n")
 
 
+class TestCheckManifest(unittest.TestCase):
+
+    _vcs = GitHelper()
+
+    def setUp(self):
+        self.oldpwd = os.getcwd()
+        self.tmpdir = tempfile.mkdtemp(prefix='test-', suffix='-check-manifest')
+        os.chdir(self.tmpdir)
+        self._stdout_patcher = mock.patch('sys.stdout', StringIO())
+        self._stdout_patcher.start()
+        self._stderr_patcher = mock.patch('sys.stderr', StringIO())
+        self._stderr_patcher.start()
+
+    def tearDown(self):
+        self._stderr_patcher.stop()
+        self._stdout_patcher.stop()
+        os.chdir(self.oldpwd)
+        rmtree(self.tmpdir)
+
+    def _create_repo_with_code(self):
+        self._vcs._init_vcs()
+        with open('setup.py', 'w') as f:
+            f.write("from setuptools import setup\n")
+            f.write("setup(name='sample', py_modules=['sample'])\n")
+        with open('sample.py', 'w') as f:
+            f.write("# wow. such code. so amaze\n")
+        self._vcs._add_to_vcs(['setup.py', 'sample.py'])
+
+    def _add_to_vcs(self, filename, content=''):
+        if os.path.sep in filename and not os.path.isdir(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(filename))
+        with open(filename, 'w') as f:
+            f.write(content)
+        self._vcs._add_to_vcs([filename])
+
+    def test_not_python_project(self):
+        from check_manifest import check_manifest, Failure
+        with self.assertRaises(Failure) as cm:
+            check_manifest()
+        self.assertEqual(str(cm.exception),
+                         "This is not a Python project (no setup.py).")
+
+    def test_all_is_well(self):
+        from check_manifest import check_manifest
+        self._create_repo_with_code()
+        self.assertTrue(check_manifest())
+
+    def test_suggestions(self):
+        from check_manifest import check_manifest
+        self._create_repo_with_code()
+        self._add_to_vcs('unrelated.txt')
+        self.assertFalse(check_manifest())
+        self.assertIn("missing from sdist:\n  unrelated.txt",
+                      sys.stderr.getvalue())
+        self.assertIn("suggested MANIFEST.in rules:\n  include *.txt",
+                      sys.stdout.getvalue())
+
+    def test_suggestions_create(self):
+        from check_manifest import check_manifest
+        self._create_repo_with_code()
+        self._add_to_vcs('unrelated.txt')
+        self.assertFalse(check_manifest(create=True))
+        self.assertIn("missing from sdist:\n  unrelated.txt",
+                      sys.stderr.getvalue())
+        self.assertIn("suggested MANIFEST.in rules:\n  include *.txt",
+                      sys.stdout.getvalue())
+        self.assertIn("creating MANIFEST.in",
+                      sys.stdout.getvalue())
+        with open('MANIFEST.in') as f:
+            self.assertEqual(f.read(), "include *.txt\n")
+
+    def test_suggestions_update(self):
+        from check_manifest import check_manifest
+        self._create_repo_with_code()
+        self._add_to_vcs('unrelated.txt')
+        self._add_to_vcs('MANIFEST.in', '#tbd')
+        self.assertFalse(check_manifest(update=True))
+        self.assertIn("missing from sdist:\n  unrelated.txt",
+                      sys.stderr.getvalue())
+        self.assertIn("suggested MANIFEST.in rules:\n  include *.txt",
+                      sys.stdout.getvalue())
+        self.assertIn("updating MANIFEST.in",
+                      sys.stdout.getvalue())
+        with open('MANIFEST.in') as f:
+            self.assertEqual(
+                f.read(),
+                "#tbd\n# added by check_manifest.py\ninclude *.txt\n")
+
+    def test_suggestions_all_unknown_patterns(self):
+        from check_manifest import check_manifest
+        self._create_repo_with_code()
+        self._add_to_vcs('.dunno-what-to-do-with-this')
+        self.assertFalse(check_manifest(update=True))
+        self.assertIn("missing from sdist:\n  .dunno-what-to-do-with-this",
+                      sys.stderr.getvalue())
+        self.assertIn(
+            "don't know how to come up with rules matching any of the files, sorry!",
+            sys.stdout.getvalue())
+
+    def test_suggestions_some_unknown_patterns(self):
+        from check_manifest import check_manifest
+        self._create_repo_with_code()
+        self._add_to_vcs('.dunno-what-to-do-with-this')
+        self._add_to_vcs('unrelated.txt')
+        self.assertFalse(check_manifest(update=True))
+        self.assertIn(
+            "don't know how to come up with rules matching\n  .dunno-what-to-do-with-this",
+            sys.stdout.getvalue())
+        self.assertIn("creating MANIFEST.in",
+                      sys.stdout.getvalue())
+        with open('MANIFEST.in') as f:
+            self.assertEqual(f.read(), "include *.txt\n")
+
+    def test_MANIFEST_in_does_not_need_to_be_added_to_be_considered(self):
+        from check_manifest import check_manifest
+        self._create_repo_with_code()
+        self._add_to_vcs('unrelated.txt')
+        with open('MANIFEST.in', 'w') as f:
+            f.write("include *.txt\n")
+        self.assertFalse(check_manifest())
+        self.assertIn("missing from VCS:\n  MANIFEST.in", sys.stderr.getvalue())
+        self.assertNotIn("missing from sdist", sys.stderr.getvalue())
+
+    def test_bad_ideas(self):
+        from check_manifest import check_manifest
+        self._create_repo_with_code()
+        self._add_to_vcs('PKG-INFO')
+        self._add_to_vcs('moo.mo')
+        self.assertFalse(check_manifest())
+        self.assertIn("you have PKG-INFO in source control!",
+                      sys.stderr.getvalue())
+        self.assertIn("this also applies to the following:\n  moo.mo",
+                      sys.stderr.getvalue())
+
+
 def test_suite():
     return unittest.TestSuite([
         unittest.defaultTestLoader.loadTestsFromName(__name__),
