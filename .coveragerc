@@ -2,3 +2,4 @@
 exclude_lines =
     pragma: nocover
     except ImportError:
+    if __name__ == '__main__':

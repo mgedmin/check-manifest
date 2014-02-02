@@ -362,6 +362,19 @@ class Tests(unittest.TestCase):
         self.assertEqual(find_suggestions([n('src/id-lang.map')]),
                          (['recursive-include src *.map'], []))
 
+    def test_find_suggestions_ignores_directories(self):
+        from check_manifest import find_suggestions
+        with mock.patch('os.path.isdir', lambda d: True):
+            self.assertEqual(find_suggestions(['SOMEDIR']),
+                             ([], []))
+
+    def test_is_package(self):
+        from check_manifest import is_package
+        j = os.path.join
+        with mock.patch('os.path.exists', lambda fn: fn == j('a', 'setup.py')):
+            self.assertTrue(is_package('a'))
+            self.assertFalse(is_package('b'))
+
     def test_glob_to_regexp(self):
         from check_manifest import _glob_to_regexp as g2r
         sep = r'\\' if os.path.sep == '\\' else os.path.sep
