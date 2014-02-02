@@ -589,6 +589,95 @@ class TestMain(unittest.TestCase):
                          ['default-ignore-rules', 'x', 'y', 'z'])
 
 
+class TestZestIntegration(unittest.TestCase):
+
+    def setUp(self):
+        sys.modules['zest'] = mock.Mock()
+        sys.modules['zest.releaser'] = mock.Mock()
+        sys.modules['zest.releaser.utils'] = mock.Mock()
+        self.ask = sys.modules['zest.releaser.utils'].ask
+
+    def tearDown(self):
+        del sys.modules['zest.releaser.utils']
+        del sys.modules['zest.releaser']
+        del sys.modules['zest']
+
+    @mock.patch('check_manifest.is_package', lambda d: False)
+    @mock.patch('check_manifest.check_manifest')
+    def test_zest_releaser_check_not_a_package(self, check_manifest):
+        from check_manifest import zest_releaser_check
+        zest_releaser_check(dict(workingdir='.'))
+        check_manifest.assert_not_called()
+
+    @mock.patch('check_manifest.is_package', lambda d: True)
+    @mock.patch('check_manifest.check_manifest')
+    def test_zest_releaser_check_user_disagrees(self, check_manifest):
+        from check_manifest import zest_releaser_check
+        self.ask.return_value = False
+        zest_releaser_check(dict(workingdir='.'))
+        check_manifest.assert_not_called()
+
+    @mock.patch('check_manifest.is_package', lambda d: True)
+    @mock.patch('sys.exit')
+    @mock.patch('check_manifest.check_manifest')
+    def test_zest_releaser_check_all_okay(self, check_manifest, sys_exit):
+        from check_manifest import zest_releaser_check
+        self.ask.return_value = True
+        check_manifest.return_value = True
+        zest_releaser_check(dict(workingdir='.'))
+        sys_exit.assert_not_called()
+
+    @mock.patch('check_manifest.is_package', lambda d: True)
+    @mock.patch('check_manifest.error')
+    @mock.patch('sys.exit')
+    @mock.patch('check_manifest.check_manifest')
+    def test_zest_releaser_check_error_user_aborts(self, check_manifest,
+                                                   sys_exit, error):
+        from check_manifest import zest_releaser_check
+        self.ask.side_effect = [True, False]
+        check_manifest.return_value = False
+        zest_releaser_check(dict(workingdir='.'))
+        sys_exit.assert_called_with(1)
+
+    @mock.patch('check_manifest.is_package', lambda d: True)
+    @mock.patch('check_manifest.error')
+    @mock.patch('sys.exit')
+    @mock.patch('check_manifest.check_manifest')
+    def test_zest_releaser_check_error_user_plods_on(self, check_manifest,
+                                                     sys_exit, error):
+        from check_manifest import zest_releaser_check
+        self.ask.side_effect = [True, True]
+        check_manifest.return_value = False
+        zest_releaser_check(dict(workingdir='.'))
+        sys_exit.assert_not_called()
+
+    @mock.patch('check_manifest.is_package', lambda d: True)
+    @mock.patch('check_manifest.error')
+    @mock.patch('sys.exit')
+    @mock.patch('check_manifest.check_manifest')
+    def test_zest_releaser_check_failure_user_aborts(self, check_manifest,
+                                                     sys_exit, error):
+        from check_manifest import zest_releaser_check, Failure
+        self.ask.side_effect = [True, False]
+        check_manifest.side_effect = Failure('msg')
+        zest_releaser_check(dict(workingdir='.'))
+        error.assert_called_with('msg')
+        sys_exit.assert_called_with(2)
+
+    @mock.patch('check_manifest.is_package', lambda d: True)
+    @mock.patch('check_manifest.error')
+    @mock.patch('sys.exit')
+    @mock.patch('check_manifest.check_manifest')
+    def test_zest_releaser_check_failure_user_plods_on(self, check_manifest,
+                                                       sys_exit, error):
+        from check_manifest import zest_releaser_check, Failure
+        self.ask.side_effect = [True, True]
+        check_manifest.side_effect = Failure('msg')
+        zest_releaser_check(dict(workingdir='.'))
+        error.assert_called_with('msg')
+        sys_exit.assert_not_called()
+
+
 class VCSMixin(object):
 
     def setUp(self):

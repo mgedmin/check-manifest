@@ -686,7 +686,7 @@ def zest_releaser_check(data):
                        " Do you want to continue despite that?", default=False):
                 sys.exit(1)
     except Failure as e:
-        error(e)
+        error(str(e))
         if not ask("Something bad happened. "
                    " Do you want to continue despite that?", default=False):
             sys.exit(2)
