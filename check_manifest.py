@@ -139,7 +139,7 @@ def run(command):
                                 stderr=subprocess.STDOUT)
     except OSError as e:
         raise Failure("could not run %s: %s" % (command, e))
-    output = pipe.communicate()[0].decode(locale.getpreferredencoding(False))
+    output = pipe.communicate()[0].decode(locale.getpreferredencoding())
     status = pipe.wait()
     if status != 0:
         raise CommandFailed(command, status, output)

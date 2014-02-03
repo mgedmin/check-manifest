@@ -757,6 +757,16 @@ class VCSMixin(object):
         j = os.path.join
         self.assertEqual(get_vcs_files(), ['b.txt', 'c', j('c', 'd.txt')])
 
+    def test_get_vcs_files_nonascii_filenames(self):
+        # This test will fail if your locale is incapable of expressing
+        # "eacute".  UTF-8 or Latin-1 should work.
+        from check_manifest import get_vcs_files
+        self._init_vcs()
+        # A spelling of u"\xe9.txt" that works on Python 3.2 too
+        filename = b'\xc3\xa9.txt'.decode('UTF-8')
+        self._create_and_add_to_vcs([filename])
+        self.assertEqual(get_vcs_files(), [filename])
+
 
 class GitHelper(VCSHelper):
 
