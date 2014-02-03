@@ -205,6 +205,17 @@ def get_one_file_in(dirname):
     return os.path.join(dirname, files[0])
 
 
+def unicodify(filename):
+    """Make sure filename is Unicode.
+
+    Because the tarfile module on Python 2 doesn't return Unicode.
+    """
+    if isinstance(filename, bytes):
+        return filename.decode(locale.getpreferredencoding())
+    else:
+        return filename
+
+
 def get_archive_file_list(archive_filename):
     """Return the list of files in an archive.
 
@@ -215,7 +226,7 @@ def get_archive_file_list(archive_filename):
             return add_directories(zf.namelist())
     elif archive_filename.endswith(('.tar.gz', '.tar.bz2', '.tar')):
         with closing(tarfile.open(archive_filename)) as tf:
-            return add_directories(tf.getnames())
+            return add_directories(list(map(unicodify, tf.getnames())))
     else:
         ext = os.path.splitext(archive_filename)[-1]
         raise Failure('Unrecognized archive type: %s' % ext)

@@ -1,4 +1,5 @@
 import doctest
+import locale
 import os
 import shutil
 import subprocess
@@ -131,6 +132,14 @@ class Tests(unittest.TestCase):
             self.assertEqual(str(cm.exception),
                              "More than one file exists in /some/dir:\na\nb")
 
+    def test_unicodify(self):
+        from check_manifest import unicodify
+        nonascii = b'\xc3\xa9.txt'.decode('UTF-8') # because Py3.2 lacks u''
+        self.assertEqual(unicodify(nonascii), nonascii)
+        self.assertEqual(
+            unicodify(nonascii.encode(locale.getpreferredencoding())),
+            nonascii)
+
     def test_get_archive_file_list_unrecognized_archive(self):
         from check_manifest import get_archive_file_list, Failure
         with self.assertRaises(Failure) as cm:
@@ -144,12 +153,28 @@ class Tests(unittest.TestCase):
         self.assertEqual(get_archive_file_list(filename),
                          ['a', 'b', 'b/c'])
 
+    def test_get_archive_file_list_zip_nonascii(self):
+        from check_manifest import get_archive_file_list
+        filename = os.path.join(self.make_temp_dir(), 'archive.zip')
+        nonascii = b'\xc3\xa9.txt'.decode('UTF-8') # because Py3.2 lacks u''
+        self.create_zip_file(filename, [nonascii])
+        self.assertEqual(get_archive_file_list(filename),
+                         [nonascii])
+
     def test_get_archive_file_list_tar(self):
         from check_manifest import get_archive_file_list
         filename = os.path.join(self.make_temp_dir(), 'archive.tar')
         self.create_tar_file(filename, ['a', 'b/c'])
         self.assertEqual(get_archive_file_list(filename),
                          ['a', 'b', 'b/c'])
+
+    def test_get_archive_file_list_tar_nonascii(self):
+        from check_manifest import get_archive_file_list
+        filename = os.path.join(self.make_temp_dir(), 'archive.tar')
+        nonascii = b'\xc3\xa9.txt'.decode('UTF-8') # because Py3.2 lacks u''
+        self.create_tar_file(filename, [nonascii])
+        self.assertEqual(get_archive_file_list(filename),
+                         [nonascii])
 
     def test_format_list(self):
         from check_manifest import format_list
