@@ -83,7 +83,8 @@ class Tests(unittest.TestCase):
             run(["there-is-really-no-such-program"])
         # Linux says "[Errno 2] No such file or directory"
         # Windows says "[Error 2] The system cannot find the file specified"
-        should_start_with = "could not run ['there-is-really-no-such-program']: [Err"
+        # but on 3.x it's "[WinErr 2] The system cannot find the file specified"
+        should_start_with = "could not run ['there-is-really-no-such-program']:"
         self.assertTrue(
             str(cm.exception).startswith(should_start_with),
             '\n%r does not start with\n%r' % (str(cm.exception),
