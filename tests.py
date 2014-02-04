@@ -707,9 +707,10 @@ class TestZestIntegration(unittest.TestCase):
 class VCSHelper(object):
 
     def _run(self, *command):
-        # Windows doesn't like Unicode arguments to subprocess.Popen():
+        # Windows doesn't like Unicode arguments to subprocess.Popen(), on Py2:
         # https://github.com/mgedmin/check-manifest/issues/23#issuecomment-33933031
-        command = [s.encode(locale.getpreferredencoding()) for s in command]
+        if str is bytes:
+            command = [s.encode(locale.getpreferredencoding()) for s in command]
         p = subprocess.Popen(command, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         stdout, stderr = p.communicate()
