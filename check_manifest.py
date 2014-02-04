@@ -28,7 +28,6 @@ import sys
 import tarfile
 import tempfile
 import zipfile
-from distutils.filelist import glob_to_re
 from contextlib import contextmanager, closing
 
 try:
@@ -440,7 +439,12 @@ def _glob_to_regexp(pat):
     don't want.  E.g. an MANIFEST.in exclude of 'dirname/*css' should
     match 'dirname/foo.css' but not 'dirname/subdir/bar.css'.
     """
-    return glob_to_re(pat)
+    pat = fnmatch.translate(pat)
+    # Note that distutils in Python 2.6 has a buggy glob_to_re in
+    # distutils.filelist -- it converts '*.cfg' to '[^/]*cfg' instead
+    # of '[^\\]*cfg' on Windows.
+    sep = r'\\' if os.path.sep == '\\' else os.path.sep
+    return re.sub(r'((?<!\\)(\\\\)*)\.', r'\1[^%s]' % sep, pat)
 
 
 def _get_ignore_from_manifest(contents):
