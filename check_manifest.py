@@ -448,7 +448,7 @@ def _glob_to_regexp(pat):
     # Note that distutils in Python 2.6 has a buggy glob_to_re in
     # distutils.filelist -- it converts '*.cfg' to '[^/]*cfg' instead
     # of '[^\\]*cfg' on Windows.
-    sep = r'\\' if os.path.sep == '\\' else os.path.sep
+    sep = r'\\\\' if os.path.sep == '\\' else os.path.sep
     return re.sub(r'((?<!\\)(\\\\)*)\.', r'\1[^%s]' % sep, pat)
 
 
