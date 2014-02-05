@@ -126,19 +126,21 @@ class CommandFailed(Failure):
                                command, status, output))
 
 
-def run(command):
+def run(command, encoding=None):
     """Run a command [cmd, arg1, arg2, ...].
 
     Returns the output (stdout + stderr).
 
     Raises CommandFailed in cases of error.
     """
+    if not encoding:
+        encoding = locale.getpreferredencoding()
     try:
         pipe = subprocess.Popen(command, stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
     except OSError as e:
         raise Failure("could not run %s: %s" % (command, e))
-    output = pipe.communicate()[0].decode(locale.getpreferredencoding())
+    output = pipe.communicate()[0].decode(encoding)
     status = pipe.wait()
     if status != 0:
         raise CommandFailed(command, status, output)
@@ -270,7 +272,10 @@ class Git(VCS):
     @staticmethod
     def get_versioned_files():
         """List all files versioned by git in the current directory."""
-        output = run(['git', 'ls-files', '-z'])
+        # Git for Windows uses UTF-8 instead of the locale encoding.
+        # Regular Git on sane POSIX systems uses the locale encoding
+        encoding = 'UTF-8' if sys.platform == 'win32' else None
+        output = run(['git', 'ls-files', '-z'], encoding=encoding)
         return add_directories(output.split('\0')[:-1])
 
 
