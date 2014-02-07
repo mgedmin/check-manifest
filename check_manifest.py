@@ -380,6 +380,12 @@ WARN_ABOUT_FILES_IN_VCS = [
     'PKG-INFO',
     '*.egg-info',
     '*.mo',
+    '*.py[co]',
+    '*.so',
+    '*.pyd',
+    '*~',
+    '.*.sw[po]',
+    '.#*',
 ]
 
 _sep = r'\\' if os.path.sep == '\\' else os.path.sep
