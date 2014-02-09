@@ -9,7 +9,7 @@ Changelog
 * Some effort was expended towards Windows compatibility.
 * Handles non-ASCII filenames, as long as they're valid in your locale
   (`issue #23 <https://github.com/mgedmin/check-manifest/issues/23>`__,
-   `#25 <https://github.com/mgedmin/check-manifest/issues/23>`__).
+  `#25 <https://github.com/mgedmin/check-manifest/issues/23>`__).
 
 
 0.18 (2014-01-30)
