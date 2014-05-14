@@ -12,8 +12,6 @@ installed, the script copies all the versioned files into a temporary
 directory before building the source distribution.  This also avoids
 issues with stale egg-info/SOURCES.txt files that may cause files not mentioned
 in MANIFEST.in to be included nevertheless.
-
-The current implementation probably doesn't work on Windows.
 """
 from __future__ import print_function
 
