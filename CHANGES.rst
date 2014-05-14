@@ -5,6 +5,10 @@ Changelog
 0.20 (unreleased)
 -----------------
 
+* Restore warning about files included in the sdist but not added to the
+  version control system (`issue #27
+  <https://github.com/mgedmin/check-manifest/issues/27>`__),
+
 
 0.19 (2014-02-09)
 -----------------

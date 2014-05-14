@@ -185,13 +185,13 @@ class Tests(unittest.TestCase):
         self.assertEqual(format_list(['a']), "  a")
         self.assertEqual(format_list(['a', 'b']), "  a\n  b")
 
-    def test_format_difference(self):
-        from check_manifest import format_difference
+    def test_format_missing(self):
+        from check_manifest import format_missing
         self.assertEqual(
-            format_difference(["a", "b"], ["a", "b"], "1st", "2nd"),
+            format_missing(set(), set(), "1st", "2nd"),
             "")
         self.assertEqual(
-            format_difference(["a", "b"], ["b", "c"], "1st", "2nd"),
+            format_missing(set(["c"]), set(["a"]), "1st", "2nd"),
             "missing from 1st:\n"
             "  c\n"
             "missing from 2nd:\n"

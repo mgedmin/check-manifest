@@ -9,9 +9,9 @@ supported).
 Since the first check can fail to catch missing MANIFEST.in entries when
 you've got the right setuptools version control system support plugins
 installed, the script copies all the versioned files into a temporary
-directory before building the source distribution.  This also avoids
-issues with stale egg-info/SOURCES.txt files that may cause files not mentioned
-in MANIFEST.in to be included nevertheless.
+directory and building the source distribution again.  This also avoids issues
+with stale egg-info/SOURCES.txt files that may cause files not mentioned in
+MANIFEST.in to be included nevertheless.
 """
 from __future__ import print_function
 
@@ -97,20 +97,14 @@ def format_list(list_of_strings):
     return "\n".join("  " + s for s in list_of_strings)
 
 
-def format_difference(seq_a, seq_b, name_a, name_b):
-    # What about a unified diff?
-    ## return format_list(difflib.unified_diff(seq_a, seq_b, name_a, name_b,
-    ##                                         lineterm=''))
-    # Maybe not
-    missing_from_a = sorted(set(seq_b) - set(seq_a))
-    missing_from_b = sorted(set(seq_a) - set(seq_b))
+def format_missing(missing_from_a, missing_from_b, name_a, name_b):
     res = []
     if missing_from_a:
         res.append("missing from %s:\n%s"
-                   % (name_a, format_list(missing_from_a)))
+                   % (name_a, format_list(sorted(missing_from_a))))
     if missing_from_b:
         res.append("missing from %s:\n%s"
-                   % (name_b, format_list(missing_from_b)))
+                   % (name_b, format_list(sorted(missing_from_b))))
     return '\n'.join(res)
 
 
@@ -591,6 +585,14 @@ def check_manifest(source_tree='.', create=False, update=False,
         all_source_files = sorted(get_vcs_files())
         source_files = strip_sdist_extras(all_source_files)
         info_continue(": %d files and directories" % len(source_files))
+        info_begin("building an sdist")
+        with mkdtemp('-sdist') as tempdir:
+            run([python, 'setup.py', 'sdist', '-d', tempdir])
+            sdist_filename = get_one_file_in(tempdir)
+            info_continue(": %s" % os.path.basename(sdist_filename))
+            sdist_files = sorted(normalize_names(strip_sdist_extras(
+                strip_toplevel_name(get_archive_file_list(sdist_filename)))))
+            info_continue(": %d files and directories" % len(sdist_files))
         info_begin("copying source files to a temporary directory")
         with mkdtemp('-sources') as tempsourcedir:
             copy_files(source_files, tempsourcedir)
@@ -601,23 +603,24 @@ def check_manifest(source_tree='.', create=False, update=False,
                 # gets confused about their new manifest rules being
                 # ignored.
                 copy_files(['MANIFEST.in'], tempsourcedir)
-            info_begin("building an sdist")
+            info_begin("building a clean sdist")
             with cd(tempsourcedir):
                 with mkdtemp('-sdist') as tempdir:
                     run([python, 'setup.py', 'sdist', '-d', tempdir])
                     sdist_filename = get_one_file_in(tempdir)
                     info_continue(": %s" % os.path.basename(sdist_filename))
-                    sdist_files = sorted(normalize_names(strip_sdist_extras(
+                    clean_sdist_files = sorted(normalize_names(strip_sdist_extras(
                         strip_toplevel_name(get_archive_file_list(sdist_filename)))))
-                    info_continue(": %d files and directories" % len(sdist_files))
-        if source_files == sdist_files:
-            info("files in version control match files in the sdist")
+                    info_continue(": %d files and directories" % len(clean_sdist_files))
+        missing_from_manifest = set(source_files) - set(clean_sdist_files)
+        missing_from_VCS = set(sdist_files + clean_sdist_files) - set(source_files)
+        if not missing_from_manifest and not missing_from_VCS:
+            info("files in version control match files in the sdist(s)")
         else:
             error("files in version control do not match the sdist!\n%s"
-                  % format_difference(source_files, sdist_files,
-                                      "VCS", "sdist"))
-            missing_files = set(source_files) - set(sdist_files)
-            suggestions, unknowns = find_suggestions(missing_files)
+                  % format_missing(missing_from_VCS, missing_from_manifest,
+                                   "VCS", "sdist"))
+            suggestions, unknowns = find_suggestions(missing_from_manifest)
             user_asked_for_help = update or (create and not
                                                 os.path.exists('MANIFEST.in'))
             if suggestions:
