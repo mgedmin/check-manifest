@@ -7,8 +7,10 @@ all:
 	@echo "Nothing to build.  Try 'make test' perhaps?"
 
 .PHONY: check test
-check test:
+test:
 	detox
+check:
+	tox
 
 .PHONY: coverage
 coverage:
