@@ -577,7 +577,7 @@ def check_manifest(source_tree='.', create=False, update=False,
     """
     all_ok = True
     with cd(source_tree):
-        if not is_package(source_tree):
+        if not is_package():
             raise Failure('This is not a Python project (no setup.py).')
         read_config()
         read_manifest()

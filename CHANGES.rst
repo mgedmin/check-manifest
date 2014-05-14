@@ -7,7 +7,10 @@ Changelog
 
 * Restore warning about files included in the sdist but not added to the
   version control system (`issue #27
-  <https://github.com/mgedmin/check-manifest/issues/27>`__),
+  <https://github.com/mgedmin/check-manifest/issues/27>`__).
+
+* Fix ``check-manifest relative/pathname`` (`issue #28
+  <https://github.com/mgedmin/check-manifest/issues/28>`__).
 
 
 0.19 (2014-02-09)

@@ -979,6 +979,14 @@ class TestCheckManifest(unittest.TestCase):
         self._create_repo_with_code()
         self.assertTrue(check_manifest())
 
+    def test_relative_pathname(self):
+        from check_manifest import check_manifest
+        os.mkdir('subdir')
+        os.chdir('subdir')
+        self._create_repo_with_code()
+        os.chdir(os.pardir)
+        self.assertTrue(check_manifest('subdir'))
+
     def test_suggestions(self):
         from check_manifest import check_manifest
         self._create_repo_with_code()
