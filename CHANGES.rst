@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.20 (unreleased)
+0.20 (2014-05-14)
 -----------------
 
 * Restore warning about files included in the sdist but not added to the
