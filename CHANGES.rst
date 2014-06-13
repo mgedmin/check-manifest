@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.21 (unreleased)
+0.21 (2014-06-13)
 -----------------
 
 * Don't drop setup.cfg when copying version-controlled files into a clean
