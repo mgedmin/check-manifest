@@ -5,6 +5,10 @@ Changelog
 0.21 (unreleased)
 -----------------
 
+* Don't drop setup.cfg when copying version-controlled files into a clean
+  temporary directory (`issue #29
+  <https://github.com/mgedmin/check-manifest/issues/29>`__).
+
 
 0.20 (2014-05-14)
 -----------------

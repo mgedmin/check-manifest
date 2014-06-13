@@ -595,7 +595,7 @@ def check_manifest(source_tree='.', create=False, update=False,
             info_continue(": %d files and directories" % len(sdist_files))
         info_begin("copying source files to a temporary directory")
         with mkdtemp('-sources') as tempsourcedir:
-            copy_files(source_files, tempsourcedir)
+            copy_files(all_source_files, tempsourcedir)
             if os.path.exists('MANIFEST.in') and 'MANIFEST.in' not in source_files:
                 # See https://github.com/mgedmin/check-manifest/issues/7
                 # if do this, we will emit a warning about MANIFEST.in not
