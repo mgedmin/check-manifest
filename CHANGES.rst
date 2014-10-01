@@ -5,6 +5,9 @@ Changelog
 0.22 (unreleased)
 -----------------
 
+* Fix IOError when files listed under version control are missing (`issue #32
+  <https://github.com/mgedmin/check-manifest/issues/32>`__).
+
 
 0.21 (2014-06-13)
 -----------------
