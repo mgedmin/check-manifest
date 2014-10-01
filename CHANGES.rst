@@ -5,6 +5,9 @@ Changelog
 0.22 (unreleased)
 -----------------
 
+* Warn the user if MANIFEST.in is missing  (`issue #31
+  <https://github.com/mgedmin/check-manifest/issues/31>`__).
+
 * Fix IOError when files listed under version control are missing (`issue #32
   <https://github.com/mgedmin/check-manifest/issues/32>`__).
 

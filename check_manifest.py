@@ -628,6 +628,10 @@ def check_manifest(source_tree='.', create=False, update=False,
             suggestions, unknowns = find_suggestions(missing_from_manifest)
             user_asked_for_help = update or (create and not
                                                 os.path.exists('MANIFEST.in'))
+            if 'MANIFEST.in' not in existing_source_files:
+                info_begin("no MANIFEST.in found")
+                if suggestions and not user_asked_for_help:
+                    info_end("; you can run 'check-manifest -c' to create one")
             if suggestions:
                 info("suggested MANIFEST.in rules:\n%s"
                      % format_list(suggestions))
