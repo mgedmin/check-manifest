@@ -593,7 +593,7 @@ def check_manifest(source_tree='.', create=False, update=False,
             sdist_files = sorted(normalize_names(strip_sdist_extras(
                 strip_toplevel_name(get_archive_file_list(sdist_filename)))))
             info_continue(": %d files and directories" % len(sdist_files))
-        existing_source_files = filter(os.path.exists, all_source_files)
+        existing_source_files = list(filter(os.path.exists, all_source_files))
         missing_source_files = sorted(set(all_source_files) - set(existing_source_files))
         if missing_source_files:
             warning("some files listed as being under source control are missing:\n%s"
