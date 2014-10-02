@@ -620,9 +620,9 @@ def check_manifest(source_tree='.', create=False, update=False,
         missing_from_manifest = set(source_files) - set(clean_sdist_files)
         missing_from_VCS = set(sdist_files + clean_sdist_files) - set(source_files)
         if not missing_from_manifest and not missing_from_VCS:
-            info("files in version control match files in the sdist(s)")
+            info("lists of files in version control and sdist match")
         else:
-            error("files in version control do not match the sdist!\n%s"
+            error("lists of files in version control and sdist do not match!\n%s"
                   % format_missing(missing_from_VCS, missing_from_manifest,
                                    "VCS", "sdist"))
             suggestions, unknowns = find_suggestions(missing_from_manifest)

@@ -22,7 +22,7 @@ You can ask the script to help you update your MANIFEST.in::
     $ check-manifest -u
     listing source files under version control: 6 files and directories
     building an sdist: check-manifest-0.7.tar.gz: 4 files and directories
-    files in version control do not match the sdist!
+    lists of files in version control and sdist do not match!
     missing from sdist:
       tests.py
       tox.ini
