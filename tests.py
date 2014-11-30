@@ -1074,6 +1074,15 @@ class TestCheckManifest(unittest.TestCase):
         self.assertIn("this also applies to the following:\n  moo.mo",
                       sys.stderr.getvalue())
 
+    def test_missing_source_files(self):
+        from check_manifest import check_manifest
+        self._create_repo_with_code()
+        self._add_to_vcs('missing.py')
+        os.unlink('missing.py')
+        check_manifest()
+        self.assertIn("some files listed as being under source control are missing:\n  missing.py",
+                      sys.stderr.getvalue())
+
 
 def test_suite():
     return unittest.TestSuite([
