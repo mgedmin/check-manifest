@@ -14,6 +14,9 @@ Changelog
 * Improved wording of the match/do not match messages (`issue #34
   <https://github.com/mgedmin/check-manifest/issues/34>`__).
 
+* Ignore .travis.yml by default (`issue #39
+  <https://github.com/mgedmin/check-manifest/issues/39>`__).
+
 * Suggest a rule for Makefile found deeper in the source tree.
 
 

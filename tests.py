@@ -246,6 +246,7 @@ class Tests(unittest.TestCase):
         from check_manifest import strip_sdist_extras
         filelist = list(map(os.path.normpath, [
             '.gitignore',
+            '.travis.yml',
             'setup.py',
             'setup.cfg',
             'README.txt',
