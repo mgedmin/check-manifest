@@ -370,11 +370,13 @@ class Tests(unittest.TestCase):
             'docs/image.png',
             'docs/Makefile',
             'docs/unknown-file',
+            'src/etc/blah/blah/Makefile',
         ]))
         expected_rules = [
             'recursive-include docs *.png',
             'recursive-include docs *.rst',
             'recursive-include docs Makefile',
+            'recursive-include src Makefile',
         ]
         expected_unknowns = [os.path.normpath('docs/unknown-file')]
         self.assertEqual(find_suggestions(filelist),

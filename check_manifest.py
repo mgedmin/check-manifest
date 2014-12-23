@@ -393,7 +393,7 @@ SUGGESTIONS = [(re.compile(pattern.replace('/', _sep)), suggestion) for pattern,
     ('^([a-zA-Z_][a-zA-Z_0-9]*)/'
      '.*[.](py|zcml|pt|mako|xml|html|txt|rst|css|png|jpg|dot|po|pot|mo|ui|desktop|bat)$',
                                     r'recursive-include \1 *.\2'),
-    ('^([a-zA-Z_][a-zA-Z_0-9]*)/(Makefile)$',
+    ('^([a-zA-Z_][a-zA-Z_0-9]*)(?:/.*)?/(Makefile)$',
                                     r'recursive-include \1 \2'),
     # catch-all rules that actually cover some of the above; somewhat
     # experimental: I fear false positives
