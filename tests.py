@@ -600,6 +600,7 @@ class TestMain(unittest.TestCase):
 
     def test(self):
         from check_manifest import main
+        sys.argv.append('-v')
         main()
 
     def test_exit_code_1_on_error(self):
@@ -881,44 +882,87 @@ class TestSvn(VCSMixin, unittest.TestCase):
 class TestUserInterface(unittest.TestCase):
 
     def setUp(self):
+        import check_manifest
+        self.old_VERBOSE = check_manifest.VERBOSE
         self.real_stdout = sys.stdout
         self.real_stderr = sys.stderr
         sys.stdout = StringIO()
         sys.stderr = StringIO()
 
     def tearDown(self):
+        import check_manifest
         sys.stderr = self.real_stderr
         sys.stdout = self.real_stdout
+        check_manifest.VERBOSE = self.old_VERBOSE
 
     def test_info(self):
-        from check_manifest import info
-        info("Reticulating splines")
+        import check_manifest
+        check_manifest.VERBOSE = False
+        check_manifest.info("Reticulating splines")
+        self.assertEqual(sys.stdout.getvalue(),
+                         "Reticulating splines\n")
+
+    def test_info_verbose(self):
+        import check_manifest
+        check_manifest.VERBOSE = True
+        check_manifest.info("Reticulating splines")
         self.assertEqual(sys.stdout.getvalue(),
                          "Reticulating splines\n")
 
     def test_info_begin_continue_end(self):
-        from check_manifest import info_begin, info_continue, info_end
-        info_begin("Reticulating splines...")
-        info_continue(" nearly done...")
-        info_continue(" almost done...")
-        info_end(" done!")
+        import check_manifest
+        check_manifest.VERBOSE = False
+        check_manifest.info_begin("Reticulating splines...")
+        check_manifest.info_continue(" nearly done...")
+        check_manifest.info_continue(" almost done...")
+        check_manifest.info_end(" done!")
+        self.assertEqual(sys.stdout.getvalue(), "")
+
+    def test_info_begin_continue_end_verbose(self):
+        import check_manifest
+        check_manifest.VERBOSE = True
+        check_manifest.info_begin("Reticulating splines...")
+        check_manifest.info_continue(" nearly done...")
+        check_manifest.info_continue(" almost done...")
+        check_manifest.info_end(" done!")
         self.assertEqual(
             sys.stdout.getvalue(),
             "Reticulating splines... nearly done... almost done... done!\n")
 
     def test_info_emits_newline_when_needed(self):
-        from check_manifest import info_begin, info
-        info_begin("Computering...")
-        info("Forgot to turn the gas off!")
+        import check_manifest
+        check_manifest.VERBOSE = False
+        check_manifest.info_begin("Computering...")
+        check_manifest.info("Forgot to turn the gas off!")
+        self.assertEqual(
+            sys.stdout.getvalue(),
+            "Forgot to turn the gas off!\n")
+
+    def test_info_emits_newline_when_needed_verbose(self):
+        import check_manifest
+        check_manifest.VERBOSE = True
+        check_manifest.info_begin("Computering...")
+        check_manifest.info("Forgot to turn the gas off!")
         self.assertEqual(
             sys.stdout.getvalue(),
             "Computering...\n"
             "Forgot to turn the gas off!\n")
 
     def test_warning(self):
-        from check_manifest import info_begin, warning
-        info_begin("Computering...")
-        warning("Forgot to turn the gas off!")
+        import check_manifest
+        check_manifest.VERBOSE = False
+        check_manifest.info_begin("Computering...")
+        check_manifest.warning("Forgot to turn the gas off!")
+        self.assertEqual(sys.stdout.getvalue(), "")
+        self.assertEqual(
+            sys.stderr.getvalue(),
+            "Forgot to turn the gas off!\n")
+
+    def test_warning_verbose(self):
+        import check_manifest
+        check_manifest.VERBOSE = True
+        check_manifest.info_begin("Computering...")
+        check_manifest.warning("Forgot to turn the gas off!")
         self.assertEqual(
             sys.stdout.getvalue(),
             "Computering...\n")
@@ -927,9 +971,20 @@ class TestUserInterface(unittest.TestCase):
             "Forgot to turn the gas off!\n")
 
     def test_error(self):
-        from check_manifest import info_begin, error
-        info_begin("Computering...")
-        error("Forgot to turn the gas off!")
+        import check_manifest
+        check_manifest.VERBOSE = False
+        check_manifest.info_begin("Computering...")
+        check_manifest.error("Forgot to turn the gas off!")
+        self.assertEqual(sys.stdout.getvalue(), "")
+        self.assertEqual(
+            sys.stderr.getvalue(),
+            "Forgot to turn the gas off!\n")
+
+    def test_error_verbose(self):
+        import check_manifest
+        check_manifest.VERBOSE = True
+        check_manifest.info_begin("Computering...")
+        check_manifest.error("Forgot to turn the gas off!")
         self.assertEqual(
             sys.stdout.getvalue(),
             "Computering...\n")

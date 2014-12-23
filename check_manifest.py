@@ -49,6 +49,8 @@ class Failure(Exception):
 # User interface
 #
 
+VERBOSE = False
+
 _to_be_continued = False
 def _check_tbc():
     global _to_be_continued
@@ -63,23 +65,29 @@ def info(message):
 
 
 def info_begin(message):
-    global _to_be_continued
+    if not VERBOSE:
+        return
     _check_tbc()
     sys.stdout.write(message)
     sys.stdout.flush()
+    global _to_be_continued
     _to_be_continued = True
 
 
 def info_continue(message):
-    global _to_be_continued
+    if not VERBOSE:
+        return
     sys.stdout.write(message)
     sys.stdout.flush()
+    global _to_be_continued
     _to_be_continued = True
 
 
 def info_end(message):
-    global _to_be_continued
+    if not VERBOSE:
+        return
     print(message)
+    global _to_be_continued
     _to_be_continued = False
 
 
@@ -640,9 +648,10 @@ def check_manifest(source_tree='.', create=False, update=False,
             user_asked_for_help = update or (create and not
                                                 os.path.exists('MANIFEST.in'))
             if 'MANIFEST.in' not in existing_source_files:
-                info_begin("no MANIFEST.in found")
                 if suggestions and not user_asked_for_help:
-                    info_end("; you can run 'check-manifest -c' to create one")
+                    info("no MANIFEST.in found; you can run 'check-manifest -c' to create one")
+                else:
+                    info("no MANIFEST.in found")
             if suggestions:
                 info("suggested MANIFEST.in rules:\n%s"
                      % format_list(suggestions))
@@ -686,6 +695,8 @@ def main():
         help='location for the source tree')
     parser.add_argument('--version', action='version',
                         version='%(prog)s version ' + __version__)
+    parser.add_argument('-v', '--verbose', action='store_true',
+        help='more verbose output')
     parser.add_argument('-c', '--create', action='store_true',
         help='create a MANIFEST.in if missing')
     parser.add_argument('-u', '--update', action='store_true',
@@ -699,6 +710,10 @@ def main():
 
     if args.ignore:
         IGNORE.extend(args.ignore.split(','))
+
+    if args.verbose:
+        global VERBOSE
+        VERBOSE = True
 
     try:
         if not check_manifest(args.source_tree, create=args.create,

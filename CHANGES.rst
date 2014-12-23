@@ -5,6 +5,9 @@ Changelog
 0.22 (unreleased)
 -----------------
 
+* More terse output by default; use the new ``-v`` (``--verbose``) flag
+  to see all the details.
+
 * Warn the user if MANIFEST.in is missing  (`issue #31
   <https://github.com/mgedmin/check-manifest/issues/31>`__).
 
