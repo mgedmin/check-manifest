@@ -990,6 +990,15 @@ class TestCheckManifest(unittest.TestCase):
         os.chdir(os.pardir)
         self.assertTrue(check_manifest('subdir'))
 
+    def test_relative_python(self):
+        from check_manifest import check_manifest
+        os.mkdir('subdir')
+        os.chdir('subdir')
+        self._create_repo_with_code()
+        os.chdir(os.pardir)
+        python = os.path.relpath(sys.executable)
+        self.assertTrue(check_manifest('subdir', python=python))
+
     def test_suggestions(self):
         from check_manifest import check_manifest
         self._create_repo_with_code()

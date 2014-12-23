@@ -14,6 +14,9 @@ Changelog
 * Improved wording of the match/do not match messages (`issue #34
   <https://github.com/mgedmin/check-manifest/issues/34>`__).
 
+* Handle a relative --python path (`issue #36
+  <https://github.com/mgedmin/check-manifest/issues/36>`__).
+
 * Ignore .travis.yml by default (`issue #39
   <https://github.com/mgedmin/check-manifest/issues/39>`__).
 
