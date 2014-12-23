@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.22 (unreleased)
+0.22 (2014-12-23)
 -----------------
 
 * More terse output by default; use the new ``-v`` (``--verbose``) flag
