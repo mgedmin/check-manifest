@@ -467,6 +467,12 @@ def _get_ignore_from_manifest(contents):
         except ValueError:
             # no whitespace, so not interesting
             continue
+        for part in rest.split():
+            # distutils enforces these warnings on Windows only
+            if part.startswith('/'):
+                warning("ERROR: Leading slashes are not allowed in MANIFEST.in on Windows: %s" % part)
+            if part.endswith('/'):
+                warning("ERROR: Trailing slashes are not allowed in MANIFEST.in on Windows: %s" % part)
         if cmd == 'exclude':
             # An exclude of 'dirname/*css' can match 'dirname/foo.css'
             # but not 'dirname/subdir/bar.css'.  We need a regular
@@ -508,6 +514,9 @@ def _get_ignore_from_manifest(contents):
             # not contain a path separator, as it actually has no
             # effect in that case, but that could differ per python
             # version.  We strip it here to avoid double separators.
+            # XXX: mg: I'm not 100% sure the above is correct, AFAICS
+            # all pythons from 2.6 complain if the path has a leading or
+            # trailing slash -- on Windows, that is.
             rest = rest.rstrip('/\\')
             ignore.append(rest)
             ignore.append(rest + os.path.sep + '*')

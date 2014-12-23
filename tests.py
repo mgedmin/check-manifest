@@ -460,6 +460,9 @@ class Tests(unittest.TestCase):
         # not fail over it or end up with double slashes.
         self.assertEqual(parse('prune dir/'),
                          (['dir', j('dir', '*')], []))
+        # You should also not have a leading slash
+        self.assertEqual(parse('prune /dir'),
+                         (['/dir', j('/dir', '*')], []))
         # And a mongo test case of everything at the end
         text = textwrap.dedent("""
             #exclude *.01

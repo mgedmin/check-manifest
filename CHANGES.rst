@@ -17,6 +17,9 @@ Changelog
 * Handle a relative --python path (`issue #36
   <https://github.com/mgedmin/check-manifest/issues/36>`__).
 
+* Warn about leading and trailing slashes in MANIFEST.in (`issue #37
+  <https://github.com/mgedmin/check-manifest/issues/37>`__).
+
 * Ignore .travis.yml by default (`issue #39
   <https://github.com/mgedmin/check-manifest/issues/39>`__).
 
