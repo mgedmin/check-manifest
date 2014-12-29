@@ -715,6 +715,18 @@ class TestZestIntegration(unittest.TestCase):
 
 class VCSHelper(object):
 
+    command = None  # override in subclasses
+
+    def is_installed(self):
+        try:
+            p = subprocess.Popen([self.command, '--version'],
+                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            stdout, stderr = p.communicate()
+            rc = p.wait()
+            return (rc == 0)
+        except OSError:
+            return False
+
     def _run(self, *command):
         # Windows doesn't like Unicode arguments to subprocess.Popen(), on Py2:
         # https://github.com/mgedmin/check-manifest/issues/23#issuecomment-33933031
@@ -733,6 +745,8 @@ class VCSHelper(object):
 class VCSMixin(object):
 
     def setUp(self):
+        if not self.vcs.is_installed():
+            self.skipTest("%s is not installed" % self.vcs.command)
         self.tmpdir = tempfile.mkdtemp(prefix='test-', suffix='-check-manifest')
         self.olddir = os.getcwd()
         os.chdir(self.tmpdir)
@@ -809,6 +823,8 @@ class VCSMixin(object):
 
 class GitHelper(VCSHelper):
 
+    command = 'git'
+
     def _init_vcs(self):
         self._run('git', 'init')
         self._run('git', 'config', 'user.name', 'Unit Test')
@@ -827,6 +843,8 @@ class TestGit(VCSMixin, unittest.TestCase):
 
 class BzrHelper(VCSHelper):
 
+    command = 'bzr'
+
     def _init_vcs(self):
         self._run('bzr', 'init')
         self._run('bzr', 'whoami', '--branch', 'Unit Test <test@example.com>')
@@ -843,6 +861,8 @@ class TestBzr(VCSMixin, unittest.TestCase):
 
 
 class HgHelper(VCSHelper):
+
+    command = 'hg'
 
     def _init_vcs(self):
         self._run('hg', 'init')
@@ -861,6 +881,8 @@ class TestHg(VCSMixin, unittest.TestCase):
 
 
 class SvnHelper(VCSHelper):
+
+    command = 'svn'
 
     def _init_vcs(self):
         self._run('svnadmin', 'create', 'repo')
