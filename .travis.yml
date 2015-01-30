@@ -1,4 +1,5 @@
 language: python
+sudo: false
 python:
     - 2.6
     - 2.7
@@ -6,6 +7,11 @@ python:
     - 3.3
     - 3.4
     - pypy
+env:
+    - FORCE_TEST_VCS=bzr
+    - FORCE_TEST_VCS=git
+    - FORCE_TEST_VCS=hg
+    - FORCE_TEST_VCS=svn
 install:
     - pip install coverage coveralls mock
 script:
