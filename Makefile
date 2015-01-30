@@ -10,7 +10,7 @@ all:
 test:
 	detox
 check:
-	tox
+	SKIP_NO_TESTS=1 tox
 
 .PHONY: coverage
 coverage:

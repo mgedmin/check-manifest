@@ -285,7 +285,7 @@ class Mercurial(VCS):
     @staticmethod
     def get_versioned_files():
         """List all files under Mercurial control in the current directory."""
-        output = run(['hg', 'status', '-ncam', '.'])
+        output = run(['hg', 'status', '-ncamd', '.'])
         return add_directories(output.splitlines())
 
 

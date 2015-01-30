@@ -24,6 +24,9 @@ except ImportError:
 import mock
 
 
+CAN_SKIP_TESTS = os.getenv('SKIP_NO_TESTS', '') == ''
+
+
 def rmtree(path):
     """A version of rmtree that can remove read-only files on Windows.
 
@@ -715,6 +718,18 @@ class TestZestIntegration(unittest.TestCase):
 
 class VCSHelper(object):
 
+    command = None  # override in subclasses
+
+    def is_installed(self):
+        try:
+            p = subprocess.Popen([self.command, '--version'],
+                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            stdout, stderr = p.communicate()
+            rc = p.wait()
+            return (rc == 0)
+        except OSError:
+            return False
+
     def _run(self, *command):
         # Windows doesn't like Unicode arguments to subprocess.Popen(), on Py2:
         # https://github.com/mgedmin/check-manifest/issues/23#issuecomment-33933031
@@ -733,6 +748,8 @@ class VCSHelper(object):
 class VCSMixin(object):
 
     def setUp(self):
+        if not self.vcs.is_installed() and CAN_SKIP_TESTS:
+            self.skipTest("%s is not installed" % self.vcs.command)
         self.tmpdir = tempfile.mkdtemp(prefix='test-', suffix='-check-manifest')
         self.olddir = os.getcwd()
         os.chdir(self.tmpdir)
@@ -786,6 +803,17 @@ class VCSMixin(object):
                          ['a.txt', 'b', j('b', 'b.txt'), j('b', 'c'),
                           j('b', 'c', 'd.txt')])
 
+    def test_get_vcs_files_deleted_but_not_removed(self):
+        if self.vcs.command == 'bzr':
+            self.skipTest("this cosmetic feature is not supported with bzr")
+            # see the longer explanation in test_missing_source_files
+        from check_manifest import get_vcs_files
+        self._init_vcs()
+        self._create_and_add_to_vcs(['a.txt'])
+        self._commit()
+        os.unlink('a.txt')
+        self.assertEqual(get_vcs_files(), ['a.txt'])
+
     def test_get_vcs_files_in_a_subdir(self):
         from check_manifest import get_vcs_files
         self._init_vcs()
@@ -809,6 +837,8 @@ class VCSMixin(object):
 
 class GitHelper(VCSHelper):
 
+    command = 'git'
+
     def _init_vcs(self):
         self._run('git', 'init')
         self._run('git', 'config', 'user.name', 'Unit Test')
@@ -827,6 +857,8 @@ class TestGit(VCSMixin, unittest.TestCase):
 
 class BzrHelper(VCSHelper):
 
+    command = 'bzr'
+
     def _init_vcs(self):
         self._run('bzr', 'init')
         self._run('bzr', 'whoami', '--branch', 'Unit Test <test@example.com>')
@@ -843,6 +875,8 @@ class TestBzr(VCSMixin, unittest.TestCase):
 
 
 class HgHelper(VCSHelper):
+
+    command = 'hg'
 
     def _init_vcs(self):
         self._run('hg', 'init')
@@ -861,6 +895,8 @@ class TestHg(VCSMixin, unittest.TestCase):
 
 
 class SvnHelper(VCSHelper):
+
+    command = 'svn'
 
     def _init_vcs(self):
         self._run('svnadmin', 'create', 'repo')
@@ -993,11 +1029,29 @@ class TestUserInterface(unittest.TestCase):
             "Forgot to turn the gas off!\n")
 
 
+def pick_installed_vcs():
+    preferred_order = [GitHelper, HgHelper, BzrHelper, SvnHelper]
+    force = os.getenv('FORCE_TEST_VCS')
+    if force:
+        for cls in preferred_order:
+            if force == cls.command:
+                return cls()
+        raise ValueError('Unsupported FORCE_TEST_VCS=%s (supported: %s)'
+                         % (force, '/'.join(cls.command for cls in preferred_order)))
+    for cls in preferred_order:
+        vcs = cls()
+        if vcs.is_installed():
+            return vcs
+    return None
+
+
 class TestCheckManifest(unittest.TestCase):
 
-    _vcs = GitHelper()
+    _vcs = pick_installed_vcs()
 
     def setUp(self):
+        if self._vcs is None:
+            self.fail('at least one version control system should be installed')
         self.oldpwd = os.getcwd()
         self.tmpdir = tempfile.mkdtemp(prefix='test-', suffix='-check-manifest')
         os.chdir(self.tmpdir)
@@ -1021,6 +1075,16 @@ class TestCheckManifest(unittest.TestCase):
             f.write("# wow. such code. so amaze\n")
         self._vcs._add_to_vcs(['setup.py', 'sample.py'])
 
+    def _create_repo_with_code_in_subdir(self):
+        os.mkdir('subdir')
+        os.chdir('subdir')
+        self._create_repo_with_code()
+        # NB: when self._vcs is SvnHelper, we're actually in
+        # ./subdir/checout rather than in ./subdir
+        subdir = os.path.basename(os.getcwd())
+        os.chdir(os.pardir)
+        return subdir
+
     def _add_to_vcs(self, filename, content=''):
         if os.path.sep in filename and not os.path.isdir(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
@@ -1042,20 +1106,14 @@ class TestCheckManifest(unittest.TestCase):
 
     def test_relative_pathname(self):
         from check_manifest import check_manifest
-        os.mkdir('subdir')
-        os.chdir('subdir')
-        self._create_repo_with_code()
-        os.chdir(os.pardir)
-        self.assertTrue(check_manifest('subdir'))
+        subdir = self._create_repo_with_code_in_subdir()
+        self.assertTrue(check_manifest(subdir))
 
     def test_relative_python(self):
         from check_manifest import check_manifest
-        os.mkdir('subdir')
-        os.chdir('subdir')
-        self._create_repo_with_code()
-        os.chdir(os.pardir)
+        subdir = self._create_repo_with_code_in_subdir()
         python = os.path.relpath(sys.executable)
-        self.assertTrue(check_manifest('subdir', python=python))
+        self.assertTrue(check_manifest(subdir, python=python))
 
     def test_suggestions(self):
         from check_manifest import check_manifest
@@ -1145,13 +1203,23 @@ class TestCheckManifest(unittest.TestCase):
                       sys.stderr.getvalue())
 
     def test_missing_source_files(self):
+        # https://github.com/mgedmin/check-manifest/issues/32
         from check_manifest import check_manifest
         self._create_repo_with_code()
         self._add_to_vcs('missing.py')
         os.unlink('missing.py')
         check_manifest()
-        self.assertIn("some files listed as being under source control are missing:\n  missing.py",
-                      sys.stderr.getvalue())
+        if self._vcs.command != 'bzr':
+            # 'bzr ls' doesn't list files that were deleted but not
+            # marked for deletion.  'bzr st' does, but it doesn't list
+            # unmodified files.  Importing bzrlib and using the API to
+            # get the file list we need is (a) complicated, (b) opens
+            # the optional dependency can of worms, and (c) not viable
+            # under Python 3 unless we fork off a Python 2 subprocess.
+            # Manually combining 'bzr ls' and 'bzr st' outputs just to
+            # produce a cosmetic warning message seems like overkill.
+            self.assertIn("some files listed as being under source control are missing:\n  missing.py",
+                        sys.stderr.getvalue())
 
 
 def test_suite():
