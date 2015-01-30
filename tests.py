@@ -24,6 +24,9 @@ except ImportError:
 import mock
 
 
+CAN_SKIP_TESTS = os.getenv('SKIP_NO_TESTS', '') == ''
+
+
 def rmtree(path):
     """A version of rmtree that can remove read-only files on Windows.
 
@@ -745,7 +748,7 @@ class VCSHelper(object):
 class VCSMixin(object):
 
     def setUp(self):
-        if not self.vcs.is_installed():
+        if not self.vcs.is_installed() and CAN_SKIP_TESTS:
             self.skipTest("%s is not installed" % self.vcs.command)
         self.tmpdir = tempfile.mkdtemp(prefix='test-', suffix='-check-manifest')
         self.olddir = os.getcwd()
