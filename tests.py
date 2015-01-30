@@ -1018,11 +1018,29 @@ class TestUserInterface(unittest.TestCase):
             "Forgot to turn the gas off!\n")
 
 
+def pick_installed_vcs():
+    preferred_order = [GitHelper, HgHelper, BzrHelper, SvnHelper]
+    force = os.getenv('FORCE_TEST_VCS')
+    if force:
+        for cls in preferred_order:
+            if force == cls.command:
+                return cls()
+        raise ValueError('Unsupported FORCE_TEST_VCS=%s (supported: %s)'
+                         % (force, '/'.join(cls.command for cls in preferred_order)))
+    for cls in preferred_order:
+        vcs = cls()
+        if vcs.is_installed():
+            return vcs
+    return None
+
+
 class TestCheckManifest(unittest.TestCase):
 
-    _vcs = GitHelper()
+    _vcs = pick_installed_vcs()
 
     def setUp(self):
+        if self._vcs is None:
+            self.fail('at least one version control system should be installed')
         self.oldpwd = os.getcwd()
         self.tmpdir = tempfile.mkdtemp(prefix='test-', suffix='-check-manifest')
         os.chdir(self.tmpdir)
@@ -1066,6 +1084,7 @@ class TestCheckManifest(unittest.TestCase):
         self.assertTrue(check_manifest())
 
     def test_relative_pathname(self):
+        # XXX: fails when self._vcs is SvnHelper()
         from check_manifest import check_manifest
         os.mkdir('subdir')
         os.chdir('subdir')
@@ -1074,6 +1093,7 @@ class TestCheckManifest(unittest.TestCase):
         self.assertTrue(check_manifest('subdir'))
 
     def test_relative_python(self):
+        # XXX: fails when self._vcs is SvnHelper()
         from check_manifest import check_manifest
         os.mkdir('subdir')
         os.chdir('subdir')
@@ -1170,6 +1190,7 @@ class TestCheckManifest(unittest.TestCase):
                       sys.stderr.getvalue())
 
     def test_missing_source_files(self):
+        # XXX: fails when self._vcs is BzrHelper() or HgHelper()
         from check_manifest import check_manifest
         self._create_repo_with_code()
         self._add_to_vcs('missing.py')
