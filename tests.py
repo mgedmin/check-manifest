@@ -1064,6 +1064,16 @@ class TestCheckManifest(unittest.TestCase):
             f.write("# wow. such code. so amaze\n")
         self._vcs._add_to_vcs(['setup.py', 'sample.py'])
 
+    def _create_repo_with_code_in_subdir(self):
+        os.mkdir('subdir')
+        os.chdir('subdir')
+        self._create_repo_with_code()
+        # NB: when self._vcs is SvnHelper, we're actually in
+        # ./subdir/checout rather than in ./subdir
+        subdir = os.path.basename(os.getcwd())
+        os.chdir(os.pardir)
+        return subdir
+
     def _add_to_vcs(self, filename, content=''):
         if os.path.sep in filename and not os.path.isdir(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
@@ -1084,23 +1094,15 @@ class TestCheckManifest(unittest.TestCase):
         self.assertTrue(check_manifest())
 
     def test_relative_pathname(self):
-        # XXX: fails when self._vcs is SvnHelper()
         from check_manifest import check_manifest
-        os.mkdir('subdir')
-        os.chdir('subdir')
-        self._create_repo_with_code()
-        os.chdir(os.pardir)
-        self.assertTrue(check_manifest('subdir'))
+        subdir = self._create_repo_with_code_in_subdir()
+        self.assertTrue(check_manifest(subdir))
 
     def test_relative_python(self):
-        # XXX: fails when self._vcs is SvnHelper()
         from check_manifest import check_manifest
-        os.mkdir('subdir')
-        os.chdir('subdir')
-        self._create_repo_with_code()
-        os.chdir(os.pardir)
+        subdir = self._create_repo_with_code_in_subdir()
         python = os.path.relpath(sys.executable)
-        self.assertTrue(check_manifest('subdir', python=python))
+        self.assertTrue(check_manifest(subdir, python=python))
 
     def test_suggestions(self):
         from check_manifest import check_manifest
