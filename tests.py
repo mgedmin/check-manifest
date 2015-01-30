@@ -803,6 +803,17 @@ class VCSMixin(object):
                          ['a.txt', 'b', j('b', 'b.txt'), j('b', 'c'),
                           j('b', 'c', 'd.txt')])
 
+    def test_get_vcs_files_deleted_but_not_removed(self):
+        if self.vcs.command == 'bzr':
+            self.skipTest("this cosmetic feature is not supported with bzr")
+            # see the longer explanation in test_missing_source_files
+        from check_manifest import get_vcs_files
+        self._init_vcs()
+        self._create_and_add_to_vcs(['a.txt'])
+        self._commit()
+        os.unlink('a.txt')
+        self.assertEqual(get_vcs_files(), ['a.txt'])
+
     def test_get_vcs_files_in_a_subdir(self):
         from check_manifest import get_vcs_files
         self._init_vcs()
@@ -1193,14 +1204,22 @@ class TestCheckManifest(unittest.TestCase):
 
     def test_missing_source_files(self):
         # https://github.com/mgedmin/check-manifest/issues/32
-        # XXX: fails when self._vcs is BzrHelper()
         from check_manifest import check_manifest
         self._create_repo_with_code()
         self._add_to_vcs('missing.py')
         os.unlink('missing.py')
         check_manifest()
-        self.assertIn("some files listed as being under source control are missing:\n  missing.py",
-                      sys.stderr.getvalue())
+        if self._vcs.command != 'bzr':
+            # 'bzr ls' doesn't list files that were deleted but not
+            # marked for deletion.  'bzr st' does, but it doesn't list
+            # unmodified files.  Importing bzrlib and using the API to
+            # get the file list we need is (a) complicated, (b) opens
+            # the optional dependency can of worms, and (c) not viable
+            # under Python 3 unless we fork off a Python 2 subprocess.
+            # Manually combining 'bzr ls' and 'bzr st' outputs just to
+            # produce a cosmetic warning message seems like overkill.
+            self.assertIn("some files listed as being under source control are missing:\n  missing.py",
+                        sys.stderr.getvalue())
 
 
 def test_suite():
