@@ -1192,7 +1192,8 @@ class TestCheckManifest(unittest.TestCase):
                       sys.stderr.getvalue())
 
     def test_missing_source_files(self):
-        # XXX: fails when self._vcs is BzrHelper() or HgHelper()
+        # https://github.com/mgedmin/check-manifest/issues/32
+        # XXX: fails when self._vcs is BzrHelper()
         from check_manifest import check_manifest
         self._create_repo_with_code()
         self._add_to_vcs('missing.py')
