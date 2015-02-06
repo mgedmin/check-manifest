@@ -5,6 +5,9 @@ Changelog
 0.23 (unreleased)
 -----------------
 
+* More reliable svn status parsing; now handles svn externals (`issue #45
+  <https://github.com/mgedmin/check-manifest/issues/45>`__).
+
 
 0.22 (2014-12-23)
 -----------------

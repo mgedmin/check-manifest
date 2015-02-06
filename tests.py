@@ -10,6 +10,7 @@ import textwrap
 import zipfile
 from contextlib import closing
 from io import BytesIO
+from xml.etree import cElementTree as ET
 
 try:
     import unittest2 as unittest    # Python 2.6
@@ -914,8 +915,21 @@ class SvnHelper(VCSHelper):
 class TestSvn(VCSMixin, unittest.TestCase):
     vcs = SvnHelper()
 
+    def test_svn_externals(self):
+        from check_manifest import get_vcs_files
+        self.vcs._run('svnadmin', 'create', 'repo2')
+        repo2_url = 'file:///' + os.path.abspath('repo2').replace(os.path.sep, '/')
+        self.vcs._init_vcs()
+        self.vcs._run('svn', 'propset', 'svn:externals', 'ext %s' % repo2_url, '.')
+        self.vcs._run('svn', 'up')
+        self._create_files(['a.txt', 'ext/b.txt'])
+        self.vcs._run('svn', 'add', 'a.txt', 'ext/b.txt')
+        j = os.path.join
+        self.assertEqual(get_vcs_files(),
+                         ['a.txt', 'ext', j('ext', 'b.txt')])
 
-class TestUserInterface(unittest.TestCase):
+
+class UIMixin(object):
 
     def setUp(self):
         import check_manifest
@@ -930,6 +944,21 @@ class TestUserInterface(unittest.TestCase):
         sys.stderr = self.real_stderr
         sys.stdout = self.real_stdout
         check_manifest.VERBOSE = self.old_VERBOSE
+
+
+class TestSvnExtraErrors(UIMixin, unittest.TestCase):
+
+    def test_svn_xml_parsing_warning(self):
+        from check_manifest import Subversion
+        entry = ET.XML('<entry path="foo/bar.txt"></entry>')
+        self.assertFalse(Subversion.is_interesting(entry))
+        self.assertEqual(
+            sys.stderr.getvalue(),
+            'svn status --xml parse error: <entry path="foo/bar.txt">'
+            ' without <wc-status>\n')
+
+
+class TestUserInterface(UIMixin, unittest.TestCase):
 
     def test_info(self):
         import check_manifest

@@ -27,6 +27,7 @@ import tarfile
 import tempfile
 import zipfile
 from contextlib import contextmanager, closing
+from xml.etree import cElementTree as ET
 
 try:
     import ConfigParser
@@ -126,7 +127,7 @@ class CommandFailed(Failure):
                                command, status, output))
 
 
-def run(command, encoding=None):
+def run(command, encoding=None, decode=True):
     """Run a command [cmd, arg1, arg2, ...].
 
     Returns the output (stdout + stderr).
@@ -140,7 +141,9 @@ def run(command, encoding=None):
                                 stderr=subprocess.STDOUT)
     except OSError as e:
         raise Failure("could not run %s: %s" % (command, e))
-    output = pipe.communicate()[0].decode(encoding)
+    output = pipe.communicate()[0]
+    if decode:
+        output = output.decode(encoding)
     status = pipe.wait()
     if status != 0:
         raise CommandFailed(command, status, output)
@@ -302,12 +305,55 @@ class Bazaar(VCS):
 class Subversion(VCS):
     metadata_name = '.svn'
 
-    @staticmethod
-    def get_versioned_files():
+    @classmethod
+    def get_versioned_files(cls):
         """List all files under SVN control in the current directory."""
-        output = run(['svn', 'st', '-vq'])
-        return sorted(line[12:].split(None, 3)[-1]
-                      for line in output.splitlines()[1:])
+        output = run(['svn', 'st', '-vq', '--xml'], decode=False)
+        tree = ET.XML(output)
+        return sorted(entry.get('path') for entry in tree.findall('.//entry')
+                      if cls.is_interesting(entry))
+
+    @staticmethod
+    def is_interesting(entry):
+        """Is this entry interesting?
+
+        ``entry`` is an XML node representing one entry of the svn status
+        XML output.  It looks like this::
+
+            <entry path="unchanged.txt">
+              <wc-status item="normal" revision="1" props="none">
+                <commit revision="1">
+                  <author>mg</author>
+                  <date>2015-02-06T07:52:38.163516Z</date>
+                </commit>
+              </wc-status>
+            </entry>
+
+            <entry path="added-but-not-committed.txt">
+              <wc-status item="added" revision="-1" props="none"></wc-status>
+            </entry>
+
+            <entry path="ext">
+              <wc-status item="external" props="none"></wc-status>
+            </entry>
+
+            <entry path="unknown.txt">
+              <wc-status props="none" item="unversioned"></wc-status>
+            </entry>
+
+        """
+        if entry.get('path') == '.':
+            return False
+        status = entry.find('wc-status')
+        if status is None:
+            warning('svn status --xml parse error: <entry path="%s"> without'
+                    ' <wc-status>' % entry.get('path'))
+            return False
+        # For SVN externals we get two entries: one mentioning the
+        # existence of the external, and one about the status of the external.
+        if status.get('item') in ('unversioned', 'external'):
+            return False
+        return True
 
 
 def detect_vcs():
