@@ -2,11 +2,15 @@ Changelog
 =========
 
 
-0.23 (unreleased)
+0.23 (2015-02-12)
 -----------------
 
 * More reliable svn status parsing; now handles svn externals (`issue #45
   <https://github.com/mgedmin/check-manifest/issues/45>`__).
+
+* The test suite now skips tests for version control systems that aren't
+  installed (`issue #42
+  <https://github.com/mgedmin/check-manifest/issues/42>`__).
 
 
 0.22 (2014-12-23)
