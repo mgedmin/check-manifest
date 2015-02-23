@@ -1095,14 +1095,15 @@ class TestCheckManifest(unittest.TestCase):
         os.chdir(self.oldpwd)
         rmtree(self.tmpdir)
 
-    def _create_repo_with_code(self):
+    def _create_repo_with_code(self, add_to_vcs=True):
         self._vcs._init_vcs()
         with open('setup.py', 'w') as f:
             f.write("from setuptools import setup\n")
             f.write("setup(name='sample', py_modules=['sample'])\n")
         with open('sample.py', 'w') as f:
             f.write("# wow. such code. so amaze\n")
-        self._vcs._add_to_vcs(['setup.py', 'sample.py'])
+        if add_to_vcs:
+            self._vcs._add_to_vcs(['setup.py', 'sample.py'])
 
     def _create_repo_with_code_in_subdir(self):
         os.mkdir('subdir')
@@ -1218,6 +1219,14 @@ class TestCheckManifest(unittest.TestCase):
             f.write("include *.txt\n")
         self.assertFalse(check_manifest())
         self.assertIn("missing from VCS:\n  MANIFEST.in", sys.stderr.getvalue())
+        self.assertNotIn("missing from sdist", sys.stderr.getvalue())
+
+    def test_setup_py_does_not_need_to_be_added_to_be_considered(self):
+        from check_manifest import check_manifest
+        self._create_repo_with_code(add_to_vcs=False)
+        self._add_to_vcs('sample.py')
+        self.assertFalse(check_manifest())
+        self.assertIn("missing from VCS:\n  setup.py", sys.stderr.getvalue())
         self.assertNotIn("missing from sdist", sys.stderr.getvalue())
 
     def test_bad_ideas(self):

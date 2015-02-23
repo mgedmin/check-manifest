@@ -5,6 +5,10 @@ Changelog
 0.24 (unreleased)
 -----------------
 
+* Make sure ``setup.py`` not being added to the VCS doesn't cause
+  hard-to-understand errors (`issue #46
+  <https://github.com/mgedmin/check-manifest/issues/46>`__).
+
 
 0.23 (2015-02-12)
 -----------------

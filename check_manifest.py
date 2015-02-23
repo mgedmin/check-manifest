@@ -673,6 +673,12 @@ def check_manifest(source_tree='.', create=False, update=False,
                 # gets confused about their new manifest rules being
                 # ignored.
                 copy_files(['MANIFEST.in'], tempsourcedir)
+            if 'setup.py' not in source_files:
+                # See https://github.com/mgedmin/check-manifest/issues/46
+                # if do this, we will emit a warning about setup.py not
+                # being in source control, if we don't do this, the user
+                # gets a scary error
+                copy_files(['setup.py'], tempsourcedir)
             info_begin("building a clean sdist")
             with cd(tempsourcedir):
                 with mkdtemp('-sdist') as tempdir:
