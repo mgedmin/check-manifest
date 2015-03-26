@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.24 (unreleased)
+0.24 (2015-03-26)
 -----------------
 
 * Make sure ``setup.py`` not being added to the VCS doesn't cause
