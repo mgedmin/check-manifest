@@ -5,6 +5,9 @@ Changelog
 0.25 (unreleased)
 -----------------
 
+* Stop dynamic computation of install_requires in setup.py: this doesn't work
+  well in the presence of the pip 7 wheel cache.  Use PEP-426 environment
+  markers instead (this means we now require setuptools version 0.7 or newer).
 
 
 0.24 (2015-03-26)

@@ -58,7 +58,12 @@ setup(
     py_modules=['check_manifest'],
     zip_safe=False,
     test_suite='tests.test_suite',
-    install_requires=['argparse'] if PY26 else [],
+    install_requires=[],
+    extras_require={
+        ':python_version=="2.6"': ['argparse'],
+        'test': ['mock'],
+        'test:python_version=="2.6"': ['unittest2'],
+    },
     tests_require=['mock'] + (['unittest2'] if PY26 else []),
     entry_points={
         'console_scripts': [
