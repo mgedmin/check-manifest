@@ -25,6 +25,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import unicodedata
 import zipfile
 from contextlib import contextmanager, closing
 from xml.etree import cElementTree as ET
@@ -377,11 +378,24 @@ def get_vcs_files():
 
 
 def normalize_names(names):
+    """Normalize file names.
+    """
+    return list(map(normalize_name, names))
+
+
+def normalize_name(name):
     """Some VCS print directory names with trailing slashes.  Strip them.
 
     Easiest is to normalize the path.
+
+    And encodings may trip us up too, especially when comparing lists
+    of files.  Plus maybe lowercase versus uppercase.
     """
-    return [os.path.normpath(name) for name in names]
+    name = os.path.normpath(name)
+    name = os.path.normcase(name)
+    name = unicodify(name)
+    name = unicodedata.normalize('NFC', name)
+    return name
 
 
 def add_directories(names):
