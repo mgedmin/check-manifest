@@ -743,7 +743,11 @@ class VCSHelper(object):
         if rc:
             print(' '.join(command))
             print(stdout)
-            raise subprocess.CalledProcessError(rc, command[0], output=stdout)
+            try:
+                raise subprocess.CalledProcessError(rc, command[0], output=stdout)
+            except TypeError:
+                # BBB Python 2.6
+                raise subprocess.CalledProcessError(rc, command[0])
 
 
 class VCSMixin(object):
