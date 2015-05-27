@@ -846,7 +846,7 @@ class GitHelper(VCSHelper):
         self._run('git', 'config', 'user.email', 'test@example.com')
 
     def _add_to_vcs(self, filenames):
-        self._run('git', 'add', '--', *filenames)
+        self._run('git', 'add', '--force', '--', *filenames)
 
     def _commit(self):
         self._run('git', 'commit', '-m', 'Initial')
