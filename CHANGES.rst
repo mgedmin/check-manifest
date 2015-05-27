@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.25 (unreleased)
+0.25 (2015-05-27)
 -----------------
 
 * Stop dynamic computation of install_requires in setup.py: this doesn't work
