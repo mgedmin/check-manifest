@@ -393,7 +393,10 @@ def normalize_name(name):
     name = os.path.normpath(name)
     name = os.path.normcase(name)
     name = unicodify(name)
-    name = unicodedata.normalize('NFC', name)
+    if sys.platform == 'darwin':
+        # Mac OSX may have problems comparing non-ascii filenames, so
+        # we convert them.
+        name = unicodedata.normalize('NFC', name)
     return name
 
 
