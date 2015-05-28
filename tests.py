@@ -850,6 +850,9 @@ class GitHelper(VCSHelper):
         self._run('git', 'config', 'user.email', 'test@example.com')
 
     def _add_to_vcs(self, filenames):
+        # Note that we use --force to prevent errors when we want to
+        # add foo.egg-info and the user running the tests has
+        # '*.egg-info' in her global .gitignore file.
         self._run('git', 'add', '--force', '--', *filenames)
 
     def _commit(self):
