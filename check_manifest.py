@@ -378,8 +378,7 @@ def get_vcs_files():
 
 
 def normalize_names(names):
-    """Normalize file names.
-    """
+    """Normalize file names."""
     return list(map(normalize_name, names))
 
 
