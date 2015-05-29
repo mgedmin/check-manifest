@@ -5,6 +5,9 @@ Changelog
 0.26 (unreleased)
 -----------------
 
+* Normalize unicode representation and case of filenames. (`issue #47
+  <https://github.com/mgedmin/check-manifest/issues/47>`__).
+
 
 0.25 (2015-05-27)
 -----------------

@@ -743,7 +743,11 @@ class VCSHelper(object):
         if rc:
             print(' '.join(command))
             print(stdout)
-            raise subprocess.CalledProcessError(rc, command[0], output=stdout)
+            try:
+                raise subprocess.CalledProcessError(rc, command[0], output=stdout)
+            except TypeError:
+                # BBB Python 2.6
+                raise subprocess.CalledProcessError(rc, command[0])
 
 
 class VCSMixin(object):
@@ -846,7 +850,10 @@ class GitHelper(VCSHelper):
         self._run('git', 'config', 'user.email', 'test@example.com')
 
     def _add_to_vcs(self, filenames):
-        self._run('git', 'add', '--', *filenames)
+        # Note that we use --force to prevent errors when we want to
+        # add foo.egg-info and the user running the tests has
+        # '*.egg-info' in her global .gitignore file.
+        self._run('git', 'add', '--force', '--', *filenames)
 
     def _commit(self):
         self._run('git', 'commit', '-m', 'Initial')
