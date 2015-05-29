@@ -391,7 +391,6 @@ def normalize_name(name):
     of files.  Plus maybe lowercase versus uppercase.
     """
     name = os.path.normpath(name)
-    name = os.path.normcase(name)
     name = unicodify(name)
     if sys.platform == 'darwin':
         # Mac OSX may have problems comparing non-ascii filenames, so
