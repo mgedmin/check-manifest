@@ -8,6 +8,8 @@ Changelog
 * Normalize unicode representation and case of filenames. (`issue #47
   <https://github.com/mgedmin/check-manifest/issues/47>`__).
 
+* Drop Python 2.6 support.
+
 
 0.25 (2015-05-27)
 -----------------
