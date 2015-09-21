@@ -15,6 +15,7 @@ env:
     - FORCE_TEST_VCS=svn
 install:
     - pip install coverage coveralls mock
+    - if [ $TRAVIS_PYTHON_VERSION = 3.2 ]; then pip install 'coverage<4.0'; fi
 script:
     - SKIP_NO_TESTS=1 coverage run --source=check_manifest setup.py test -q
     - coverage run --source=check_manifest --append check_manifest.py
