@@ -5,6 +5,8 @@ Changelog
 0.26 (unreleased)
 -----------------
 
+* Do not complain about missing ``.gitattributes`` file.
+
 * Normalize unicode representation and case of filenames. (`issue #47
   <https://github.com/mgedmin/check-manifest/issues/47>`__).
 

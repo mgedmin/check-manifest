@@ -425,6 +425,7 @@ IGNORE = [
     'setup.cfg',    # always generated, sometimes also kept in source control
     # it's not a problem if the sdist is lacking these files:
     '.hgtags', '.hgignore', '.gitignore', '.bzrignore',
+    '.gitattributes',
     '.travis.yml',
     # it's convenient to ship compiled .mo files in sdists, but they shouldn't
     # be checked in
