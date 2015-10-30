@@ -12,6 +12,9 @@ Changelog
 
 * Drop Python 2.6 support.
 
+* Support installation via zc.buildout better (`issue #51
+  <https://github.com/mgedmin/check-manifest/issues/51>`__).
+
 
 0.25 (2015-05-27)
 -----------------
