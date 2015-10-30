@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.26 (unreleased)
+0.26 (2015-10-30)
 -----------------
 
 * Do not complain about missing ``.gitattributes`` file.
@@ -12,8 +12,8 @@ Changelog
 
 * Drop Python 2.6 support.
 
-* Support installation via zc.buildout better (`issue #51
-  <https://github.com/mgedmin/check-manifest/issues/51>`__).
+* Support installation via zc.buildout better (`issue #35
+  <https://github.com/mgedmin/check-manifest/issues/35>`__).
 
 
 0.25 (2015-05-27)
