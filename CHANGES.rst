@@ -2,11 +2,13 @@ Changelog
 =========
 
 
-0.27 (unreleased)
+0.27 (2015-11-02)
 -----------------
 
 * Fix utter breakage on Windows, introduced in 0.26 (`issue #52
   <https://github.com/mgedmin/check-manifest/issues/52>`__).
+  (The bug -- clearing the environment unnecessarily -- could probably
+  also cause locale-related problems on other OSes.)
 
 
 0.26 (2015-10-30)
