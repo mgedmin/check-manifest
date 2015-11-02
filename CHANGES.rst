@@ -5,6 +5,8 @@ Changelog
 0.27 (unreleased)
 -----------------
 
+* Fix utter breakage on Windows, introduced in 0.26 (`issue #52
+  <https://github.com/mgedmin/check-manifest/issues/52>`__).
 
 
 0.26 (2015-10-30)

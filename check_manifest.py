@@ -139,8 +139,11 @@ def run(command, encoding=None, decode=True):
         encoding = locale.getpreferredencoding()
     if command and command[0] == sys.executable:
         # Workaround for zc.buildout, bootstrapped from a Python that lacks
-        # setuptools (see https://github.com/mgedmin/check-manifest/issues/35)
-        env = {'PYTHONPATH': os.pathsep.join(sys.path)}
+        # setuptools (see https://github.com/mgedmin/check-manifest/issues/35).
+        # NB: you need to copy the parent os.environ, or at least %SYSTEMROOT%/
+        # %PATH% (see https://github.com/mgedmin/check-manifest/issues/52).
+        env = os.environ.copy()
+        env['PYTHONPATH'] = os.pathsep.join(sys.path)
     else:
         env = None
     try:
