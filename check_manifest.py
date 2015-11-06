@@ -282,6 +282,11 @@ class VCS(object):
 class Git(VCS):
     metadata_name = '.git'
 
+    @classmethod
+    def detect(cls, location):
+        # .git can be a file for submodules
+        return os.path.exists(os.path.join(location, cls.metadata_name))
+
     @staticmethod
     def get_versioned_files():
         """List all files versioned by git in the current directory."""

@@ -212,11 +212,12 @@ class Tests(unittest.TestCase):
     def test_detect_vcs_no_vcs(self):
         from check_manifest import detect_vcs, Failure
         with mock.patch('check_manifest.VCS.detect', staticmethod(lambda *a: False)):
-            with self.assertRaises(Failure) as cm:
-                detect_vcs()
-            self.assertEqual(str(cm.exception),
-                             "Couldn't find version control data"
-                             " (git/hg/bzr/svn supported)")
+            with mock.patch('check_manifest.Git.detect', staticmethod(lambda *a: False)):
+                with self.assertRaises(Failure) as cm:
+                    detect_vcs()
+                self.assertEqual(str(cm.exception),
+                                 "Couldn't find version control data"
+                                 " (git/hg/bzr/svn supported)")
 
     def test_normalize_names(self):
         from check_manifest import normalize_names
@@ -861,6 +862,17 @@ class GitHelper(VCSHelper):
 
 class TestGit(VCSMixin, unittest.TestCase):
     vcs = GitHelper()
+
+    def test_detect_git_submodule(self):
+        from check_manifest import detect_vcs, Failure
+        with self.assertRaises(Failure) as cm:
+            detect_vcs()
+        self.assertEqual(str(cm.exception),
+                         "Couldn't find version control data"
+                         " (git/hg/bzr/svn supported)")
+        # now create a .git file like in a submodule
+        open(os.path.join(self.tmpdir, '.git'), 'w').close()
+        self.assertEqual(detect_vcs().metadata_name, '.git')
 
 
 class BzrHelper(VCSHelper):
