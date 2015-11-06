@@ -609,7 +609,9 @@ def _get_ignore_from_manifest(contents):
 
 def file_matches(filename, patterns):
     """Does this filename match any of the patterns?"""
-    return any(fnmatch.fnmatch(filename, pat) for pat in patterns)
+    return any(fnmatch.fnmatch(filename, pat) or
+               fnmatch.fnmatch(os.path.basename(filename), pat)
+               for pat in patterns)
 
 
 def file_matches_regexps(filename, patterns):

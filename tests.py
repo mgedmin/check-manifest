@@ -256,6 +256,7 @@ class Tests(unittest.TestCase):
             'setup.cfg',
             'README.txt',
             'src',
+            'src/.gitignore',
             'src/zope',
             'src/zope/__init__.py',
             'src/zope/foo',
