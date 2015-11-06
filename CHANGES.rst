@@ -2,10 +2,11 @@ Changelog
 =========
 
 
-0.28 (2015-11-02)
+0.28 (unreleased)
 -----------------
 
-* Fix detection of git submodules.
+* Fix detection of git submodules (`#53
+  <https://github.com/mgedmin/check-manifest/pulls/53>`__).
 
 
 0.27 (2015-11-02)
