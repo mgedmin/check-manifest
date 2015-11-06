@@ -5,6 +5,8 @@ Changelog
 0.28 (2015-11-02)
 -----------------
 
+* Fix detection of git submodules.
+
 
 0.27 (2015-11-02)
 -----------------
