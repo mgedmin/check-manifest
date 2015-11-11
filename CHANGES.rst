@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.28 (unreleased)
+0.28 (2015-11-11)
 -----------------
 
 * Fix detection of git submodules (`#53
