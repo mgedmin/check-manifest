@@ -672,7 +672,8 @@ def check_manifest(source_tree='.', create=False, update=False,
     Returns True if the manifest is fine.
     """
     all_ok = True
-    python = os.path.abspath(python)  # in case it was relative
+    if os.path.sep in python:
+        python = os.path.abspath(python)
     with cd(source_tree):
         if not is_package():
             raise Failure('This is not a Python project (no setup.py).')

@@ -1160,10 +1160,19 @@ class TestCheckManifest(unittest.TestCase):
         self.assertTrue(check_manifest(subdir))
 
     def test_relative_python(self):
+        # https://github.com/mgedmin/check-manifest/issues/36
         from check_manifest import check_manifest
         subdir = self._create_repo_with_code_in_subdir()
         python = os.path.relpath(sys.executable)
         self.assertTrue(check_manifest(subdir, python=python))
+
+    def test_python_from_path(self):
+        # https://github.com/mgedmin/check-manifest/issues/57
+        # NB: this test assumes you have a 'python' executable somewhere
+        # in your path.
+        from check_manifest import check_manifest
+        subdir = self._create_repo_with_code_in_subdir()
+        self.assertTrue(check_manifest(subdir, python='python'))
 
     def test_suggestions(self):
         from check_manifest import check_manifest

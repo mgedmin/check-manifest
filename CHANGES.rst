@@ -5,7 +5,8 @@ Changelog
 0.29 (unreleased)
 -----------------
 
-* No changes yet.
+* Fix --python with just a comman name, to be found in path (`issue #57
+  <https://github.com/mgedmin/check-manifest/issues/57>`__).
 
 
 0.28 (2015-11-11)
