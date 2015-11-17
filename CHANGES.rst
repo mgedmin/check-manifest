@@ -31,15 +31,17 @@ Changelog
 0.26 (2015-10-30)
 -----------------
 
-* Do not complain about missing ``.gitattributes`` file.
+* Do not complain about missing ``.gitattributes`` file (`PR #50
+  <https://github.com/mgedmin/check-manifest/pull/50>`__).
 
 * Normalize unicode representation and case of filenames. (`issue #47
   <https://github.com/mgedmin/check-manifest/issues/47>`__).
 
-* Drop Python 2.6 support.
-
 * Support installation via zc.buildout better (`issue #35
   <https://github.com/mgedmin/check-manifest/issues/35>`__).
+
+* Drop Python 2.6 support because one of our test dependencies (mock) dropped
+  it.  This also means we no longer use environment markers.
 
 
 0.25 (2015-05-27)
@@ -47,7 +49,8 @@ Changelog
 
 * Stop dynamic computation of install_requires in setup.py: this doesn't work
   well in the presence of the pip 7 wheel cache.  Use PEP-426 environment
-  markers instead (this means we now require setuptools version 0.7 or newer).
+  markers instead (this means we now require setuptools >= 0.7, and pip >= 6.0,
+  and wheel >= 0.24).
 
 
 0.24 (2015-03-26)
