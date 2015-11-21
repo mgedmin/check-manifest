@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.29 (unreleased)
+0.29 (2015-11-21)
 -----------------
 
 * Fix --python with just a comman name, to be found in path (`issue #57
