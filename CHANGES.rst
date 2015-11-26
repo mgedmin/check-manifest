@@ -5,7 +5,8 @@ Changelog
 0.30 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Revert the zc.buildout support hack from 0.26 because it causes breakage
+  (`issue #56 <https://github.com/mgedmin/check-manifest/issues/56>`__).
 
 
 0.29 (2015-11-21)
