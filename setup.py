@@ -56,7 +56,7 @@ setup(
     py_modules=['check_manifest'],
     zip_safe=False,
     test_suite='tests.test_suite',
-    install_requires=['setuptools'],
+    install_requires=[],
     extras_require={
         'test': ['mock'],
     },
