@@ -137,18 +137,9 @@ def run(command, encoding=None, decode=True):
     """
     if not encoding:
         encoding = locale.getpreferredencoding()
-    if command and command[0] == sys.executable:
-        # Workaround for zc.buildout, bootstrapped from a Python that lacks
-        # setuptools (see https://github.com/mgedmin/check-manifest/issues/35).
-        # NB: you need to copy the parent os.environ, or at least %SYSTEMROOT%/
-        # %PATH% (see https://github.com/mgedmin/check-manifest/issues/52).
-        env = os.environ.copy()
-        env['PYTHONPATH'] = os.pathsep.join(sys.path)
-    else:
-        env = None
     try:
         pipe = subprocess.Popen(command, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT, env=env)
+                                stderr=subprocess.STDOUT)
     except OSError as e:
         raise Failure("could not run %s: %s" % (command, e))
     output = pipe.communicate()[0]
