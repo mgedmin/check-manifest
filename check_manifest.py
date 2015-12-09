@@ -19,6 +19,7 @@ import argparse
 import fnmatch
 import locale
 import os
+import posixpath
 import re
 import shutil
 import subprocess
@@ -270,7 +271,7 @@ def add_prefix_to_each(prefix, filelist):
         ['foo/bar/a', 'foo/bar/b', 'foo/bar/c/d']
 
     """
-    return [os.path.join(prefix, name) for name in filelist]
+    return [posixpath.join(prefix, name) for name in filelist]
 
 
 class VCS(object):
