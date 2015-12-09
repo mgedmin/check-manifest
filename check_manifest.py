@@ -330,7 +330,8 @@ class Bazaar(VCS):
     metadata_name = '.bzr'
 
     # Bzr on Windows apparently uses OEM encoding instead of ANSI
-    _encoding = sys.stdout.encoding if sys.platform == 'win32' else None
+    _encoding = (getattr(sys.stdout, 'encoding', None)
+                 if sys.platform == 'win32' else None)
 
     @classmethod
     def get_versioned_files(cls):
