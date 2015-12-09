@@ -864,6 +864,20 @@ class GitHelper(VCSHelper):
 class TestGit(VCSMixin, unittest.TestCase):
     vcs = GitHelper()
 
+    def _init_repo_with_files(self, dirname, filenames):
+        os.mkdir(dirname)
+        os.chdir(dirname)
+        self._init_vcs()
+        self._create_and_add_to_vcs(filenames)
+        self._commit()
+        os.chdir(self.tmpdir)
+
+    def _add_submodule(self, repo, subdir, subrepo):
+        os.chdir(repo)
+        self.vcs._run('git', 'submodule', 'add', subrepo, subdir)
+        self._commit()
+        os.chdir(self.tmpdir)
+
     def test_detect_git_submodule(self):
         from check_manifest import detect_vcs, Failure
         with self.assertRaises(Failure) as cm:
@@ -874,6 +888,32 @@ class TestGit(VCSMixin, unittest.TestCase):
         # now create a .git file like in a submodule
         open(os.path.join(self.tmpdir, '.git'), 'w').close()
         self.assertEqual(detect_vcs().metadata_name, '.git')
+
+    def test_get_versioned_files_with_git_submodules(self):
+        from check_manifest import get_vcs_files
+        self._init_repo_with_files('repo1', ['file1', 'file2'])
+        self._init_repo_with_files('repo2', ['file3'])
+        self._init_repo_with_files('repo3', ['file4'])
+        self._add_submodule('repo2', 'sub3', '../repo3')
+        self._init_repo_with_files('main', ['file5'])
+        self._add_submodule('main', 'sub1', '../repo1')
+        self._add_submodule('main', 'sub2', '../repo2')
+        os.chdir('main')
+        self.vcs._run('git', 'submodule', 'update', '--init', '--recursive')
+        self.assertEqual(
+            get_vcs_files(),
+            [
+                '.gitmodules',
+                'file5',
+                'sub1',
+                'sub1/file1',
+                'sub1/file2',
+                'sub2',
+                'sub2/.gitmodules',
+                'sub2/file3',
+                'sub2/sub3',
+                'sub2/sub3/file4',
+            ])
 
 
 class BzrHelper(VCSHelper):

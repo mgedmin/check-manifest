@@ -128,7 +128,7 @@ class CommandFailed(Failure):
                                command, status, output))
 
 
-def run(command, encoding=None, decode=True):
+def run(command, encoding=None, decode=True, cwd=None):
     """Run a command [cmd, arg1, arg2, ...].
 
     Returns the output (stdout + stderr).
@@ -139,7 +139,7 @@ def run(command, encoding=None, decode=True):
         encoding = locale.getpreferredencoding()
     try:
         pipe = subprocess.Popen(command, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
+                                stderr=subprocess.STDOUT, cwd=cwd)
     except OSError as e:
         raise Failure("could not run %s: %s" % (command, e))
     output = pipe.communicate()[0]
@@ -263,6 +263,16 @@ def strip_toplevel_name(filelist):
     return [name[len(prefix):] for name in names]
 
 
+def add_prefix_to_each(prefix, filelist):
+    """Add a prefix to each name in a file list.
+
+        >>> add_prefix_to_each('foo/bar', ['a', 'b', 'c/d'])
+        ['foo/bar/a', 'foo/bar/b', 'foo/bar/c/d']
+
+    """
+    return [os.path.join(prefix, name) for name in filelist]
+
+
 class VCS(object):
 
     @classmethod
@@ -273,19 +283,34 @@ class VCS(object):
 class Git(VCS):
     metadata_name = '.git'
 
+    # Git for Windows uses UTF-8 instead of the locale encoding.
+    # Git on POSIX systems uses the locale encoding.
+    _encoding = 'UTF-8' if sys.platform == 'win32' else None
+
     @classmethod
     def detect(cls, location):
         # .git can be a file for submodules
         return os.path.exists(os.path.join(location, cls.metadata_name))
 
-    @staticmethod
-    def get_versioned_files():
+    @classmethod
+    def get_versioned_files(cls):
         """List all files versioned by git in the current directory."""
-        # Git for Windows uses UTF-8 instead of the locale encoding.
-        # Regular Git on sane POSIX systems uses the locale encoding
-        encoding = 'UTF-8' if sys.platform == 'win32' else None
-        output = run(['git', 'ls-files', '-z'], encoding=encoding)
-        return add_directories(output.split('\0')[:-1])
+        files = cls._git_ls_files()
+        submodules = cls._list_submodules()
+        for subdir in submodules:
+            subdir = os.path.relpath(subdir)
+            files += add_prefix_to_each(subdir, cls._git_ls_files(subdir))
+        return add_directories(files)
+
+    @classmethod
+    def _git_ls_files(cls, cwd=None):
+        output = run(['git', 'ls-files', '-z'], encoding=cls._encoding, cwd=cwd)
+        return output.rstrip('\0').split('\0')
+
+    @classmethod
+    def _list_submodules(cls):
+        return run(['git', 'submodule', '--quiet', 'foreach', '--recursive',
+                    'printf "%s/%s\\n" $toplevel $path'], encoding=cls._encoding).splitlines()
 
 
 class Mercurial(VCS):
