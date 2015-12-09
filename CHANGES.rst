@@ -19,8 +19,9 @@ Changelog
 0.28 (2015-11-11)
 -----------------
 
-* Fix detection of git submodules (`#53
-  <https://github.com/mgedmin/check-manifest/pull/53>`__).
+* Fix detection of git repostiories when .git is a file and not a directory (`#53
+  <https://github.com/mgedmin/check-manifest/pull/53>`__).  One situation
+  where this occurs is when the project is checked out as a git submodule.
 
 * Apply ignore patterns in subdirectories too (`#54
   <https://github.com/mgedmin/check-manifest/issues/54>`__).
