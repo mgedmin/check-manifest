@@ -329,14 +329,13 @@ class Mercurial(VCS):
 class Bazaar(VCS):
     metadata_name = '.bzr'
 
-    # Bzr on Windows apparently uses OEM encoding instead of ANSI
-    _encoding = (getattr(sys.stdout, 'encoding', None)
-                 if sys.platform == 'win32' else None)
-
     @classmethod
     def get_versioned_files(cls):
         """List all files versioned in Bazaar in the current directory."""
-        output = run(['bzr', 'ls', '-VR'], encoding=cls._encoding)
+        # Bzr on Windows apparently uses OEM encoding instead of ANSI
+        encoding = (getattr(sys.stdout, 'encoding', None)
+                    if sys.platform == 'wind32' else None)
+        output = run(['bzr', 'ls', '-VR'], encoding=encoding)
         return output.splitlines()
 
 
