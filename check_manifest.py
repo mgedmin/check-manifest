@@ -139,8 +139,10 @@ def run(command, encoding=None, decode=True, cwd=None):
     if not encoding:
         encoding = locale.getpreferredencoding()
     try:
-        pipe = subprocess.Popen(command, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT, cwd=cwd)
+        with open(os.devnull, 'rb') as devnull:
+            pipe = subprocess.Popen(command, stdin=devnull,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT, cwd=cwd)
     except OSError as e:
         raise Failure("could not run %s: %s" % (command, e))
     output = pipe.communicate()[0]
