@@ -334,7 +334,7 @@ class Bazaar(VCS):
         """List all files versioned in Bazaar in the current directory."""
         # Bzr on Windows apparently uses OEM encoding instead of ANSI
         encoding = (getattr(sys.stdout, 'encoding', None)
-                    if sys.platform == 'wind32' else None)
+                    if sys.platform == 'win32' else None)
         output = run(['bzr', 'ls', '-VR'], encoding=encoding)
         return output.splitlines()
 
