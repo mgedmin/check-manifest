@@ -20,7 +20,7 @@ Changelog
 -----------------
 
 * Fix detection of git submodules (`#53
-  <https://github.com/mgedmin/check-manifest/pulls/53>`__).
+  <https://github.com/mgedmin/check-manifest/pull/53>`__).
 
 * Apply ignore patterns in subdirectories too (`#54
   <https://github.com/mgedmin/check-manifest/issues/54>`__).
