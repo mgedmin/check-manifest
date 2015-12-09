@@ -19,7 +19,6 @@ import argparse
 import fnmatch
 import locale
 import os
-import posixpath
 import re
 import shutil
 import subprocess
@@ -269,11 +268,12 @@ def strip_toplevel_name(filelist):
 def add_prefix_to_each(prefix, filelist):
     """Add a prefix to each name in a file list.
 
-        >>> add_prefix_to_each('foo/bar', ['a', 'b', 'c/d'])
+        >>> filelist = add_prefix_to_each('foo/bar', ['a', 'b', 'c/d'])
+        >>> [f.replace(os.path.sep, '/') for f in filelist]
         ['foo/bar/a', 'foo/bar/b', 'foo/bar/c/d']
 
     """
-    return [posixpath.join(prefix, name) for name in filelist]
+    return [os.path.join(prefix, name) for name in filelist]
 
 
 class VCS(object):
