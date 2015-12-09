@@ -902,7 +902,7 @@ class TestGit(VCSMixin, unittest.TestCase):
         self.vcs._run('git', 'submodule', 'update', '--init', '--recursive')
         self.assertEqual(
             get_vcs_files(),
-            [
+            [fn.replace('/', os.path.sep) for fn in [
                 '.gitmodules',
                 'file5',
                 'sub1',
@@ -913,7 +913,7 @@ class TestGit(VCSMixin, unittest.TestCase):
                 'sub2/file3',
                 'sub2/sub3',
                 'sub2/sub3/file4',
-            ])
+            ]])
 
 
 class BzrHelper(VCSHelper):
