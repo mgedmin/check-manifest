@@ -13,7 +13,7 @@ init:
 install:
   - "set PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   - python --version
-  - pip install tox
+  - pip install tox bzr
 
 build: off
 
