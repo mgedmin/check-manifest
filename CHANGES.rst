@@ -5,11 +5,13 @@ Changelog
 0.30 (unreleased)
 -----------------
 
-- Support git submodules
+* Support git submodules
   (`issue #61 <https://github.com/mgedmin/check-manifest/issues/61>`__).
 
-- Revert the zc.buildout support hack from 0.26 because it causes breakage
+* Revert the zc.buildout support hack from 0.26 because it causes breakage
   (`issue #56 <https://github.com/mgedmin/check-manifest/issues/56>`__).
+
+* Improve non-ASCII filename handling with Bazaar on Windows.
 
 
 0.29 (2015-11-21)
