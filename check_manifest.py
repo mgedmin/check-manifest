@@ -329,14 +329,27 @@ class Mercurial(VCS):
 class Bazaar(VCS):
     metadata_name = '.bzr'
 
-    # Bzr on Windows apparently uses OEM encoding instead of ANSI
-    _encoding = (getattr(sys.stdout, 'encoding', None)
-                 if sys.platform == 'win32' else None)
+    @classmethod
+    def _get_terminal_encoding(self):
+        # Based on bzrlib.osutils.get_terminal_encoding()
+        encoding = getattr(sys.stdout, 'encoding', None)
+        if not encoding:
+            encoding = getattr(sys.stdin, 'encoding', None)
+        if encoding == 'cp0':  # "no codepage"
+            encoding = None
+        # NB: bzrlib falls back on bzrlib.osutils.get_user_encoding(),
+        # which is like locale.getpreferredencoding() on steroids, and
+        # also includes a fallback from 'ascii' to 'utf-8' when
+        # sys.platform is 'darwin'.  This is probably something we might
+        # want to do in run(), but I'll wait for somebody to complain
+        # first, since I don't have a Mac OS X machine and cannot test.
+        return encoding
 
     @classmethod
     def get_versioned_files(cls):
         """List all files versioned in Bazaar in the current directory."""
-        output = run(['bzr', 'ls', '-VR'], encoding=cls._encoding)
+        encoding = cls._get_terminal_encoding()
+        output = run(['bzr', 'ls', '-VR'], encoding=encoding)
         return output.splitlines()
 
 
