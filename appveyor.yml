@@ -26,4 +26,4 @@ test_script:
   - tox -e py
 
 after_test:
-  - .tox/py/bin/python --version
+  - .tox/py/scripts/python --version
