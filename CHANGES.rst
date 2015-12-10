@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.30 (unreleased)
+0.30 (2015-12-10)
 -----------------
 
 * Support git submodules
