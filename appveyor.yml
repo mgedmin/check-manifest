@@ -24,6 +24,3 @@ build: off
 
 test_script:
   - tox -e py
-
-after_test:
-  - .tox/py/scripts/python --version
