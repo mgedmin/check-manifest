@@ -105,7 +105,7 @@ ignore-default-rules
 .. _buildstatus: https://travis-ci.org/mgedmin/check-manifest
 
 .. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/mgedmin/check-manifest?branch=master&svg=true
-.. _appveyor: https://ci.appveyor.com/project/mgedmin/check-manifest/branch/master
+.. _appveyor: https://ci.appveyor.com/project/mgedmin/check-manifest
 
 .. |coverage| image:: https://coveralls.io/repos/mgedmin/check-manifest/badge.svg?branch=master
 .. _coverage: https://coveralls.io/r/mgedmin/check-manifest
