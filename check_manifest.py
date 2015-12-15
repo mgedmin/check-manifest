@@ -312,6 +312,14 @@ class Git(VCS):
 
     @classmethod
     def _list_submodules(cls):
+        # This is incredibly expensive on my Jenkins instance (50 seconds for
+        # each invocation, even when there are no submodules whatsoever).
+        # Curiously, I cannot reproduce that in Appveyor, or even on the same
+        # Jenkins machine but when I run the tests manually.  Still, 2-hour
+        # Jenkins runs are bad, so let's avoid running 'git submodule' when
+        # there's no .gitmodules file.
+        if not os.path.exists('.gitmodules'):
+            return []
         return run(['git', 'submodule', '--quiet', 'foreach', '--recursive',
                     'printf "%s/%s\\n" $toplevel $path'], encoding=cls._encoding).splitlines()
 
