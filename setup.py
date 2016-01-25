@@ -5,6 +5,9 @@ from setuptools import setup
 if sys.version_info < (2, 7):
     sys.exit("Python 2.7 or newer is required for check-manifest")
 
+if (3, 0) <= sys.version_info < (3, 3):
+    sys.exit("Python 3.3 or newer is required for check-manifest")
+
 here = os.path.dirname(__file__)
 
 with open(os.path.join(here, 'README.rst')) as readme:
@@ -44,7 +47,6 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
