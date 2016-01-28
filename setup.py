@@ -34,6 +34,8 @@ setup(
     url=url,
     description='Check MANIFEST.in in a Python source package for completeness',
     long_description=long_description,
+    keywords=['distutils', 'setuptools', 'packaging', 'manifest', 'checker',
+              'linter'],
     classifiers=[
         'Development Status :: 4 - Beta',
 ##      'Development Status :: 5 - Production/Stable', eventually...

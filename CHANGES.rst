@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.31 (unreleased)
+0.31 (2016-01-28)
 -----------------
 
 - Drop Python 3.2 support.
