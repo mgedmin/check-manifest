@@ -519,6 +519,18 @@ class Tests(unittest.TestCase):
         self.assertEqual(parse(filename), (['test.dat'], []))
         self.assertEqual(self.warnings, [])
 
+    def test_get_ignore_from_manifest_warnings(self):
+        from check_manifest import _get_ignore_from_manifest as parse
+        filename = os.path.join(self.make_temp_dir(), 'MANIFEST.in')
+        self.create_file(filename, textwrap.dedent('''
+           # this is bad: a file should not end with a backslash
+           exclude test.dat \\
+        '''))
+        self.assertEqual(parse(filename), (['test.dat'], []))
+        self.assertEqual(self.warnings, [
+            "%s, line 2: continuation line immediately precedes end-of-file" % filename,
+        ])
+
 
 class TestConfiguration(unittest.TestCase):
 

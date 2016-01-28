@@ -586,7 +586,8 @@ def _get_ignore_from_manifest(filename):
     """
 
     class MyTextFile(TextFile):
-        def error(self, msg, line=None):
+        def error(self, msg, line=None):  # pragma: nocover
+            # (this is never called by TextFile in current versions of CPython)
             raise Failure(self.gen_error(msg, line))
 
         def warn(self, msg, line=None):
