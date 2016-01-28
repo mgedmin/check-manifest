@@ -981,6 +981,35 @@ class HgHelper(VCSHelper):
 class TestHg(VCSMixin, unittest.TestCase):
     vcs = HgHelper()
 
+    @mock.patch('sys.stdin')
+    @mock.patch('sys.stdout')
+    def test_terminal_encoding_not_known(self, mock_stdout, mock_stdin):
+        from check_manifest import Bazaar
+        mock_stdout.encoding = None
+        mock_stdin.encoding = None
+        self.assertEqual(Bazaar._get_terminal_encoding(), None)
+
+    @mock.patch('sys.stdout')
+    def test_terminal_encoding_stdout_known(self, mock_stdout):
+        from check_manifest import Bazaar
+        mock_stdout.encoding = 'UTF-8'
+        self.assertEqual(Bazaar._get_terminal_encoding(), 'UTF-8')
+
+    @mock.patch('sys.stdin')
+    @mock.patch('sys.stdout')
+    def test_terminal_encoding_stdin_known(self, mock_stdout, mock_stdin):
+        from check_manifest import Bazaar
+        mock_stdout.encoding = None
+        mock_stdin.encoding = 'UTF-8'
+        self.assertEqual(Bazaar._get_terminal_encoding(), 'UTF-8')
+
+    @mock.patch('sys.stdout')
+    def test_terminal_encoding_cp0(self, mock_stdout):
+        from check_manifest import Bazaar
+        mock_stdout.encoding = 'cp0'
+        self.assertEqual(Bazaar._get_terminal_encoding(), None)
+
+
 
 class SvnHelper(VCSHelper):
 
