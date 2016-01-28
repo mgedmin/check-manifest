@@ -7,6 +7,9 @@ Changelog
 
 - Drop Python 3.2 support.
 
+- Ignore commented-out lines in MANIFEST.in
+  (`issue #66 <https://github.com/mgedmin/check-manifest/issues/66>`__).
+
 
 0.30 (2015-12-10)
 -----------------

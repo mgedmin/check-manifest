@@ -590,10 +590,14 @@ def _get_ignore_from_manifest(contents):
     ignore = []
     ignore_regexps = []
     for line in contents.splitlines():
+        # XXX: this does not handle continuation lines correctly!
         try:
             cmd, rest = line.split(None, 1)
         except ValueError:
             # no whitespace, so not interesting
+            continue
+        if cmd.startswith('#'):
+            # ignore comments
             continue
         for part in rest.split():
             # distutils enforces these warnings on Windows only

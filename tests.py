@@ -504,6 +504,13 @@ class Tests(unittest.TestCase):
                 g2r('some/directory/*.cfg'),
             ]))
 
+    def test_dont_warn_about_trailing_slashes_in_comments_lol(self):
+        # https://github.com/mgedmin/check-manifest/issues/66
+        from check_manifest import _get_ignore_from_manifest as parse
+        self.assertEqual(parse(' # docs/ folder'),
+                         ([], []))
+        self.assertEqual(self.warnings, [])
+
 
 class TestConfiguration(unittest.TestCase):
 
