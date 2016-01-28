@@ -28,6 +28,7 @@ import tempfile
 import unicodedata
 import zipfile
 from contextlib import contextmanager, closing
+from distutils.text_file import TextFile
 from xml.etree import cElementTree as ET
 
 try:
@@ -557,9 +558,7 @@ def read_manifest():
     # XXX modifies global state, which is kind of evil
     if not os.path.isfile('MANIFEST.in'):
         return
-    with open('MANIFEST.in') as manifest:
-        contents = manifest.read()
-    ignore, ignore_regexps = _get_ignore_from_manifest(contents)
+    ignore, ignore_regexps = _get_ignore_from_manifest('MANIFEST.in')
     IGNORE.extend(ignore)
     IGNORE_REGEXPS.extend(ignore_regexps)
 
@@ -579,25 +578,50 @@ def _glob_to_regexp(pat):
     return re.sub(r'((?<!\\)(\\\\)*)\.', r'\1[^%s]' % sep, pat)
 
 
-def _get_ignore_from_manifest(contents):
-    """Gather the various ignore patterns from MANIFEST.in.
+def _get_ignore_from_manifest(filename):
+    """Gather the various ignore patterns from a MANIFEST.in.
 
-    'contents' should be a string, which may contain newlines.
+    Returns a list of standard ignore patterns and a list of regular
+    expressions to ignore.
+    """
+
+    class MyTextFile(TextFile):
+        def error(self, msg, line=None):
+            raise Failure(self.gen_error(msg, line))
+
+        def warn(self, msg, line=None):
+            warning(self.gen_error(msg, line))
+
+    template = MyTextFile(filename,
+                          strip_comments=True,
+                          skip_blanks=True,
+                          join_lines=True,
+                          lstrip_ws=True,
+                          rstrip_ws=True,
+                          collapse_join=True)
+    try:
+        lines = template.readlines()
+    finally:
+        template.close()
+    return _get_ignore_from_manifest_lines(lines)
+
+
+def _get_ignore_from_manifest_lines(lines):
+    """Gather the various ignore patterns from a MANIFEST.in.
+
+    'lines' should be a list of strings with comments removed
+    and continuation lines joined.
 
     Returns a list of standard ignore patterns and a list of regular
     expressions to ignore.
     """
     ignore = []
     ignore_regexps = []
-    for line in contents.splitlines():
-        # XXX: this does not handle continuation lines correctly!
+    for line in lines:
         try:
             cmd, rest = line.split(None, 1)
         except ValueError:
             # no whitespace, so not interesting
-            continue
-        if cmd.startswith('#'):
-            # ignore comments
             continue
         for part in rest.split():
             # distutils enforces these warnings on Windows only

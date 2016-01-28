@@ -62,6 +62,10 @@ class Tests(unittest.TestCase):
         self.addCleanup(rmtree, tmpdir)
         return tmpdir
 
+    def create_file(self, filename, contents):
+        with open(filename, 'w') as f:
+            f.write(contents)
+
     def create_zip_file(self, filename, filenames):
         with closing(zipfile.ZipFile(filename, 'w')) as zf:
             for fn in filenames:
@@ -281,7 +285,7 @@ class Tests(unittest.TestCase):
     def test_strip_sdist_extras_with_manifest(self):
         import check_manifest
         from check_manifest import strip_sdist_extras
-        from check_manifest import _get_ignore_from_manifest as parse
+        from check_manifest import _get_ignore_from_manifest_lines as parse
         orig_ignore = check_manifest.IGNORE[:]
         orig_ignore_regexps = check_manifest.IGNORE_REGEXPS[:]
         manifest_in = textwrap.dedent("""
@@ -330,7 +334,7 @@ class Tests(unittest.TestCase):
         # This will change the definitions.
         try:
             # This is normally done in read_manifest:
-            ignore, ignore_regexps = parse(manifest_in)
+            ignore, ignore_regexps = parse(manifest_in.splitlines())
             check_manifest.IGNORE.extend(ignore)
             check_manifest.IGNORE_REGEXPS.extend(ignore_regexps)
             # Filter the file list.
@@ -423,55 +427,52 @@ class Tests(unittest.TestCase):
         self.assertEqual(g2r('foo[!123].py'), r'foo[^123]\.py\Z(?ms)')
         self.assertEqual(g2r('foo/*.py'), r'foo\/[^%s]*\.py\Z(?ms)' % sep)
 
-    def test_get_ignore_from_manifest(self):
-        from check_manifest import _get_ignore_from_manifest as parse
+    def test_get_ignore_from_manifest_lines(self):
+        from check_manifest import _get_ignore_from_manifest_lines as parse
         from check_manifest import _glob_to_regexp as g2r
         j = os.path.join
         # The return value is a tuple with two lists:
         # ([<list of filename ignores>], [<list of regular expressions>])
-        self.assertEqual(parse(''),
+        self.assertEqual(parse([]),
                          ([], []))
-        self.assertEqual(parse('      \n        '),
+        self.assertEqual(parse(['', ' ']),
                          ([], []))
-        self.assertEqual(parse('exclude *.cfg'),
+        self.assertEqual(parse(['exclude *.cfg']),
                          ([], [g2r('*.cfg')]))
-        self.assertEqual(parse('#exclude *.cfg'),
-                         ([], []))
-        self.assertEqual(parse('exclude          *.cfg'),
+        self.assertEqual(parse(['exclude          *.cfg']),
                          ([], [g2r('*.cfg')]))
-        self.assertEqual(parse('\texclude\t*.cfg foo.*   bar.txt'),
+        self.assertEqual(parse(['\texclude\t*.cfg foo.*   bar.txt']),
                          (['bar.txt'], [g2r('*.cfg'), g2r('foo.*')]))
-        self.assertEqual(parse('exclude some/directory/*.cfg'),
+        self.assertEqual(parse(['exclude some/directory/*.cfg']),
                          ([], [g2r('some/directory/*.cfg')]))
-        self.assertEqual(parse('include *.cfg'),
+        self.assertEqual(parse(['include *.cfg']),
                          ([], []))
-        self.assertEqual(parse('global-exclude *.pyc'),
+        self.assertEqual(parse(['global-exclude *.pyc']),
                          (['*.pyc'], []))
-        self.assertEqual(parse('global-exclude *.pyc *.sh'),
+        self.assertEqual(parse(['global-exclude *.pyc *.sh']),
                          (['*.pyc', '*.sh'], []))
-        self.assertEqual(parse('recursive-exclude dir *.pyc'),
+        self.assertEqual(parse(['recursive-exclude dir *.pyc']),
                          ([j('dir', '*.pyc')], []))
-        self.assertEqual(parse('recursive-exclude dir *.pyc foo*.sh'),
+        self.assertEqual(parse(['recursive-exclude dir *.pyc foo*.sh']),
                          ([j('dir', '*.pyc'), j('dir', 'foo*.sh'),
                            j('dir', '*', 'foo*.sh')], []))
-        self.assertEqual(parse('recursive-exclude dir nopattern.xml'),
+        self.assertEqual(parse(['recursive-exclude dir nopattern.xml']),
                          ([j('dir', 'nopattern.xml'),
                            j('dir', '*', 'nopattern.xml')], []))
         # We should not fail when a recursive-exclude line is wrong:
-        self.assertEqual(parse('recursive-exclude dirwithoutpattern'),
+        self.assertEqual(parse(['recursive-exclude dirwithoutpattern']),
                          ([], []))
-        self.assertEqual(parse('prune dir'),
+        self.assertEqual(parse(['prune dir']),
                          (['dir', j('dir', '*')], []))
         # You should not add a slash at the end of a prune, but let's
         # not fail over it or end up with double slashes.
-        self.assertEqual(parse('prune dir/'),
+        self.assertEqual(parse(['prune dir/']),
                          (['dir', j('dir', '*')], []))
         # You should also not have a leading slash
-        self.assertEqual(parse('prune /dir'),
+        self.assertEqual(parse(['prune /dir']),
                          (['/dir', j('/dir', '*')], []))
         # And a mongo test case of everything at the end
         text = textwrap.dedent("""
-            #exclude *.01
             exclude *.02
             exclude *.03 04.*   bar.txt
             exclude          *.05
@@ -482,7 +483,7 @@ class Tests(unittest.TestCase):
             prune 30
             recursive-exclude    40      *.41
             recursive-exclude 42 *.43 44.*
-        """)
+        """).splitlines()
         self.assertEqual(
             parse(text),
             ([
@@ -504,11 +505,18 @@ class Tests(unittest.TestCase):
                 g2r('some/directory/*.cfg'),
             ]))
 
-    def test_dont_warn_about_trailing_slashes_in_comments_lol(self):
-        # https://github.com/mgedmin/check-manifest/issues/66
+    def test_get_ignore_from_manifest(self):
         from check_manifest import _get_ignore_from_manifest as parse
-        self.assertEqual(parse(' # docs/ folder'),
-                         ([], []))
+        filename = os.path.join(self.make_temp_dir(), 'MANIFEST.in')
+        self.create_file(filename, textwrap.dedent('''
+           exclude \\
+              # yes, this is allowed!
+              test.dat
+
+           # https://github.com/mgedmin/check-manifest/issues/66
+           # docs/ folder
+        '''))
+        self.assertEqual(parse(filename), (['test.dat'], []))
         self.assertEqual(self.warnings, [])
 
 
