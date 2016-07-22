@@ -1226,7 +1226,7 @@ class TestCheckManifest(unittest.TestCase):
         os.chdir('subdir')
         self._create_repo_with_code()
         # NB: when self._vcs is SvnHelper, we're actually in
-        # ./subdir/checout rather than in ./subdir
+        # ./subdir/checkout rather than in ./subdir
         subdir = os.path.basename(os.getcwd())
         os.chdir(os.pardir)
         return subdir

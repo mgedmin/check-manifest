@@ -32,14 +32,14 @@ Changelog
 0.29 (2015-11-21)
 -----------------
 
-* Fix --python with just a comman name, to be found in path (`issue #57
+* Fix --python with just a command name, to be found in path (`issue #57
   <https://github.com/mgedmin/check-manifest/issues/57>`__).
 
 
 0.28 (2015-11-11)
 -----------------
 
-* Fix detection of git repostiories when .git is a file and not a directory (`#53
+* Fix detection of git repositories when .git is a file and not a directory (`#53
   <https://github.com/mgedmin/check-manifest/pull/53>`__).  One situation
   where this occurs is when the project is checked out as a git submodule.
 
@@ -286,5 +286,5 @@ Changelog
   MANIFEST.in, and a Makefile.
 
 * Fixed a bug in error reporting (when setup.py failed, the user would get
-  `TypeError: descriptor '__init__' requires a 'exceptions.Exception' object
+  `TypeError: descriptor '__init__' requires an 'exceptions.Exception' object
   but received a 'str'`).
