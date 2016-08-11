@@ -541,13 +541,16 @@ class TestConfiguration(unittest.TestCase):
         os.chdir(self.tmpdir)
         self.OLD_IGNORE = check_manifest.IGNORE
         self.OLD_IGNORE_REGEXPS = check_manifest.IGNORE_REGEXPS
+        self.OLD_IGNORE_BAD_IDEAS = check_manifest.IGNORE_BAD_IDEAS
         check_manifest.IGNORE = ['default-ignore-rules']
         check_manifest.IGNORE_REGEXPS = ['default-ignore-regexps']
+        check_manifest.IGNORE_BAD_IDEAS = []
 
     def tearDown(self):
         import check_manifest
         check_manifest.IGNORE = self.OLD_IGNORE
         check_manifest.IGNORE_REGEXPS = self.OLD_IGNORE_REGEXPS
+        check_manifest.IGNORE_BAD_IDEAS = self.OLD_IGNORE_BAD_IDEAS
         os.chdir(self.oldpwd)
         shutil.rmtree(self.tmpdir)
 
