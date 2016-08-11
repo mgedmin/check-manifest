@@ -1400,7 +1400,7 @@ class TestCheckManifest(unittest.TestCase):
                     '  subdir/bar.egg-info\n')
         self._add_to_vcs('foo.egg-info')
         self._add_to_vcs('moo.mo')
-        self._add_to_vcs('subdir/bar.egg-info')
+        self._add_to_vcs(os.path.join('subdir', 'bar.egg-info'))
         self.assertFalse(check_manifest())
         self.assertIn("you have foo.egg-info in source control!",
                       sys.stderr.getvalue())
