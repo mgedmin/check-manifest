@@ -1390,6 +1390,7 @@ class TestCheckManifest(unittest.TestCase):
 
     def test_ignore_bad_ideas(self):
         from check_manifest import check_manifest
+        self._create_repo_with_code()
         with open('setup.cfg', 'w') as f:
             f.write('[check-manifest]\n'
                     'ignore =\n'
@@ -1397,7 +1398,6 @@ class TestCheckManifest(unittest.TestCase):
                     'ignore-bad-ideas =\n'
                     '  *.mo\n'
                     '  subdir/bar.egg-info\n')
-        self._create_repo_with_code()
         self._add_to_vcs('foo.egg-info')
         self._add_to_vcs('moo.mo')
         self._add_to_vcs('subdir/bar.egg-info')
