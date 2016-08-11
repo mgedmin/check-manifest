@@ -587,6 +587,16 @@ class TestConfiguration(unittest.TestCase):
         self.assertEqual(check_manifest.IGNORE,
                          ['foo', 'bar'])
 
+    def test_read_config_ignore_bad_ideas(self):
+        import check_manifest
+        with open('setup.cfg', 'w') as f:
+            f.write('[check-manifest]\n'
+                    'ignore-bad-ideas = \n'
+                    '  foo\n'
+                    '  bar\n')
+        check_manifest.read_config()
+        self.assertEqual(check_manifest.IGNORE_BAD_IDEAS, ['foo', 'bar'])
+
     def test_read_manifest_no_manifest(self):
         import check_manifest
         check_manifest.read_manifest()
@@ -619,13 +629,16 @@ class TestMain(unittest.TestCase):
         sys.argv = ['check-manifest']
         self.OLD_IGNORE = check_manifest.IGNORE
         self.OLD_IGNORE_REGEXPS = check_manifest.IGNORE_REGEXPS
+        self.OLD_IGNORE_BAD_IDEAS = check_manifest.IGNORE_BAD_IDEAS
         check_manifest.IGNORE = ['default-ignore-rules']
         check_manifest.IGNORE_REGEXPS = ['default-ignore-regexps']
+        check_manifest.IGNORE_BAD_IDEAS = []
 
     def tearDown(self):
         import check_manifest
         check_manifest.IGNORE = self.OLD_IGNORE
         check_manifest.IGNORE_REGEXPS = self.OLD_IGNORE_REGEXPS
+        check_manifest.IGNORE_BAD_IDEAS = self.OLD_IGNORE_BAD_IDEAS
         sys.argv = self._orig_sys_argv
         self._se_patcher.stop()
         self._cm_patcher.stop()
@@ -655,6 +668,13 @@ class TestMain(unittest.TestCase):
         check_manifest.main()
         self.assertEqual(check_manifest.IGNORE,
                          ['default-ignore-rules', 'x', 'y', 'z'])
+
+    def test_ignore_bad_ideas_args(self):
+        import check_manifest
+        sys.argv.append('--ignore-bad-ideas=x,y,z')
+        check_manifest.main()
+        self.assertEqual(check_manifest.IGNORE_BAD_IDEAS,
+                         ['x', 'y', 'z'])
 
 
 class TestZestIntegration(unittest.TestCase):
@@ -1364,6 +1384,25 @@ class TestCheckManifest(unittest.TestCase):
                       sys.stderr.getvalue())
         self.assertIn("this also applies to the following:\n  moo.mo",
                       sys.stderr.getvalue())
+
+    def test_ignore_bad_ideas(self):
+        from check_manifest import check_manifest
+        with open('setup.cfg', 'w') as f:
+            f.write('[check-manifest]\n'
+                    'ignore =\n'
+                    '  subdir/bar.egg-info\n'
+                    'ignore-bad-ideas =\n'
+                    '  *.mo\n'
+                    '  subdir/bar.egg-info\n')
+        self._create_repo_with_code()
+        self._add_to_vcs('foo.egg-info')
+        self._add_to_vcs('moo.mo')
+        self._add_to_vcs('subdir/bar.egg-info')
+        self.assertFalse(check_manifest())
+        self.assertIn("you have foo.egg-info in source control!",
+                      sys.stderr.getvalue())
+        self.assertNotIn("moo.mo", sys.stderr.getvalue())
+        self.assertNotIn("bar.egg-info", sys.stderr.getvalue())
 
     def test_missing_source_files(self):
         # https://github.com/mgedmin/check-manifest/issues/32

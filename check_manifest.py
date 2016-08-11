@@ -510,6 +510,8 @@ WARN_ABOUT_FILES_IN_VCS = [
     '.#*',
 ]
 
+IGNORE_BAD_IDEAS = []
+
 _sep = r'\\' if os.path.sep == '\\' else os.path.sep
 
 SUGGESTIONS = [(re.compile(pattern.replace('/', _sep)), suggestion) for pattern, suggestion in [
@@ -533,21 +535,29 @@ SUGGESTIONS = [(re.compile(pattern.replace('/', _sep)), suggestion) for pattern,
                                     r'recursive-include \1 *.\2'),
 ]]
 
+CFG_SECTION_CHECK_MANIFEST = 'check-manifest'
+CFG_IGNORE_DEFAULT_RULES = (CFG_SECTION_CHECK_MANIFEST, 'ignore-default-rules')
+CFG_IGNORE = (CFG_SECTION_CHECK_MANIFEST, 'ignore')
+CFG_IGNORE_BAD_IDEAS = (CFG_SECTION_CHECK_MANIFEST, 'ignore-bad-ideas')
+
 
 def read_config():
     """Read configuration from setup.cfg."""
     # XXX modifies global state, which is kind of evil
+    ignore_bad_ideas = []
     config = ConfigParser.ConfigParser()
     config.read(['setup.cfg'])
-    if not config.has_section('check-manifest'):
+    if not config.has_section(CFG_SECTION_CHECK_MANIFEST):
         return
-    if (config.has_option('check-manifest', 'ignore-default-rules')
-            and config.getboolean('check-manifest', 'ignore-default-rules')):
+    if (config.has_option(*CFG_IGNORE_DEFAULT_RULES)
+            and config.getboolean(*CFG_IGNORE_DEFAULT_RULES)):
         del IGNORE[:]
-    if config.has_option('check-manifest', 'ignore'):
-        patterns = [p.strip() for p in config.get('check-manifest',
-                                                  'ignore').splitlines()]
+    if config.has_option(*CFG_IGNORE):
+        patterns = [p.strip() for p in config.get(*CFG_IGNORE).splitlines()]
         IGNORE.extend(p for p in patterns if p)
+    if config.has_option(*CFG_IGNORE_BAD_IDEAS):
+        lines = config.get(*CFG_IGNORE_BAD_IDEAS).splitlines()
+        IGNORE_BAD_IDEAS.extend(line.strip() for line in lines if line)
 
 
 def read_manifest():
@@ -830,13 +840,15 @@ def check_manifest(source_tree='.', create=False, update=False,
                      " matching any of the files, sorry!")
             all_ok = False
         bad_ideas = find_bad_ideas(all_source_files)
-        if bad_ideas:
+        filtered_bad_ideas = [bad_idea for bad_idea in bad_ideas
+                              if not file_matches(bad_idea, IGNORE_BAD_IDEAS)]
+        if filtered_bad_ideas:
             warning("you have %s in source control!\nthat's a bad idea:"
                     " auto-generated files should not be versioned"
-                    % bad_ideas[0])
-            if len(bad_ideas) > 1:
+                    % filtered_bad_ideas[0])
+            if len(filtered_bad_ideas) > 1:
                 warning("this also applies to the following:\n%s"
-                        % format_list(bad_ideas[1:]))
+                        % format_list(filtered_bad_ideas[1:]))
             all_ok = False
     return all_ok
 
@@ -864,10 +876,16 @@ def main():
     parser.add_argument('--ignore', metavar='patterns', default=None,
                         help='ignore files/directories matching these'
                              ' comma-separated patterns')
+    parser.add_argument('--ignore-bad-ideas', metavar='patterns',
+                        default=[], help='ignore bad idea files/directories '
+                        'matching these comma-separated patterns')
     args = parser.parse_args()
 
     if args.ignore:
         IGNORE.extend(args.ignore.split(','))
+
+    if args.ignore_bad_ideas:
+        IGNORE_BAD_IDEAS.extend(args.ignore_bad_ideas.split(','))
 
     if args.verbose:
         global VERBOSE
