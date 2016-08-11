@@ -66,6 +66,9 @@ Command-line reference
                             (default: /home/mg/.venv/bin/python)
       --ignore patterns     ignore files/directories matching these comma-
                             separated patterns (default: None)
+      --ignore-bad-ideas patterns
+                            ignore bad idea files/directories matching these
+                            comma-separated patterns (default: [])
 
 
 Configuration
@@ -99,6 +102,12 @@ ignore
 ignore-default-rules
     If set to ``true``, your ``ignore`` patterns will replace the default
     ignore list instead of adding to it.
+
+ignore-bad-ideas
+    A list of newline separated filename patterns that will be ignored by
+    check-manifest's generated files check.  Use this if you want to keep
+    generated files in your version control system, even though it is generally
+    a bad idea.
 
 
 .. |buildstatus| image:: https://api.travis-ci.org/mgedmin/check-manifest.svg?branch=master
