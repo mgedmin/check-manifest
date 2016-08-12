@@ -544,7 +544,6 @@ CFG_IGNORE_BAD_IDEAS = (CFG_SECTION_CHECK_MANIFEST, 'ignore-bad-ideas')
 def read_config():
     """Read configuration from setup.cfg."""
     # XXX modifies global state, which is kind of evil
-    ignore_bad_ideas = []
     config = ConfigParser.ConfigParser()
     config.read(['setup.cfg'])
     if not config.has_section(CFG_SECTION_CHECK_MANIFEST):
@@ -557,7 +556,8 @@ def read_config():
         IGNORE.extend(p for p in patterns if p)
     if config.has_option(*CFG_IGNORE_BAD_IDEAS):
         lines = config.get(*CFG_IGNORE_BAD_IDEAS).splitlines()
-        IGNORE_BAD_IDEAS.extend(line.strip() for line in lines if line)
+        patterns = [p.strip() for p in lines]
+        IGNORE_BAD_IDEAS.extend(p for p in patterns if p)
 
 
 def read_manifest():
