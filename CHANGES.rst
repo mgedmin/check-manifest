@@ -2,12 +2,14 @@ Changelog
 =========
 
 
-0.32 (unreleased)
+0.32 (2016-08-16)
 -----------------
 
 * New config/command line option to ignore bad ideas (ignore-bad-ideas)
   (`issue #67 <https://github.com/mgedmin/check-manifest/issues/67>`__).
   Contributed by Brecht Machiels.
+
+* Files named ``.hgsigs`` are ignored by default.  Contributed by Jakub Wilk.
 
 
 0.31 (2016-01-28)
