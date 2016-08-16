@@ -5,7 +5,9 @@ Changelog
 0.32 (unreleased)
 -----------------
 
-- Nothing changed yet.
+* New config/command line option to ignore bad ideas (ignore-bad-ideas)
+  (`issue #67 <https://github.com/mgedmin/check-manifest/issues/67>`__).
+  Contributed by Brecht Machiels.
 
 
 0.31 (2016-01-28)
