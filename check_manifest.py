@@ -19,6 +19,7 @@ import argparse
 import fnmatch
 import locale
 import os
+import posixpath
 import re
 import shutil
 import subprocess
@@ -274,7 +275,7 @@ def add_prefix_to_each(prefix, filelist):
         ['foo/bar/a', 'foo/bar/b', 'foo/bar/c/d']
 
     """
-    return [os.path.join(prefix, name) for name in filelist]
+    return [posixpath.join(prefix, name) for name in filelist]
 
 
 class VCS(object):
@@ -302,7 +303,7 @@ class Git(VCS):
         files = cls._git_ls_files()
         submodules = cls._list_submodules()
         for subdir in submodules:
-            subdir = os.path.relpath(subdir)
+            subdir = os.path.relpath(subdir).replace(os.path.sep, '/')
             files += add_prefix_to_each(subdir, cls._git_ls_files(subdir))
         return add_directories(files)
 
