@@ -5,7 +5,9 @@ Changelog
 0.33 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Fix WindowsError due to git submodules in subdirectories
+  (`#73 <https://github.com/mgedmin/check-manifest/pull/73>`__).
+  Contributed by Loren Gordon.
 
 
 0.32 (2016-08-16)
