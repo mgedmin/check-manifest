@@ -945,9 +945,9 @@ class TestGit(VCSMixin, unittest.TestCase):
         self._init_repo_with_files('repo2', ['file3'])
         self._init_repo_with_files('repo3', ['file4'])
         self._add_submodule('repo2', 'sub3', '../repo3')
-        self._init_repo_with_files('main', ['file5'])
+        self._init_repo_with_files('main', ['file5', 'subdir/file6'])
         self._add_submodule('main', 'sub1', '../repo1')
-        self._add_submodule('main', 'sub2', '../repo2')
+        self._add_submodule('main', 'subdir/sub2', '../repo2')
         os.chdir('main')
         self.vcs._run('git', 'submodule', 'update', '--init', '--recursive')
         self.assertEqual(
@@ -958,11 +958,13 @@ class TestGit(VCSMixin, unittest.TestCase):
                 'sub1',
                 'sub1/file1',
                 'sub1/file2',
-                'sub2',
-                'sub2/.gitmodules',
-                'sub2/file3',
-                'sub2/sub3',
-                'sub2/sub3/file4',
+                'subdir',
+                'subdir/file6',
+                'subdir/sub2',
+                'subdir/sub2/.gitmodules',
+                'subdir/sub2/file3',
+                'subdir/sub2/sub3',
+                'subdir/sub2/sub3/file4',
             ]])
 
 
@@ -1031,7 +1033,6 @@ class TestHg(VCSMixin, unittest.TestCase):
         from check_manifest import Bazaar
         mock_stdout.encoding = 'cp0'
         self.assertEqual(Bazaar._get_terminal_encoding(), None)
-
 
 
 class SvnHelper(VCSHelper):
