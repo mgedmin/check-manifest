@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.33 (unreleased)
+0.33 (2016-08-29)
 -----------------
 
 - Fix WindowsError due to git submodules in subdirectories
