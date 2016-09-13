@@ -179,7 +179,24 @@ def mkdtemp(hint=''):
     try:
         yield dirname
     finally:
-        shutil.rmtree(dirname)
+        rmtree(dirname)
+
+
+def rmtree(path):
+    """A version of rmtree that can remove read-only files on Windows.
+
+    Needed because the stock shutil.rmtree() fails with an access error
+    when there are read-only files in the directory.
+    """
+    def onerror(func, path, exc_info):
+        if func is os.remove or func is os.unlink:
+            # Did you know what on Python 3.3 on Windows os.remove() and
+            # os.unlink() are distinct functions?
+            os.chmod(path, 0o644)
+            func(path)
+        else:
+            raise
+    shutil.rmtree(path, onerror=onerror)
 
 
 def copy_files(filelist, destdir):

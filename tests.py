@@ -24,25 +24,10 @@ except ImportError:
 
 import mock
 
+from check_manifest import rmtree
+
 
 CAN_SKIP_TESTS = os.getenv('SKIP_NO_TESTS', '') == ''
-
-
-def rmtree(path):
-    """A version of rmtree that can remove read-only files on Windows.
-
-    Needed because the stock shutil.rmtree() fails with an access error
-    due to the files in .git/objects being read-only.
-    """
-    def onerror(func, path, exc_info):
-        if func is os.remove or func is os.unlink:
-            # Did you know what on Python 3.3 on Windows os.remove() and
-            # os.unlink() are distinct functions?
-            os.chmod(path, 0o644)
-            func(path)
-        else:
-            raise
-    shutil.rmtree(path, onerror=onerror)
 
 
 class Tests(unittest.TestCase):
