@@ -2,10 +2,11 @@ Changelog
 =========
 
 
-0.34 (unreleased)
+0.34 (2016-09-14)
 -----------------
 
-- Nothing changed yet.
+- Fix WindowsError due to presence of read-only files
+  (`#74 <https://github.com/mgedmin/check-manifest/issues/74>`__).
 
 
 0.33 (2016-08-29)
