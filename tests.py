@@ -85,6 +85,15 @@ class Tests(unittest.TestCase):
             '\n%r does not start with\n%r' % (str(cm.exception),
                                               should_start_with))
 
+    def test_mkdtemp_readonly_files(self):
+        from check_manifest import mkdtemp
+        with mkdtemp(hint='-test-readonly') as d:
+            fn = os.path.join(d, 'file.txt')
+            with open(fn, 'w'):
+                pass
+            os.chmod(fn, 0o444)  # readonly
+        assert not os.path.exists(d)
+
     def test_copy_files(self):
         from check_manifest import copy_files
         actions = []
