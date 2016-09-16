@@ -408,14 +408,23 @@ class Tests(unittest.TestCase):
 
     def test_glob_to_regexp(self):
         from check_manifest import _glob_to_regexp as g2r
-        sep = r'\\' if os.path.sep == '\\' else os.path.sep
-        self.assertEqual(g2r('foo.py'), r'foo\.py\Z(?ms)')
-        self.assertEqual(g2r('foo/bar.py'), r'foo\/bar\.py\Z(?ms)')
-        self.assertEqual(g2r('foo*.py'), r'foo[^%s]*\.py\Z(?ms)' % sep)
-        self.assertEqual(g2r('foo?.py'), r'foo[^%s]\.py\Z(?ms)' % sep)
-        self.assertEqual(g2r('foo[123].py'), r'foo[123]\.py\Z(?ms)')
-        self.assertEqual(g2r('foo[!123].py'), r'foo[^123]\.py\Z(?ms)')
-        self.assertEqual(g2r('foo/*.py'), r'foo\/[^%s]*\.py\Z(?ms)' % sep)
+        sep = os.path.sep.replace('\\', '\\\\')
+        if sys.version_info >= (3, 6):
+            self.assertEqual(g2r('foo.py'), r'(?s:foo\.py)\Z')
+            self.assertEqual(g2r('foo/bar.py'), r'(?s:foo\/bar\.py)\Z')
+            self.assertEqual(g2r('foo*.py'), r'(?s:foo[^%s]*\.py)\Z' % sep)
+            self.assertEqual(g2r('foo?.py'), r'(?s:foo[^%s]\.py)\Z' % sep)
+            self.assertEqual(g2r('foo[123].py'), r'(?s:foo[123]\.py)\Z')
+            self.assertEqual(g2r('foo[!123].py'), r'(?s:foo[^123]\.py)\Z')
+            self.assertEqual(g2r('foo/*.py'), r'(?s:foo\/[^%s]*\.py)\Z' % sep)
+        else:
+            self.assertEqual(g2r('foo.py'), r'foo\.py\Z(?ms)')
+            self.assertEqual(g2r('foo/bar.py'), r'foo\/bar\.py\Z(?ms)')
+            self.assertEqual(g2r('foo*.py'), r'foo[^%s]*\.py\Z(?ms)' % sep)
+            self.assertEqual(g2r('foo?.py'), r'foo[^%s]\.py\Z(?ms)' % sep)
+            self.assertEqual(g2r('foo[123].py'), r'foo[123]\.py\Z(?ms)')
+            self.assertEqual(g2r('foo[!123].py'), r'foo[^123]\.py\Z(?ms)')
+            self.assertEqual(g2r('foo/*.py'), r'foo\/[^%s]*\.py\Z(?ms)' % sep)
 
     def test_get_ignore_from_manifest_lines(self):
         from check_manifest import _get_ignore_from_manifest_lines as parse
