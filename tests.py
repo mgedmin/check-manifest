@@ -7,15 +7,11 @@ import sys
 import tarfile
 import tempfile
 import textwrap
+import unittest
 import zipfile
 from contextlib import closing
 from io import BytesIO
 from xml.etree import cElementTree as ET
-
-try:
-    import unittest2 as unittest    # Python 2.6
-except ImportError:
-    import unittest
 
 try:
     from cStringIO import StringIO  # Python 2.x
@@ -789,11 +785,7 @@ class VCSHelper(object):
         if rc:
             print(' '.join(command))
             print(stdout)
-            try:
-                raise subprocess.CalledProcessError(rc, command[0], output=stdout)
-            except TypeError:
-                # BBB Python 2.6
-                raise subprocess.CalledProcessError(rc, command[0])
+            raise subprocess.CalledProcessError(rc, command[0], output=stdout)
 
 
 class VCSMixin(object):
