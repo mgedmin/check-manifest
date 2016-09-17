@@ -1,7 +1,6 @@
 import doctest
 import locale
 import os
-import shutil
 import subprocess
 import sys
 import tarfile
@@ -551,7 +550,7 @@ class TestConfiguration(unittest.TestCase):
         check_manifest.IGNORE_REGEXPS = self.OLD_IGNORE_REGEXPS
         check_manifest.IGNORE_BAD_IDEAS = self.OLD_IGNORE_BAD_IDEAS
         os.chdir(self.oldpwd)
-        shutil.rmtree(self.tmpdir)
+        rmtree(self.tmpdir)
 
     def test_read_config_no_config(self):
         import check_manifest
