@@ -190,7 +190,7 @@ def rmtree(path):
     when there are read-only files in the directory.
     """
     def onerror(func, path, exc_info):
-        if func is os.remove or func is os.unlink:
+        if func is os.remove or func is os.unlink:  # pragma: nocover
             # Did you know what on Python 3.3 on Windows os.remove() and
             # os.unlink() are distinct functions?
             os.chmod(path, 0o644)
