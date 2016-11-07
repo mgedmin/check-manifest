@@ -935,7 +935,7 @@ def zest_releaser_check(data):
         return
     try:
         if not check_manifest(source_tree):
-            if not ask("MANIFEST.in is not in order. "
+            if not ask("MANIFEST.in has problems. "
                        " Do you want to continue despite that?", default=False):
                 sys.exit(1)
     except Failure as e:
