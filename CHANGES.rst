@@ -5,7 +5,7 @@ Changelog
 0.35 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Python 3.6 support.
 
 
 0.34 (2016-09-14)
