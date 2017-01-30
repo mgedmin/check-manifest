@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.35 (unreleased)
+0.35 (2017-01-30)
 -----------------
 
 - Python 3.6 support.
