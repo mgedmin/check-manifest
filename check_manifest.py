@@ -596,7 +596,7 @@ def _glob_to_regexp(pat):
     """Compile a glob pattern into a regexp.
 
     We need to do this because fnmatch allows * to match /, which we
-    don't want.  E.g. an MANIFEST.in exclude of 'dirname/*css' should
+    don't want.  E.g. a MANIFEST.in exclude of 'dirname/*css' should
     match 'dirname/foo.css' but not 'dirname/subdir/bar.css'.
     """
     return glob_to_re(pat)
