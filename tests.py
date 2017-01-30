@@ -1,3 +1,4 @@
+import codecs
 import doctest
 import locale
 import os
@@ -23,6 +24,15 @@ from check_manifest import rmtree
 
 
 CAN_SKIP_TESTS = os.getenv('SKIP_NO_TESTS', '') == ''
+
+
+try:
+    codecs.lookup('oem')
+except LookupError:
+    HAS_OEM_CODEC = False
+else:
+    # Python >= 3.6 on Windows
+    HAS_OEM_CODEC = True
 
 
 class Tests(unittest.TestCase):
@@ -981,24 +991,9 @@ class TestBzr(VCSMixin, unittest.TestCase):
     vcs = BzrHelper()
 
 
-class HgHelper(VCSHelper):
-
-    command = 'hg'
-
-    def _init_vcs(self):
-        self._run('hg', 'init')
-        with open('.hg/hgrc', 'a') as f:
-            f.write('\n[ui]\nusername = Unit Test <test@example.com\n')
-
-    def _add_to_vcs(self, filenames):
-        self._run('hg', 'add', '--', *filenames)
-
-    def _commit(self):
-        self._run('hg', 'commit', '-m', 'Initial')
-
-
-class TestHg(VCSMixin, unittest.TestCase):
-    vcs = HgHelper()
+@unittest.skipIf(HAS_OEM_CODEC,
+                 "Python 3.6 lets us use 'oem' codec instead of guessing")
+class TestBzrTerminalCharsetDetectionOnOldPythons(unittest.TestCase):
 
     @mock.patch('sys.stdin')
     @mock.patch('sys.stdout')
@@ -1027,6 +1022,35 @@ class TestHg(VCSMixin, unittest.TestCase):
         from check_manifest import Bazaar
         mock_stdout.encoding = 'cp0'
         self.assertEqual(Bazaar._get_terminal_encoding(), None)
+
+
+@unittest.skipIf(not HAS_OEM_CODEC,
+                 "'oem' codec not available on Python before 3.6")
+class TestBzrTerminalCharsetDetectionOnNewPythons(unittest.TestCase):
+
+    def test_terminal_encoding_cp0(self):
+        from check_manifest import Bazaar
+        self.assertEqual(Bazaar._get_terminal_encoding(), "oem")
+
+
+class HgHelper(VCSHelper):
+
+    command = 'hg'
+
+    def _init_vcs(self):
+        self._run('hg', 'init')
+        with open('.hg/hgrc', 'a') as f:
+            f.write('\n[ui]\nusername = Unit Test <test@example.com\n')
+
+    def _add_to_vcs(self, filenames):
+        self._run('hg', 'add', '--', *filenames)
+
+    def _commit(self):
+        self._run('hg', 'commit', '-m', 'Initial')
+
+
+class TestHg(VCSMixin, unittest.TestCase):
+    vcs = HgHelper()
 
 
 class SvnHelper(VCSHelper):

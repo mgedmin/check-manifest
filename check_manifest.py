@@ -16,6 +16,7 @@ MANIFEST.in to be included nevertheless.
 from __future__ import print_function
 
 import argparse
+import codecs
 import fnmatch
 import locale
 import os
@@ -359,6 +360,15 @@ class Bazaar(VCS):
 
     @classmethod
     def _get_terminal_encoding(self):
+        # Python 3.6 lets us name the OEM codepage directly, which is lucky
+        # because it also breaks our old method of OEM codepage detection
+        # (PEP-528 changed sys.stdout.encoding to UTF-8).
+        try:
+            codecs.lookup('oem')
+        except LookupError:
+            pass
+        else:
+            return 'oem'
         # Based on bzrlib.osutils.get_terminal_encoding()
         encoding = getattr(sys.stdout, 'encoding', None)
         if not encoding:
