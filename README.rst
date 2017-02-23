@@ -97,6 +97,7 @@ ignore
         .hgignore
         .gitignore
         .bzrignore
+        Jenkinsfile
         *.mo
 
 ignore-default-rules
