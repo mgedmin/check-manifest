@@ -94,9 +94,12 @@ ignore
         *.egg-info/*
         setup.cfg
         .hgtags
+        .hgsigs
         .hgignore
         .gitignore
         .bzrignore
+        .gitattributes
+        .travis.yml
         Jenkinsfile
         *.mo
 
