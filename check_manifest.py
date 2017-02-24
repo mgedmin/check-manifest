@@ -515,6 +515,7 @@ IGNORE = [
     '.hgtags', '.hgsigs', '.hgignore', '.gitignore', '.bzrignore',
     '.gitattributes',
     '.travis.yml',
+    'Jenkinsfile',
     # it's convenient to ship compiled .mo files in sdists, but they shouldn't
     # be checked in
     '*.mo',

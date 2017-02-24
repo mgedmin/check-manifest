@@ -100,6 +100,7 @@ ignore
         .bzrignore
         .gitattributes
         .travis.yml
+        Jenkinsfile
         *.mo
 
 ignore-default-rules
