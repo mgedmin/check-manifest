@@ -318,6 +318,20 @@ class Git(VCS):
 
     @classmethod
     def get_versioned_files(cls):
+        try:
+            return cls.get_versioned_files_new_git()
+        except Failure:
+            return cls.get_versioned_files_old_git()
+
+    @classmethod
+    def get_versioned_files_new_git(cls):
+        """List all files versioned by git in the current directory."""
+        # git ls-files supports --recurse-submodules since Git v2.11
+        files = cls._git_ls_files(extra_args=['--recurse-submodules'])
+        return add_directories(files)
+
+    @classmethod
+    def get_versioned_files_old_git(cls):
         """List all files versioned by git in the current directory."""
         files = cls._git_ls_files()
         submodules = cls._list_submodules()
@@ -327,8 +341,9 @@ class Git(VCS):
         return add_directories(files)
 
     @classmethod
-    def _git_ls_files(cls, cwd=None):
-        output = run(['git', 'ls-files', '-z'], encoding=cls._encoding, cwd=cwd)
+    def _git_ls_files(cls, cwd=None, extra_args=()):
+        output = run(['git', 'ls-files', '-z'] + list(extra_args),
+                     encoding=cls._encoding, cwd=cwd)
         return output.rstrip('\0').split('\0')
 
     @classmethod
@@ -341,6 +356,9 @@ class Git(VCS):
         # there's no .gitmodules file.
         if not os.path.exists('.gitmodules'):
             return []
+        # Bug: git submodule will print /paths/like/this when you run it from
+        # an msys shell (like Git Bash), and we will fail then.  See
+        # https://github.com/mgedmin/check-manifest/issues/64
         return run(['git', 'submodule', '--quiet', 'foreach', '--recursive',
                     'printf "%s/%s\\n" $toplevel $path'], encoding=cls._encoding).splitlines()
 
