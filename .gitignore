@@ -6,3 +6,4 @@ dist/
 tmp/
 .coverage
 build/
+tags
