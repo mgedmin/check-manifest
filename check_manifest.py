@@ -933,7 +933,7 @@ def zest_releaser_check(data):
     """Check the completeness of MANIFEST.in before the release.
 
     This is an entry point for zest.releaser.  See the documentation at
-    http://zestreleaser.readthedocs.org/en/latest/entrypoints.html
+    https://zestreleaser.readthedocs.io/en/latest/entrypoints.html
     """
     from zest.releaser.utils import ask
     source_tree = data['workingdir']
