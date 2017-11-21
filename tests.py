@@ -99,6 +99,38 @@ class Tests(unittest.TestCase):
             os.chmod(fn, 0o444)  # readonly
         assert not os.path.exists(d)
 
+    def test_rmtree_unreadable_directories(self):
+        d = self.make_temp_dir()
+        sd = os.path.join(d, 'subdir')
+        os.mkdir(sd)
+        os.chmod(sd, 0)  # a bad mode for a directory, oops
+        # The onerror API of shutil.rmtree doesn't let us recover from
+        # os.listdir() failures.
+        with self.assertRaises(OSError):
+            rmtree(sd)
+        os.chmod(sd, 0o755)  # so we can clean up
+
+    def test_rmtree_readonly_directories(self):
+        d = self.make_temp_dir()
+        sd = os.path.join(d, 'subdir')
+        fn = os.path.join(sd, 'file.txt')
+        os.mkdir(sd)
+        open(fn, 'w').close()
+        os.chmod(sd, 0o444)  # a bad mode for a directory, oops
+        rmtree(sd)
+        assert not os.path.exists(sd)
+
+    def test_rmtree_readonly_directories_and_files(self):
+        d = self.make_temp_dir()
+        sd = os.path.join(d, 'subdir')
+        fn = os.path.join(sd, 'file.txt')
+        os.mkdir(sd)
+        open(fn, 'w').close()
+        os.chmod(fn, 0o444)  # readonly
+        os.chmod(sd, 0o444)  # a bad mode for a directory, oops
+        rmtree(sd)
+        assert not os.path.exists(sd)
+
     def test_copy_files(self):
         from check_manifest import copy_files
         actions = []

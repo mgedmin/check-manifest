@@ -23,6 +23,7 @@ import os
 import posixpath
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tarfile
@@ -184,17 +185,30 @@ def mkdtemp(hint=''):
         rmtree(dirname)
 
 
+def chmod_plus(path, add_bits=stat.S_IWUSR):
+    """Change a file's mode by adding a few bits.
+
+    Like chmod +<bits> <path> in a Unix shell.
+    """
+    try:
+        os.chmod(path, stat.S_IMODE(os.stat(path).st_mode) | add_bits)
+    except OSError:  # pragma: nocover
+        pass  # well, we tried
+
+
 def rmtree(path):
-    """A version of rmtree that can remove read-only files on Windows.
+    """A version of rmtree that can deal with read-only files and directories.
 
     Needed because the stock shutil.rmtree() fails with an access error
-    when there are read-only files in the directory.
+    when there are read-only files in the directory on Windows, or when the
+    directory itself is read-only on Unix.
     """
     def onerror(func, path, exc_info):
-        if func is os.remove or func is os.unlink:  # pragma: nocover
-            # Did you know what on Python 3.3 on Windows os.remove() and
-            # os.unlink() are distinct functions?
-            os.chmod(path, 0o644)
+        # Did you know what on Python 3.3 on Windows os.remove() and
+        # os.unlink() are distinct functions?
+        if func is os.remove or func is os.unlink:
+            chmod_plus(os.path.dirname(path), stat.S_IWUSR | stat.S_IXUSR)
+            chmod_plus(path)
             func(path)
         else:
             raise
