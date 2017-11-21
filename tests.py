@@ -1292,6 +1292,14 @@ class TestCheckManifest(unittest.TestCase):
         self.assertEqual(str(cm.exception),
                          "This is not a Python project (no setup.py).")
 
+    def test_forgot_to_git_add_anything(self):
+        from check_manifest import check_manifest, Failure
+        self._create_repo_with_code(add_to_vcs=False)
+        with self.assertRaises(Failure) as cm:
+            check_manifest()
+        self.assertEqual(str(cm.exception),
+                         "There are no files added to version control!")
+
     def test_all_is_well(self):
         from check_manifest import check_manifest
         self._create_repo_with_code()
