@@ -206,8 +206,9 @@ def rmtree(path):
     def onerror(func, path, exc_info):
         # Did you know what on Python 3.3 on Windows os.remove() and
         # os.unlink() are distinct functions?
-        if func is os.remove or func is os.unlink:
-            chmod_plus(os.path.dirname(path), stat.S_IWUSR | stat.S_IXUSR)
+        if func is os.remove or func is os.unlink or func is os.rmdir:
+            if sys.platform != 'win32':
+                chmod_plus(os.path.dirname(path), stat.S_IWUSR | stat.S_IXUSR)
             chmod_plus(path)
             func(path)
         else:
