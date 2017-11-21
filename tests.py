@@ -99,6 +99,8 @@ class Tests(unittest.TestCase):
             os.chmod(fn, 0o444)  # readonly
         assert not os.path.exists(d)
 
+    @unittest.skipIf(sys.platform == 'win32',
+                     "No POSIX-like unreadable directories on Windows")
     def test_rmtree_unreadable_directories(self):
         d = self.make_temp_dir()
         sd = os.path.join(d, 'subdir')
