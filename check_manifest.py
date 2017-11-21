@@ -329,7 +329,7 @@ class Git(VCS):
     @classmethod
     def _git_ls_files(cls, cwd=None):
         output = run(['git', 'ls-files', '-z'], encoding=cls._encoding, cwd=cwd)
-        return output.rstrip('\0').split('\0')
+        return output.split('\0')[:-1]
 
     @classmethod
     def _list_submodules(cls):
@@ -791,6 +791,8 @@ def check_manifest(source_tree='.', create=False, update=False,
         all_source_files = sorted(get_vcs_files())
         source_files = strip_sdist_extras(all_source_files)
         info_continue(": %d files and directories" % len(source_files))
+        if not all_source_files:
+            raise Failure('There are no files added to version control!')
         info_begin("building an sdist")
         with mkdtemp('-sdist') as tempdir:
             run([python, 'setup.py', 'sdist', '-d', tempdir])

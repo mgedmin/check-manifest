@@ -895,6 +895,11 @@ class VCSMixin(object):
         self._create_and_add_to_vcs([filename])
         self.assertEqual(get_vcs_files(), [filename])
 
+    def test_get_vcs_files_empty(self):
+        from check_manifest import get_vcs_files
+        self._init_vcs()
+        self.assertEqual(get_vcs_files(), [])
+
 
 class GitHelper(VCSHelper):
 

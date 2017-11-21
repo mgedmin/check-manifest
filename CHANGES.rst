@@ -5,7 +5,8 @@ Changelog
 0.36 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Handle empty VCS repositories more gracefully
+  (`#84 <https://github.com/mgedmin/check-manifest/issues/84>`__).
 
 
 0.35 (2017-01-30)
