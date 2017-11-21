@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.36 (unreleased)
+0.36 (2017-11-21)
 -----------------
 
 - Handle empty VCS repositories more gracefully
