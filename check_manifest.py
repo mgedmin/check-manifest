@@ -381,7 +381,7 @@ class Bazaar(VCS):
             codecs.lookup('oem')
         except LookupError:
             pass
-        else:
+        else:  # pragma: nocover
             return 'oem'
         # Based on bzrlib.osutils.get_terminal_encoding()
         encoding = getattr(sys.stdout, 'encoding', None)
