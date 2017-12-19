@@ -6,3 +6,6 @@ include .gitignore
 include .travis.yml
 include appveyor.yml
 include .coveragerc
+
+# added by check_manifest.py
+include *.mk
