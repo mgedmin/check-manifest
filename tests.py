@@ -452,7 +452,15 @@ class Tests(unittest.TestCase):
     def test_glob_to_regexp(self):
         from check_manifest import _glob_to_regexp as g2r
         sep = os.path.sep.replace('\\', '\\\\')
-        if sys.version_info >= (3, 6):
+        if sys.version_info >= (3, 7):
+            self.assertEqual(g2r('foo.py'), r'(?s:foo\.py)\Z')
+            self.assertEqual(g2r('foo/bar.py'), r'(?s:foo/bar\.py)\Z')
+            self.assertEqual(g2r('foo*.py'), r'(?s:foo[^%s]*\.py)\Z' % sep)
+            self.assertEqual(g2r('foo?.py'), r'(?s:foo[^%s]\.py)\Z' % sep)
+            self.assertEqual(g2r('foo[123].py'), r'(?s:foo[123]\.py)\Z')
+            self.assertEqual(g2r('foo[!123].py'), r'(?s:foo[^123]\.py)\Z')
+            self.assertEqual(g2r('foo/*.py'), r'(?s:foo/[^%s]*\.py)\Z' % sep)
+        elif sys.version_info >= (3, 6):
             self.assertEqual(g2r('foo.py'), r'(?s:foo\.py)\Z')
             self.assertEqual(g2r('foo/bar.py'), r'(?s:foo\/bar\.py)\Z')
             self.assertEqual(g2r('foo*.py'), r'(?s:foo[^%s]*\.py)\Z' % sep)
