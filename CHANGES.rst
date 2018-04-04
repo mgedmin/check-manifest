@@ -5,7 +5,7 @@ Changelog
 0.37 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Drop Python 3.3 support.
 
 
 0.36 (2017-11-21)
