@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.37 (unreleased)
+0.37 (2018-04-12)
 -----------------
 
 - Drop Python 3.3 support.
