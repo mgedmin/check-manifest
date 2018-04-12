@@ -7,6 +7,13 @@ Changelog
 
 - Drop Python 3.3 support.
 
+- Support packages using ``setuptools_scm``
+  (`#68 <https://github.com/mgedmin/check-manifest/issues/68>`__).
+
+  Note that ``setuptools_scm`` usually makes MANIFEST.in files obsolete.
+  Having one is helpful only if you intend to build an sdist and then use that
+  sdist to perform further builds, instead of building from a source checkout.
+
 
 0.36 (2017-11-21)
 -----------------

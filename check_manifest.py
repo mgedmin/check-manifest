@@ -788,6 +788,14 @@ def is_package(source_tree='.'):
     return os.path.exists(os.path.join(source_tree, 'setup.py'))
 
 
+def extract_version_from_filename(filename):
+    """Extract version number from sdist filename."""
+    filename = os.path.splitext(os.path.basename(filename))[0]
+    if filename.endswith('.tar'):
+        filename = os.path.splitext(filename)[0]
+    return filename.partition('-')[2]
+
+
 def check_manifest(source_tree='.', create=False, update=False,
                    python=sys.executable):
     """Compare a generated source distribution with list of files in a VCS.
@@ -816,6 +824,7 @@ def check_manifest(source_tree='.', create=False, update=False,
             sdist_files = sorted(normalize_names(strip_sdist_extras(
                 strip_toplevel_name(get_archive_file_list(sdist_filename)))))
             info_continue(": %d files and directories" % len(sdist_files))
+            version = extract_version_from_filename(sdist_filename)
         existing_source_files = list(filter(os.path.exists, all_source_files))
         missing_source_files = sorted(set(all_source_files) - set(existing_source_files))
         if missing_source_files:
@@ -840,6 +849,7 @@ def check_manifest(source_tree='.', create=False, update=False,
             info_begin("building a clean sdist")
             with cd(tempsourcedir):
                 with mkdtemp('-sdist') as tempdir:
+                    os.environ['SETUPTOOLS_SCM_PRETEND_VERSION'] = version
                     run([python, 'setup.py', 'sdist', '-d', tempdir])
                     sdist_filename = get_one_file_in(tempdir)
                     info_continue(": %s" % os.path.basename(sdist_filename))

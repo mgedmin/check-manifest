@@ -449,6 +449,11 @@ class Tests(unittest.TestCase):
             self.assertTrue(is_package('a'))
             self.assertFalse(is_package('b'))
 
+    def test_extract_version_from_filename(self):
+        from check_manifest import extract_version_from_filename as e
+        self.assertEqual(e('dist/foo_bar-1.2.3.dev4+g12345.zip'), '1.2.3.dev4+g12345')
+        self.assertEqual(e('dist/foo_bar-1.2.3.dev4+g12345.tar.gz'), '1.2.3.dev4+g12345')
+
     def test_glob_to_regexp(self):
         from check_manifest import _glob_to_regexp as g2r
         sep = os.path.sep.replace('\\', '\\\\')
