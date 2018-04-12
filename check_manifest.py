@@ -42,7 +42,7 @@ except ImportError:
     import configparser as ConfigParser
 
 
-__version__ = '0.37'
+__version__ = '0.38.dev0'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
 __licence__ = 'MIT'
 __url__ = 'https://github.com/mgedmin/check-manifest'
