@@ -5,7 +5,7 @@ Changelog
 0.38 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Claim Python 3.7 support.
 
 
 0.37 (2018-04-12)

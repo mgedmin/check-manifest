@@ -5,9 +5,13 @@ python:
     - 3.4
     - 3.5
     - 3.6
-    - 3.7-dev
     - pypy
     - pypy3
+matrix:
+    include:
+        - python: 3.7
+          dist: xenial
+          sudo: true
 env:
     - FORCE_TEST_VCS=bzr
     - FORCE_TEST_VCS=git
