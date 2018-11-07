@@ -590,8 +590,7 @@ def read_config():
     """Read configuration from setup.cfg."""
     # XXX modifies global state, which is kind of evil
     config = ConfigParser.ConfigParser()
-    config.read(['setup.cfg'])
-    if not config.has_section(CFG_SECTION_CHECK_MANIFEST):
+    if not _find_config(config):
         return
     if (config.has_option(*CFG_IGNORE_DEFAULT_RULES)
             and config.getboolean(*CFG_IGNORE_DEFAULT_RULES)):
@@ -603,6 +602,18 @@ def read_config():
         lines = config.get(*CFG_IGNORE_BAD_IDEAS).splitlines()
         patterns = [p.strip() for p in lines]
         IGNORE_BAD_IDEAS.extend(p for p in patterns if p)
+
+
+def _find_config(config):
+    """Search setup.cfg and tox.ini for the section '[check-manifest]'.
+    If successful, the file will have been read into the config object."""
+    search_files = ['setup.cfg', 'tox.ini']
+    for filename in search_files:
+        if os.path.isfile(filename) \
+                and config.read([filename]) \
+                and config.has_section(CFG_SECTION_CHECK_MANIFEST):
+                return True
+    return False
 
 
 def read_manifest():
