@@ -714,8 +714,8 @@ def _get_ignore_from_manifest_lines(lines):
                     # of sub directories.  We could use a regexp, but
                     # two ignores seems easier.
                     ignore.append(dirname + os.path.sep + pattern)
-                    ignore.append(dirname + os.path.sep + '*' + os.path.sep +
-                                  pattern)
+                    ignore.append(
+                        dirname + os.path.sep + '*' + os.path.sep + pattern)
         elif cmd == 'prune':
             # rest is considered to be a directory name.  It should
             # not contain a path separator, as it actually has no
@@ -732,8 +732,8 @@ def _get_ignore_from_manifest_lines(lines):
 
 def file_matches(filename, patterns):
     """Does this filename match any of the patterns?"""
-    return any(fnmatch.fnmatch(filename, pat) or
-               fnmatch.fnmatch(os.path.basename(filename), pat)
+    return any(fnmatch.fnmatch(filename, pat)
+               or fnmatch.fnmatch(os.path.basename(filename), pat)
                for pat in patterns)
 
 
