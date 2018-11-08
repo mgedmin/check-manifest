@@ -609,9 +609,9 @@ def _find_config(config):
     If successful, the file will have been read into the config object."""
     search_files = ['setup.cfg', 'tox.ini']
     for filename in search_files:
-        if os.path.isfile(filename) \
-                and config.read([filename]) \
-                and config.has_section(CFG_SECTION_CHECK_MANIFEST):
+        if (os.path.isfile(filename)
+            and config.read([filename])
+                and config.has_section(CFG_SECTION_CHECK_MANIFEST)):
                 return True
     return False
 
