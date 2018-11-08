@@ -1,5 +1,9 @@
 #!/usr/bin/env python
-import os, re, ast, email.utils, sys
+import ast
+import email.utils
+import os
+import re
+import sys
 from setuptools import setup
 
 if sys.version_info < (2, 7):
@@ -38,14 +42,9 @@ setup(
               'linter'],
     classifiers=[
         'Development Status :: 4 - Beta',
-##      'Development Status :: 5 - Production/Stable', eventually...
         'Environment :: Console',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: GNU General Public License (GPL)'
-            if licence.startswith('GPL') else
         'License :: OSI Approved :: MIT License'
-            if licence.startswith('MIT') else
-        'License :: uhh, dunno',  # fail PyPI upload intentionally until fixed
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',

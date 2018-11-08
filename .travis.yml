@@ -18,10 +18,11 @@ env:
     - FORCE_TEST_VCS=hg
     - FORCE_TEST_VCS=svn
 install:
-    - pip install coverage coveralls mock
+    - pip install coverage coveralls mock flake8
 script:
     - SKIP_NO_TESTS=1 coverage run --source=check_manifest setup.py test -q
     - coverage run --source=check_manifest --append check_manifest.py
+    - flake8 *.py
 after_script:
     - coveralls
 notifications:
