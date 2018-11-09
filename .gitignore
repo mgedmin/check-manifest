@@ -1,3 +1,5 @@
+.idea/
+.vscode/
 *.pyc
 __pycache__/
 .tox/
