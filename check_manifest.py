@@ -605,14 +605,20 @@ def read_config():
 
 
 def _find_config(config):
-    """Search setup.cfg and tox.ini for the section '[check-manifest]'.
-    If successful, the file will have been read into the config object."""
+    """Search for a config file and read it.
+
+    Looks for a ``check-manifest`` section in ``setup.cfg`` and ``tox.ini``, in that order.
+    The first file that exists and has that section will be loaded into `config`, which
+    should be a ConfigParser instance.
+
+    Returns ``True`` if a config file with check-manifest configuration was found,
+    ``False`` otherwise.
+    """
     search_files = ['setup.cfg', 'tox.ini']
     for filename in search_files:
-        if (os.path.isfile(filename)
-            and config.read([filename])
+        if (config.read([filename])
                 and config.has_section(CFG_SECTION_CHECK_MANIFEST)):
-                return True
+            return True
     return False
 
 
