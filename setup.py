@@ -4,7 +4,9 @@ import email.utils
 import os
 import re
 import sys
+
 from setuptools import setup
+
 
 if sys.version_info < (2, 7):
     sys.exit("Python 2.7 or newer is required for check-manifest")
@@ -44,7 +46,7 @@ setup(
         'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License'
+        'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
