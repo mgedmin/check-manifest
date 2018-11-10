@@ -287,6 +287,7 @@ class Tests(unittest.TestCase):
     def test_strip_sdist_extras(self):
         from check_manifest import strip_sdist_extras
         filelist = list(map(os.path.normpath, [
+            '.github/ISSUE_TEMPLATE/bug_report.md',
             '.gitignore',
             '.travis.yml',
             'setup.py',
@@ -329,6 +330,7 @@ class Tests(unittest.TestCase):
             recursive-exclude src/zope *.sh
         """)
         filelist = list(map(os.path.normpath, [
+            '.github/ISSUE_TEMPLATE/bug_report.md',
             '.gitignore',
             'setup.py',
             'setup.cfg',

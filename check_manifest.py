@@ -529,6 +529,7 @@ IGNORE = [
     # it's not a problem if the sdist is lacking these files:
     '.hgtags', '.hgsigs', '.hgignore', '.gitignore', '.bzrignore',
     '.gitattributes',
+    '.github/*',    # GitHub template files
     '.travis.yml',
     'Jenkinsfile',
     # it's convenient to ship compiled .mo files in sdists, but they shouldn't
