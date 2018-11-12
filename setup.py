@@ -3,16 +3,9 @@ import ast
 import email.utils
 import os
 import re
-import sys
 
 from setuptools import setup
 
-
-if sys.version_info < (2, 7):
-    sys.exit("Python 2.7 or newer is required for check-manifest")
-
-if (3, 0) <= sys.version_info < (3, 4):
-    sys.exit("Python 3.4 or newer is required for check-manifest")
 
 here = os.path.dirname(__file__)
 
@@ -62,6 +55,7 @@ setup(
     py_modules=['check_manifest'],
     zip_safe=False,
     test_suite='tests.test_suite',
+    python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
     install_requires=[],
     extras_require={
         'test': ['mock'],
