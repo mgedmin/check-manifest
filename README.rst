@@ -99,6 +99,7 @@ ignore
         .gitignore
         .bzrignore
         .gitattributes
+        .github/*
         .travis.yml
         Jenkinsfile
         *.mo

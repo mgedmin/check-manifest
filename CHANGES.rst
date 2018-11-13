@@ -6,6 +6,7 @@ Changelog
 -----------------
 
 - Claim Python 3.7 support.
+- Added GitHub templates to default ignore patterns.
 
 
 0.37 (2018-04-12)
