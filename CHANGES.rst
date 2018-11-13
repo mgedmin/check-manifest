@@ -5,8 +5,9 @@ Changelog
 0.38 (unreleased)
 -----------------
 
-- Claim Python 3.7 support.
+- Python 3.7 support.
 - Added GitHub templates to default ignore patterns.
+- Added reading check-manifest config out of ``tox.ini``.
 
 
 0.37 (2018-04-12)
