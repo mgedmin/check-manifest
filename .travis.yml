@@ -1,18 +1,17 @@
 language: python
-sudo: false
+sudo: required
+dist: xenial
 cache: pip
 python:
     - 2.7
     - 3.4
     - 3.5
     - 3.6
-    - pypy
-    - pypy3
-matrix:
-    include:
-        - python: 3.7
-          dist: xenial
-          sudo: true
+    - 3.7
+    # have to be very specific about pypy versions because
+    # https://github.com/travis-ci/travis-ci/issues/9452
+    - pypy2.7-5.10.0
+    - pypy3.5
 env:
     - FORCE_TEST_VCS=bzr
     - FORCE_TEST_VCS=git
