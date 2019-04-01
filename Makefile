@@ -8,7 +8,7 @@ all:
 
 .PHONY: check test
 test:
-	detox
+	tox -p auto
 check:
 	SKIP_NO_TESTS=1 tox
 
