@@ -287,6 +287,8 @@ class Tests(unittest.TestCase):
     def test_strip_sdist_extras(self):
         from check_manifest import strip_sdist_extras
         filelist = list(map(os.path.normpath, [
+            '.github',
+            '.github/ISSUE_TEMPLATE',
             '.github/ISSUE_TEMPLATE/bug_report.md',
             '.gitignore',
             '.travis.yml',
