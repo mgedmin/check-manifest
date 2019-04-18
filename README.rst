@@ -74,20 +74,30 @@ Command-line reference
 Configuration
 -------------
 
-You can tell check-manifest to ignore certain file patterns by adding a
-``check-manifest`` section to your package's ``setup.cfg``.  Example::
+You can configure check-manifest to ignore certain file patterns using
+a ``[tool.check-manifest]`` section in your ``pyproject.toml`` file or
+a ``[check-manifest]`` section in either ``setup.cfg`` or
+``tox.ini``. Examples::
 
+    # pyproject.toml
+    [tool.check-manifest]
+    ignore = [".travis.yml"]
+
+    # setup.cfg or tox.ini
     [check-manifest]
     ignore =
         .travis.yml
 
+Note that lists are newline separated in the ``setup.cfg`` and
+``tox.ini`` files.
+
 The following options are recognized:
 
 ignore
-    A list of newline separated filename patterns that will be ignored by
-    check-manifest.  Use this if you want to keep files in your version
-    control system that shouldn't be included in your source distributions.
-    The default ignore list is ::
+    A list of filename patterns that will be ignored by check-manifest.
+    Use this if you want to keep files in your version control system
+    that shouldn't be included in your source distributions.  The
+    default ignore list is ::
 
         PKG-INFO
         *.egg-info
@@ -109,10 +119,10 @@ ignore-default-rules
     ignore list instead of adding to it.
 
 ignore-bad-ideas
-    A list of newline separated filename patterns that will be ignored by
-    check-manifest's generated files check.  Use this if you want to keep
-    generated files in your version control system, even though it is generally
-    a bad idea.
+    A list of filename patterns that will be ignored by
+    check-manifest's generated files check.  Use this if you want to
+    keep generated files in your version control system, even though
+    it is generally a bad idea.
 
 
 .. |buildstatus| image:: https://api.travis-ci.org/mgedmin/check-manifest.svg?branch=master
@@ -123,4 +133,3 @@ ignore-bad-ideas
 
 .. |coverage| image:: https://coveralls.io/repos/mgedmin/check-manifest/badge.svg?branch=master
 .. _coverage: https://coveralls.io/r/mgedmin/check-manifest
-

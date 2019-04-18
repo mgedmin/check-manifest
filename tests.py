@@ -618,21 +618,35 @@ class TestConfiguration(unittest.TestCase):
         check_manifest.read_config()
         self.assertEqual(check_manifest.IGNORE, ['default-ignore-rules'])
 
-    def test_read_config_no_section(self):
+    def test_read_setup_config_no_section(self):
         import check_manifest
         with open('setup.cfg', 'w') as f:
             f.write('[pep8]\nignore =\n')
         check_manifest.read_config()
         self.assertEqual(check_manifest.IGNORE, ['default-ignore-rules'])
 
-    def test_read_config_no_option(self):
+    def test_read_pyproject_config_no_section(self):
+        import check_manifest
+        with open('pyproject.toml', 'w') as f:
+            f.write('[tool.pep8]\nignore = []\n')
+        check_manifest.read_config()
+        self.assertEqual(check_manifest.IGNORE, ['default-ignore-rules'])
+
+    def test_read_setup_config_no_option(self):
         import check_manifest
         with open('setup.cfg', 'w') as f:
             f.write('[check-manifest]\n')
         check_manifest.read_config()
         self.assertEqual(check_manifest.IGNORE, ['default-ignore-rules'])
 
-    def test_read_config_extra_ignores(self):
+    def test_read_pyproject_config_no_option(self):
+        import check_manifest
+        with open('pyproject.toml', 'w') as f:
+            f.write('[tool.check-manifest]\n')
+        check_manifest.read_config()
+        self.assertEqual(check_manifest.IGNORE, ['default-ignore-rules'])
+
+    def test_read_setup_config_extra_ignores(self):
         import check_manifest
         with open('setup.cfg', 'w') as f:
             f.write('[check-manifest]\nignore = foo\n  bar\n')
@@ -640,7 +654,15 @@ class TestConfiguration(unittest.TestCase):
         self.assertEqual(check_manifest.IGNORE,
                          ['default-ignore-rules', 'foo', 'bar'])
 
-    def test_read_config_override_ignores(self):
+    def test_read_pyproject_config_extra_ignores(self):
+        import check_manifest
+        with open('pyproject.toml', 'w') as f:
+            f.write('[tool.check-manifest]\nignore = ["foo", "bar"]\n')
+        check_manifest.read_config()
+        self.assertEqual(check_manifest.IGNORE,
+                         ['default-ignore-rules', 'foo', 'bar'])
+
+    def test_read_setup_config_override_ignores(self):
         import check_manifest
         with open('setup.cfg', 'w') as f:
             f.write('[check-manifest]\nignore = foo\n\n  bar\n')
@@ -649,13 +671,30 @@ class TestConfiguration(unittest.TestCase):
         self.assertEqual(check_manifest.IGNORE,
                          ['foo', 'bar'])
 
-    def test_read_config_ignore_bad_ideas(self):
+    def test_read_pyproject_config_override_ignores(self):
+        import check_manifest
+        with open('pyproject.toml', 'w') as f:
+            f.write('[tool.check-manifest]\nignore = ["foo", "bar"]\n')
+            f.write('ignore-default-rules = true\n')
+        check_manifest.read_config()
+        self.assertEqual(check_manifest.IGNORE,
+                         ['foo', 'bar'])
+
+    def test_read_setup_config_ignore_bad_ideas(self):
         import check_manifest
         with open('setup.cfg', 'w') as f:
             f.write('[check-manifest]\n'
                     'ignore-bad-ideas = \n'
                     '  foo\n'
                     '  bar\n')
+        check_manifest.read_config()
+        self.assertEqual(check_manifest.IGNORE_BAD_IDEAS, ['foo', 'bar'])
+
+    def test_read_pyproject_config_ignore_bad_ideas(self):
+        import check_manifest
+        with open('pyproject.toml', 'w') as f:
+            f.write('[tool.check-manifest]\n'
+                    'ignore-bad-ideas = ["foo", "bar"]\n')
         check_manifest.read_config()
         self.assertEqual(check_manifest.IGNORE_BAD_IDEAS, ['foo', 'bar'])
 

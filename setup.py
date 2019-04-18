@@ -60,9 +60,10 @@ setup(
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
     install_requires=[],
     extras_require={
-        'test': ['mock'],
+        'pyproject': ['toml'],
+        'test': ['mock', 'toml'],
     },
-    tests_require=['mock'],
+    tests_require=['mock', 'toml'],
     entry_points={
         'console_scripts': [
             'check-manifest = check_manifest:main',
