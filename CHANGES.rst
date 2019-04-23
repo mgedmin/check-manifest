@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.38 (unreleased)
+0.38 (2019-04-23)
 -----------------
 
 - Add Python 3.7 support.
