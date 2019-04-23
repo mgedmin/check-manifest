@@ -17,7 +17,7 @@ env:
     - FORCE_TEST_VCS=hg
     - FORCE_TEST_VCS=svn
 install:
-    - pip install coverage coveralls mock flake8
+    - pip install coverage coveralls mock flake8 toml
 script:
     - SKIP_NO_TESTS=1 coverage run setup.py test -q
     - coverage report -m
