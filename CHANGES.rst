@@ -6,8 +6,10 @@ Changelog
 -----------------
 
 - Python 3.7 support.
+
 - Added GitHub templates to default ignore patterns.
-- Added reading check-manifest config out of ``tox.ini``.
+
+- Added reading check-manifest config out of ``tox.ini`` or ``pyproject.toml``.
 
 
 0.37 (2018-04-12)
