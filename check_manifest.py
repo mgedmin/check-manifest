@@ -42,6 +42,12 @@ except ImportError:
     import configparser as ConfigParser
 
 
+try:
+    import toml
+except ImportError:
+    toml = None
+
+
 __version__ = '0.38.dev0'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
 __licence__ = 'MIT'
@@ -589,39 +595,64 @@ CFG_IGNORE_BAD_IDEAS = (CFG_SECTION_CHECK_MANIFEST, 'ignore-bad-ideas')
 
 
 def read_config():
-    """Read configuration from setup.cfg."""
+    """Read configuration from file if possible."""
     # XXX modifies global state, which is kind of evil
-    config = ConfigParser.ConfigParser()
-    if not _find_config(config):
-        return
-    if (config.has_option(*CFG_IGNORE_DEFAULT_RULES)
-            and config.getboolean(*CFG_IGNORE_DEFAULT_RULES)):
+    config = _load_config()
+    if config.get(CFG_IGNORE_DEFAULT_RULES[1], False):
         del IGNORE[:]
-    if config.has_option(*CFG_IGNORE):
-        patterns = [p.strip() for p in config.get(*CFG_IGNORE).splitlines()]
-        IGNORE.extend(p for p in patterns if p)
-    if config.has_option(*CFG_IGNORE_BAD_IDEAS):
-        lines = config.get(*CFG_IGNORE_BAD_IDEAS).splitlines()
-        patterns = [p.strip() for p in lines]
-        IGNORE_BAD_IDEAS.extend(p for p in patterns if p)
+    if CFG_IGNORE[1] in config:
+        IGNORE.extend(p for p in config[CFG_IGNORE[1]] if p)
+    if CFG_IGNORE_BAD_IDEAS[1] in config:
+        IGNORE_BAD_IDEAS.extend(p for p in config[CFG_IGNORE_BAD_IDEAS[1]] if p)
 
 
-def _find_config(config):
-    """Search for a config file and read it.
+def _load_config():
+    """Searches for config files, reads them and returns a dictionary
 
-    Looks for a ``check-manifest`` section in ``setup.cfg`` and ``tox.ini``, in that order.
-    The first file that exists and has that section will be loaded into `config`, which
-    should be a ConfigParser instance.
+    Looks for a ``check-manifest`` section in ``pyproject.toml``,
+    ``setup.cfg``, and ``tox.ini``, in that order.  The first file
+    that exists and has that section will be loaded and returned as a
+    dictionary.
 
-    Returns ``True`` if a config file with check-manifest configuration was found,
-    ``False`` otherwise.
     """
+    if os.path.exists("pyproject.toml"):
+        if toml is None:
+            warning("pyproject.toml found but toml package is not installed. "
+                    "To configure with pyproject.toml please install with "
+                    "check-manifest[pyproject].")
+        else:
+            config = toml.load("pyproject.toml")
+            if CFG_SECTION_CHECK_MANIFEST in config.get("tool", {}):
+                return config["tool"][CFG_SECTION_CHECK_MANIFEST]
+
     search_files = ['setup.cfg', 'tox.ini']
+    config_parser = ConfigParser.ConfigParser()
     for filename in search_files:
-        if (config.read([filename])
-                and config.has_section(CFG_SECTION_CHECK_MANIFEST)):
-            return True
-    return False
+        if (config_parser.read([filename])
+                and config_parser.has_section(CFG_SECTION_CHECK_MANIFEST)):
+            config = {}
+
+            if config_parser.has_option(*CFG_IGNORE_DEFAULT_RULES):
+                ignore_defaults = config_parser.getboolean(*CFG_IGNORE_DEFAULT_RULES)
+                config[CFG_IGNORE_DEFAULT_RULES[1]] = ignore_defaults
+
+            if config_parser.has_option(*CFG_IGNORE):
+                patterns = [
+                    p.strip()
+                    for p in config_parser.get(*CFG_IGNORE).splitlines()
+                ]
+                config[CFG_IGNORE[1]] = patterns
+
+            if config_parser.has_option(*CFG_IGNORE_BAD_IDEAS):
+                patterns = [
+                    p.strip()
+                    for p in config_parser.get(*CFG_IGNORE_BAD_IDEAS).splitlines()
+                ]
+                config[CFG_IGNORE_BAD_IDEAS[1]] = patterns
+
+            return config
+
+    return {}
 
 
 def read_manifest():
