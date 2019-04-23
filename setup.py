@@ -57,12 +57,11 @@ setup(
     zip_safe=False,
     test_suite='tests.test_suite',
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*",
-    install_requires=[],
+    install_requires=['toml'],
     extras_require={
-        'pyproject': ['toml'],
-        'test': ['mock', 'toml'],
+        'test': ['mock'],
     },
-    tests_require=['mock', 'toml'],
+    tests_require=['mock'],
     entry_points={
         'console_scripts': [
             'check-manifest = check_manifest:main',

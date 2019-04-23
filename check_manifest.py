@@ -41,11 +41,7 @@ except ImportError:
     # Python 3.x
     import configparser as ConfigParser
 
-
-try:
-    import toml
-except ImportError:
-    toml = None
+import toml
 
 
 __version__ = '0.38.dev0'
@@ -616,14 +612,9 @@ def _load_config():
 
     """
     if os.path.exists("pyproject.toml"):
-        if toml is None:
-            warning("pyproject.toml found but toml package is not installed. "
-                    "To configure with pyproject.toml please install with "
-                    "check-manifest[pyproject].")
-        else:
-            config = toml.load("pyproject.toml")
-            if CFG_SECTION_CHECK_MANIFEST in config.get("tool", {}):
-                return config["tool"][CFG_SECTION_CHECK_MANIFEST]
+        config = toml.load("pyproject.toml")
+        if CFG_SECTION_CHECK_MANIFEST in config.get("tool", {}):
+            return config["tool"][CFG_SECTION_CHECK_MANIFEST]
 
     search_files = ['setup.cfg', 'tox.ini']
     config_parser = ConfigParser.ConfigParser()
