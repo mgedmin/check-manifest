@@ -5,7 +5,9 @@ Changelog
 0.38 (unreleased)
 -----------------
 
-- Python 3.7 support.
+- Add Python 3.7 support.
+
+- Drop Python 3.4 support.
 
 - Added GitHub templates to default ignore patterns.
 
