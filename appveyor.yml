@@ -19,6 +19,9 @@ install:
   - choco install bzr
   - "set PATH=C:\\Program Files (x86)\\Bazaar;%PATH%"
   - bzr --version
+  - git --version
+  - svn --version
+  - hg --version
 
 build: off
 

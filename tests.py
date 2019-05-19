@@ -1394,19 +1394,20 @@ class TestCheckManifest(unittest.TestCase):
     def test_all_is_well(self):
         from check_manifest import check_manifest
         self._create_repo_with_code()
-        self.assertTrue(check_manifest())
+        self.assertTrue(check_manifest(), sys.stderr.getvalue())
 
     def test_relative_pathname(self):
         from check_manifest import check_manifest
         subdir = self._create_repo_with_code_in_subdir()
-        self.assertTrue(check_manifest(subdir))
+        self.assertTrue(check_manifest(subdir), sys.stderr.getvalue())
 
     def test_relative_python(self):
         # https://github.com/mgedmin/check-manifest/issues/36
         from check_manifest import check_manifest
         subdir = self._create_repo_with_code_in_subdir()
         python = os.path.relpath(sys.executable)
-        self.assertTrue(check_manifest(subdir, python=python))
+        self.assertTrue(check_manifest(subdir, python=python),
+                        sys.stderr.getvalue())
 
     def test_python_from_path(self):
         # https://github.com/mgedmin/check-manifest/issues/57
@@ -1418,7 +1419,8 @@ class TestCheckManifest(unittest.TestCase):
                 if shutil.which(python):
                     break
         subdir = self._create_repo_with_code_in_subdir()
-        self.assertTrue(check_manifest(subdir, python=python))
+        self.assertTrue(check_manifest(subdir, python=python),
+                        sys.stderr.getvalue())
 
     def test_suggestions(self):
         from check_manifest import check_manifest

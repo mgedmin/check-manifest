@@ -283,6 +283,9 @@ def strip_toplevel_name(filelist):
         >>> strip_toplevel_name(['a', 'a/b', 'a/c', 'a/c/d'])
         ['b', 'c', 'c/d']
 
+        >>> strip_toplevel_name(['a', 'a/', 'a/b', 'a/c', 'a/c/d'])
+        ['b', 'c', 'c/d']
+
         >>> strip_toplevel_name(['a/b', 'a/c', 'a/c/d'])
         ['b', 'c', 'c/d']
 
@@ -300,7 +303,7 @@ def strip_toplevel_name(filelist):
         if not name.startswith(prefix):
             raise Failure("File doesn't have the common prefix (%s): %s"
                           % (name, prefix))
-    return [name[len(prefix):] for name in names]
+    return [name[len(prefix):] for name in names if name != prefix]
 
 
 def add_prefix_to_each(prefix, filelist):
