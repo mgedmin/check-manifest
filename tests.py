@@ -2,6 +2,7 @@ import codecs
 import doctest
 import locale
 import os
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -1409,11 +1410,15 @@ class TestCheckManifest(unittest.TestCase):
 
     def test_python_from_path(self):
         # https://github.com/mgedmin/check-manifest/issues/57
-        # NB: this test assumes you have a 'python' executable somewhere
-        # in your path.
         from check_manifest import check_manifest
+        # We need a Python interpeter to be in PATH.
+        python = 'python'
+        if hasattr(shutil, 'which'):
+            for python in 'python', 'python3', os.path.basename(sys.executable):
+                if shutil.which(python):
+                    break
         subdir = self._create_repo_with_code_in_subdir()
-        self.assertTrue(check_manifest(subdir, python='python'))
+        self.assertTrue(check_manifest(subdir, python=python))
 
     def test_suggestions(self):
         from check_manifest import check_manifest
