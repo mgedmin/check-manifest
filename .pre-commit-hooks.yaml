@@ -1,0 +1,7 @@
+-   id: check-manifest
+    name: check-manifest
+    description: Check the completeness of MANIFEST.in for Python packages.
+    entry: check-manifest
+    language: python
+    pass_filenames: false
+    always_run: true
