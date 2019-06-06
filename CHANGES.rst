@@ -5,7 +5,8 @@ Changelog
 0.39 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- You can now use check-manifest as a `pre-commit <https://pre-commit.com>`_
+  hook (`#100 <https://github.com/mgedmin/check-manifest/issues/100>`__).
 
 
 0.38 (2019-04-23)
