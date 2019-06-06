@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.39 (unreleased)
+0.39 (2019-06-06)
 -----------------
 
 - You can now use check-manifest as a `pre-commit <https://pre-commit.com>`_
