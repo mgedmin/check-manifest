@@ -125,6 +125,21 @@ ignore-bad-ideas
     it is generally a bad idea.
 
 
+Version control integration
+---------------------------
+
+With `pre-commit <https://pre-commit.com>`_, check-manifest can be part of your
+git-workflow. Add the following to your ``.pre-commit-config.yaml``.
+
+.. code-block:: yaml
+
+    repos:
+    -   repo: https://github.com/mgedmin/check-manifest
+        rev: "0.39"
+        hooks:
+        -   id: check-manifest
+
+
 .. |buildstatus| image:: https://api.travis-ci.org/mgedmin/check-manifest.svg?branch=master
 .. _buildstatus: https://travis-ci.org/mgedmin/check-manifest
 
