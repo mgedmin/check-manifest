@@ -1,5 +1,6 @@
 include *.rst
 include *.py
+include *.yaml
 include tox.ini
 include Makefile
 include .gitignore
