@@ -887,13 +887,14 @@ class VCSHelper(object):
         # https://github.com/mgedmin/check-manifest/issues/23#issuecomment-33933031
         if str is bytes:
             command = [s.encode(locale.getpreferredencoding()) for s in command]
+        print('$', ' '.join(command))
         p = subprocess.Popen(command, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         stdout, stderr = p.communicate()
         rc = p.wait()
+        if stdout:
+            print(stdout.decode('ascii', 'backslashreplace'))
         if rc:
-            print(' '.join(command))
-            print(stdout)
             raise subprocess.CalledProcessError(rc, command[0], output=stdout)
 
 
