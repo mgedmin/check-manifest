@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import codecs
 import doctest
 import locale
@@ -893,7 +895,10 @@ class VCSHelper(object):
         stdout, stderr = p.communicate()
         rc = p.wait()
         if stdout:
-            print(stdout.decode('ascii', 'backslashreplace'))
+            print(
+                stdout if isinstance(stdout, str) else
+                stdout.decode('ascii', 'backslashreplace')
+            )
         if rc:
             raise subprocess.CalledProcessError(rc, command[0], output=stdout)
 
