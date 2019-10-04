@@ -59,6 +59,7 @@ class Failure(Exception):
 #
 
 VERBOSE = False
+QUIET = False
 
 _to_be_continued = False
 def _check_tbc():
@@ -69,6 +70,8 @@ def _check_tbc():
 
 
 def info(message):
+    if QUIET:
+        return
     _check_tbc()
     print(message)
 
@@ -996,6 +999,8 @@ def main():
                         version='%(prog)s version ' + __version__)
     parser.add_argument('-v', '--verbose', action='store_true',
         help='more verbose output')
+    parser.add_argument('-q', '--quiet', action='store_true',
+        help='reduced output verbosity')
     parser.add_argument('-c', '--create', action='store_true',
         help='create a MANIFEST.in if missing')
     parser.add_argument('-u', '--update', action='store_true',
@@ -1019,6 +1024,10 @@ def main():
     if args.verbose:
         global VERBOSE
         VERBOSE = True
+
+    if args.quiet:
+        global QUIET
+        QUIET = True
 
     try:
         if not check_manifest(args.source_tree, create=args.create,
