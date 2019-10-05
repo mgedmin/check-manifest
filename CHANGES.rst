@@ -6,7 +6,7 @@ Changelog
 -----------------
 
 - Added ``-q``/``--quiet`` command line argument. This will reduce the verbosity
-of informational output, e.g. for use in a CI pipeline.
+  of informational output, e.g. for use in a CI pipeline.
 
 
 0.39 (2019-06-06)
