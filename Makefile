@@ -19,8 +19,10 @@ coverage:
 .PHONY: distcheck
 distcheck: distcheck-self  # also release.mk will add other checks
 
+DISTCHECK_DIFF_OPTS = $(DISTCHECK_DIFF_DEFAULT_OPTS) -x .github
 include release.mk
 
 .PHONY: distcheck-self
 distcheck-self:
-	$(PYTHON) check_manifest.py
+	tox -e py3 --notest
+	.tox/py3/bin/check-manifest

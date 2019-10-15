@@ -2,10 +2,10 @@ Changelog
 =========
 
 
-0.40 (unreleased)
+0.40 (2019-10-15)
 -----------------
 
-- Add Pyhton 3.8 support.
+- Add Python 3.8 support.
 
 
 0.39 (2019-06-06)
