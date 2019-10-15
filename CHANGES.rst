@@ -5,7 +5,7 @@ Changelog
 0.40 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Add Pyhton 3.8 support.
 
 
 0.39 (2019-06-06)
