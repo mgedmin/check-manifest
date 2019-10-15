@@ -7,7 +7,7 @@ python:
     - 3.5
     - 3.6
     - 3.7
-    - 3.8-dev-dev-dev
+    - 3.8-dev
     - pypy
     - pypy3
 env:
