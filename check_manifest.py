@@ -871,7 +871,8 @@ def check_manifest(source_tree='.', create=False, update=False,
         python = os.path.abspath(python)
     with cd(source_tree):
         if not is_package():
-            raise Failure('This is not a Python project (no setup.py).')
+            raise Failure(
+                'This is not a Python project (no setup.py/pyproject.toml).')
         read_config()
         read_manifest()
         info_begin("listing source files under version control")
