@@ -452,9 +452,11 @@ class Tests(unittest.TestCase):
     def test_is_package(self):
         from check_manifest import is_package
         j = os.path.join
-        with mock.patch('os.path.exists', lambda fn: fn == j('a', 'setup.py')):
+        exists = {j('a', 'setup.py'), j('c', 'pyproject.toml')}
+        with mock.patch('os.path.exists', lambda fn: fn in exists):
             self.assertTrue(is_package('a'))
             self.assertFalse(is_package('b'))
+            self.assertTrue(is_package('c'))
 
     def test_extract_version_from_filename(self):
         from check_manifest import extract_version_from_filename as e
@@ -592,6 +594,24 @@ class Tests(unittest.TestCase):
         self.assertEqual(self.warnings, [
             "%s, line 2: continuation line immediately precedes end-of-file" % filename,
         ])
+
+    def test_build_sdist(self):
+        from check_manifest import build_sdist, cd, get_one_file_in
+        src_dir = self.make_temp_dir()
+        filename = os.path.join(src_dir, 'pyproject.toml')
+        self.create_file(filename, textwrap.dedent('''
+            [build-system]
+            requires = [
+                "setuptools >= 40.6.0",
+                "wheel",
+            ]
+            build-backend = "setuptools.build_meta"
+        '''))
+        out_dir = self.make_temp_dir()
+        python = os.path.abspath(sys.executable)
+        with cd(src_dir):
+            build_sdist(out_dir, python=python)
+        self.assertTrue(get_one_file_in(out_dir))
 
 
 class TestConfiguration(unittest.TestCase):
@@ -1386,8 +1406,9 @@ class TestCheckManifest(unittest.TestCase):
         from check_manifest import check_manifest, Failure
         with self.assertRaises(Failure) as cm:
             check_manifest()
-        self.assertEqual(str(cm.exception),
-                         "This is not a Python project (no setup.py).")
+        self.assertEqual(
+            str(cm.exception),
+            "This is not a Python project (no setup.py/pyproject.toml).")
 
     def test_forgot_to_git_add_anything(self):
         from check_manifest import check_manifest, Failure

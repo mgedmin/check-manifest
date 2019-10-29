@@ -5,7 +5,10 @@ Changelog
 0.41 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Support `PEP 517`_, i.e. packages using pyproject.toml instead of a setup.py
+  (`#105 <https://github.com/mgedmin/check-manifest/issue/105>`_).
+
+.. _PEP 517: https://www.python.org/dev/peps/pep-0517/
 
 
 0.40 (2019-10-15)

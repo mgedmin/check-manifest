@@ -58,7 +58,7 @@ setup(
     zip_safe=False,
     test_suite='tests.test_suite',
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*",
-    install_requires=['toml'],
+    install_requires=['toml', 'pep517'],
     extras_require={
         'test': ['mock'],
     },
