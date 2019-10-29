@@ -827,9 +827,12 @@ def is_package(source_tree='.'):
     """Is the directory the root of a Python package?
 
     Note: the term "package" here refers to a collection of files
-    with a setup.py, not to a directory with an __init__.py.
+    with a setup.py/pyproject.toml, not to a directory with an __init__.py.
     """
-    return os.path.exists(os.path.join(source_tree, 'setup.py'))
+    return (
+        os.path.exists(os.path.join(source_tree, 'setup.py'))
+        or os.path.exists(os.path.join(source_tree, 'pyproject.toml'))
+    )
 
 
 def extract_version_from_filename(filename):
@@ -838,6 +841,23 @@ def extract_version_from_filename(filename):
     if filename.endswith('.tar'):
         filename = os.path.splitext(filename)[0]
     return filename.partition('-')[2]
+
+
+def build_sdist(tempdir, python=sys.executable):
+    """Build a source distribution in a temporary directory.
+
+    Should be run with the current working directory inside the Python package
+    you want to build.
+    """
+    if os.path.exists('pyproject.toml'):
+        # I could do this in-process with
+        #   import pep517.envbuild
+        #   pep517.envbuild.build_sdist('.', tempdir)
+        # but then it would print a bunch of things to stdout and I'd have to
+        # worry about exceptions
+        run([python, '-m', 'pep517.build', '--source', '-o', tempdir, '.'])
+    else:
+        run([python, 'setup.py', 'sdist', '-d', tempdir])
 
 
 def check_manifest(source_tree='.', create=False, update=False,
@@ -862,7 +882,7 @@ def check_manifest(source_tree='.', create=False, update=False,
             raise Failure('There are no files added to version control!')
         info_begin("building an sdist")
         with mkdtemp('-sdist') as tempdir:
-            run([python, 'setup.py', 'sdist', '-d', tempdir])
+            build_sdist(tempdir, python=python)
             sdist_filename = get_one_file_in(tempdir)
             info_continue(": %s" % os.path.basename(sdist_filename))
             sdist_files = sorted(normalize_names(strip_sdist_extras(
@@ -877,24 +897,19 @@ def check_manifest(source_tree='.', create=False, update=False,
         info_begin("copying source files to a temporary directory")
         with mkdtemp('-sources') as tempsourcedir:
             copy_files(existing_source_files, tempsourcedir)
-            if os.path.exists('MANIFEST.in') and 'MANIFEST.in' not in source_files:
-                # See https://github.com/mgedmin/check-manifest/issues/7
-                # if do this, we will emit a warning about MANIFEST.in not
-                # being in source control, if we don't do this, the user
-                # gets confused about their new manifest rules being
-                # ignored.
-                copy_files(['MANIFEST.in'], tempsourcedir)
-            if 'setup.py' not in source_files:
-                # See https://github.com/mgedmin/check-manifest/issues/46
-                # if do this, we will emit a warning about setup.py not
-                # being in source control, if we don't do this, the user
-                # gets a scary error
-                copy_files(['setup.py'], tempsourcedir)
+            for filename in 'MANIFEST.in', 'setup.py', 'pyproject.toml':
+                if filename not in source_files and os.path.exists(filename):
+                    # See https://github.com/mgedmin/check-manifest/issues/7
+                    # and https://github.com/mgedmin/check-manifest/issues/46:
+                    # if we do this, the user gets a warning about files
+                    # missing from source control; if we don't do this,
+                    # things get very confusing for the user!
+                    copy_files([filename], tempsourcedir)
             info_begin("building a clean sdist")
             with cd(tempsourcedir):
                 with mkdtemp('-sdist') as tempdir:
                     os.environ['SETUPTOOLS_SCM_PRETEND_VERSION'] = version
-                    run([python, 'setup.py', 'sdist', '-d', tempdir])
+                    build_sdist(tempdir, python=python)
                     sdist_filename = get_one_file_in(tempdir)
                     info_continue(": %s" % os.path.basename(sdist_filename))
                     clean_sdist_files = sorted(normalize_names(strip_sdist_extras(
