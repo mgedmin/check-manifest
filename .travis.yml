@@ -1,6 +1,4 @@
 language: python
-sudo: required
-dist: xenial
 cache: pip
 python:
     - 2.7
