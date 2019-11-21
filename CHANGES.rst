@@ -6,7 +6,7 @@ Changelog
 -----------------
 
 - Support `PEP 517`_, i.e. packages using pyproject.toml instead of a setup.py
-  (`#105 <https://github.com/mgedmin/check-manifest/issue/105>`_).
+  (`#105 <https://github.com/mgedmin/check-manifest/issues/105>`_).
 
 .. _PEP 517: https://www.python.org/dev/peps/pep-0517/
 
