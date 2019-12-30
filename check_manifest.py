@@ -148,15 +148,16 @@ def run(command, encoding=None, decode=True, cwd=None):
         with open(os.devnull, 'rb') as devnull:
             pipe = subprocess.Popen(command, stdin=devnull,
                                     stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT, cwd=cwd)
+                                    stderr=subprocess.PIPE, cwd=cwd)
     except OSError as e:
         raise Failure("could not run %s: %s" % (command, e))
-    output = pipe.communicate()[0]
+    output, stderr = pipe.communicate()
     if decode:
         output = output.decode(encoding)
+    stderr = stderr.decode(encoding, 'replace')
     status = pipe.wait()
     if status != 0:
-        raise CommandFailed(command, status, output)
+        raise CommandFailed(command, status, output + stderr)
     return output
 
 

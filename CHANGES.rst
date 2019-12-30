@@ -10,6 +10,10 @@ Changelog
 
 .. _PEP 517: https://www.python.org/dev/peps/pep-0517/
 
+- Ignore subcommand stderr unless the subcommand fails.  This avoids treating
+  warning messages as filenames.  (`#110
+  <https://github.com/mgedmin/check-manifest/issues/110>`_.)
+
 
 0.40 (2019-10-15)
 -----------------
