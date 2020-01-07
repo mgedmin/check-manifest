@@ -844,13 +844,29 @@ def extract_version_from_filename(filename):
     return filename.partition('-')[2]
 
 
+def should_use_pep_517():
+    """Check if the project uses PEP-517 builds."""
+    # https://www.python.org/dev/peps/pep-0517/#build-system-table says
+    # "If the pyproject.toml file is absent, or the build-backend key is
+    # missing, the source tree is not using this specification, and tools
+    # should revert to the legacy behaviour of running setup.py".
+    if not os.path.exists('pyproject.toml'):
+        return False
+    config = toml.load("pyproject.toml")
+    if "build-system" not in config:
+        return False
+    if "build-backend" not in config["build-system"]:
+        return False
+    return True
+
+
 def build_sdist(tempdir, python=sys.executable):
     """Build a source distribution in a temporary directory.
 
     Should be run with the current working directory inside the Python package
     you want to build.
     """
-    if os.path.exists('pyproject.toml'):
+    if should_use_pep_517():
         # I could do this in-process with
         #   import pep517.envbuild
         #   pep517.envbuild.build_sdist('.', tempdir)

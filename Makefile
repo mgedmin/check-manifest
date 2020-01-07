@@ -16,6 +16,11 @@ check:
 coverage:
 	tox -e coverage
 
+.PHONY: diff-cover
+diff-cover: coverage
+	coverage xml
+	diff-cover coverage.xml
+
 .PHONY: distcheck
 distcheck: distcheck-self  # also release.mk will add other checks
 

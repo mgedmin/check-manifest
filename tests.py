@@ -595,6 +595,51 @@ class Tests(unittest.TestCase):
             "%s, line 2: continuation line immediately precedes end-of-file" % filename,
         ])
 
+    def test_should_use_pep517_no_pyproject_toml(self):
+        from check_manifest import should_use_pep_517, cd
+        src_dir = self.make_temp_dir()
+        with cd(src_dir):
+            self.assertFalse(should_use_pep_517())
+
+    def test_should_use_pep517_no_build_system(self):
+        from check_manifest import should_use_pep_517, cd
+        src_dir = self.make_temp_dir()
+        filename = os.path.join(src_dir, 'pyproject.toml')
+        self.create_file(filename, textwrap.dedent('''
+            [tool.check-manifest]
+        '''))
+        with cd(src_dir):
+            self.assertFalse(should_use_pep_517())
+
+    def test_should_use_pep517_no_build_backend(self):
+        from check_manifest import should_use_pep_517, cd
+        src_dir = self.make_temp_dir()
+        filename = os.path.join(src_dir, 'pyproject.toml')
+        self.create_file(filename, textwrap.dedent('''
+            [build-system]
+            requires = [
+                "setuptools >= 40.6.0",
+                "wheel",
+            ]
+        '''))
+        with cd(src_dir):
+            self.assertFalse(should_use_pep_517())
+
+    def test_should_use_pep517_yes_please(self):
+        from check_manifest import should_use_pep_517, cd
+        src_dir = self.make_temp_dir()
+        filename = os.path.join(src_dir, 'pyproject.toml')
+        self.create_file(filename, textwrap.dedent('''
+            [build-system]
+            requires = [
+                "setuptools >= 40.6.0",
+                "wheel",
+            ]
+            build-backend = "setuptools.build_meta"
+        '''))
+        with cd(src_dir):
+            self.assertTrue(should_use_pep_517())
+
     def test_build_sdist(self):
         from check_manifest import build_sdist, cd, get_one_file_in
         src_dir = self.make_temp_dir()
