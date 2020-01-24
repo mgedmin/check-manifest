@@ -56,13 +56,11 @@ setup(
 
     py_modules=['check_manifest'],
     zip_safe=False,
-    test_suite='tests.test_suite',
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*",
     install_requires=['toml', 'pep517'],
     extras_require={
         'test': ['mock'],
     },
-    tests_require=['mock'],
     entry_points={
         'console_scripts': [
             'check-manifest = check_manifest:main',
