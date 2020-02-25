@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.41 (unreleased)
+0.41 (2020-02-25)
 -----------------
 
 - Support `PEP 517`_, i.e. packages using pyproject.toml instead of a setup.py
