@@ -997,9 +997,9 @@ def main():
         help='location for the source tree')
     parser.add_argument('--version', action='version',
                         version='%(prog)s version ' + __version__)
-    parser.add_argument('--quiet', action='store_const', dest='quiet',
+    parser.add_argument('-q', '--quiet', action='store_const', dest='quiet',
                         const=0, default=1, help='reduced output verbosity')
-    parser.add_argument('--verbose', action='store_const', dest='verbose',
+    parser.add_argument('-v', '--verbose', action='store_const', dest='verbose',
                         const=1, default=0, help='more verbose output')
     parser.add_argument('-c', '--create', action='store_true',
         help='create a MANIFEST.in if missing')

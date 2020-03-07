@@ -845,6 +845,34 @@ class TestMain(unittest.TestCase):
         self.assertEqual(check_manifest.IGNORE_BAD_IDEAS,
                          ['x', 'y', 'z'])
 
+    def test_verbose_arg(self):
+        import check_manifest
+        check_manifest.VERBOSE = False
+        sys.argv.append('--verbose')
+        check_manifest.main()
+        self.assertTrue(check_manifest.VERBOSE)
+        check_manifest.VERBOSE = False
+
+    def test_quiet_arg(self):
+        import check_manifest
+        check_manifest.QUIET = False
+        sys.argv.append('--quiet')
+        check_manifest.main()
+        self.assertTrue(check_manifest.QUIET)
+        check_manifest.QUIET = False
+
+    def test_verbose_and_quiet_arg(self):
+        import check_manifest
+        check_manifest.VERBOSE = False
+        check_manifest.QUIET = False
+        sys.argv.append('--verbose')
+        sys.argv.append('--quiet')
+        check_manifest.main()
+        self.assertFalse(check_manifest.VERBOSE)
+        self.assertFalse(check_manifest.QUIET)
+        check_manifest.VERBOSE = False
+        check_manifest.QUIET = False
+
 
 class TestZestIntegration(unittest.TestCase):
 
@@ -1298,6 +1326,14 @@ class TestUserInterface(UIMixin, unittest.TestCase):
         check_manifest.info("Reticulating splines")
         self.assertEqual(sys.stdout.getvalue(),
                          "Reticulating splines\n")
+
+    def test_info_quiet(self):
+        import check_manifest
+        check_manifest.VERBOSE = False
+        check_manifest.QUIET = True
+        check_manifest.info("Reticulating splines")
+        self.assertEqual(sys.stdout.getvalue(), "")
+        check_manifest.QUIET = False
 
     def test_info_begin_continue_end(self):
         import check_manifest
