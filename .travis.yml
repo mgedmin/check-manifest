@@ -1,12 +1,11 @@
 language: python
-sudo: required
-dist: xenial
 cache: pip
 python:
     - 2.7
     - 3.5
     - 3.6
     - 3.7
+    - 3.8
     - pypy
     - pypy3
 env:
@@ -15,9 +14,11 @@ env:
     - FORCE_TEST_VCS=hg
     - FORCE_TEST_VCS=svn
 install:
-    - pip install coverage coveralls mock flake8 toml
+    - pip install -U pip
+    - pip install coverage coveralls pytest flake8
+    - pip install -e .[test]
 script:
-    - SKIP_NO_TESTS=1 coverage run setup.py test -q
+    - SKIP_NO_TESTS=1 coverage run -m pytest
     - coverage report -m
     - python check_manifest.py
     - flake8 *.py

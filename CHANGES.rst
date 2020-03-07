@@ -2,11 +2,30 @@ Changelog
 =========
 
 
-0.40 (unreleased)
+0.42 (unreleased)
 -----------------
 
 - Added ``-q``/``--quiet`` command line argument. This will reduce the verbosity
   of informational output, e.g. for use in a CI pipeline.
+
+
+0.41 (2020-02-25)
+-----------------
+
+- Support `PEP 517`_, i.e. packages using pyproject.toml instead of a setup.py
+  (`#105 <https://github.com/mgedmin/check-manifest/issues/105>`_).
+
+.. _PEP 517: https://www.python.org/dev/peps/pep-0517/
+
+- Ignore subcommand stderr unless the subcommand fails.  This avoids treating
+  warning messages as filenames.  (`#110
+  <https://github.com/mgedmin/check-manifest/issues/110>`_.)
+
+
+0.40 (2019-10-15)
+-----------------
+
+- Add Python 3.8 support.
 
 
 0.39 (2019-06-06)
