@@ -964,10 +964,10 @@ def main():
         help='location for the source tree')
     parser.add_argument('--version', action='version',
                         version='%(prog)s version ' + __version__)
-    parser.add_argument('-v', '--verbose', action='store_true',
-        help='more verbose output')
-    parser.add_argument('-q', '--quiet', action='store_true',
-        help='reduced output verbosity')
+    parser.add_argument('--quiet', action='store_const', dest='quiet',
+                        const=0, default=1, help='reduced output verbosity')
+    parser.add_argument('--verbose', action='store_const', dest='verbose',
+                        const=1, default=0, help='more verbose output')
     parser.add_argument('-c', '--create', action='store_true',
         help='create a MANIFEST.in if missing')
     parser.add_argument('-u', '--update', action='store_true',
@@ -988,11 +988,11 @@ def main():
     if args.ignore_bad_ideas:
         IGNORE_BAD_IDEAS.extend(args.ignore_bad_ideas.split(','))
 
-    if args.verbose:
+    verbosity = args.quiet + args.verbose
+    if verbosity >= 2:
         global VERBOSE
         VERBOSE = True
-
-    if args.quiet:
+    if not verbosity:
         global QUIET
         QUIET = True
 
