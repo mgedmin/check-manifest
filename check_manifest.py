@@ -33,7 +33,12 @@ import zipfile
 from distutils.filelist import glob_to_re
 from contextlib import contextmanager, closing
 from distutils.text_file import TextFile
-from xml.etree import cElementTree as ET
+
+try:
+    from xml.etree import cElementTree as ET
+except ImportError:
+    # Python 3.9+
+    from xml.etree import ElementTree as ET
 
 try:
     import ConfigParser

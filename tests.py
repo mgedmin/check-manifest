@@ -14,7 +14,7 @@ import unittest
 import zipfile
 from contextlib import closing
 from io import BytesIO
-from xml.etree import cElementTree as ET
+from xml.etree import ElementTree as ET
 
 try:
     from cStringIO import StringIO  # Python 2.x
