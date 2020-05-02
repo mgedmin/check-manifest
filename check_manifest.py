@@ -196,7 +196,7 @@ def mkdtemp(hint=''):
         rmtree(dirname)
 
 
-def chmod_plus(path, add_bits=stat.S_IWUSR):
+def chmod_plus(path, add_bits):
     """Change a file's mode by adding a few bits.
 
     Like chmod +<bits> <path> in a Unix shell.
@@ -220,7 +220,7 @@ def rmtree(path):
         if func is os.remove or func is os.unlink or func is os.rmdir:
             if sys.platform != 'win32':
                 chmod_plus(os.path.dirname(path), stat.S_IWUSR | stat.S_IXUSR)
-            chmod_plus(path)
+            chmod_plus(path, stat.S_IWUSR)
             func(path)
         else:
             raise
