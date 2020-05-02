@@ -210,8 +210,9 @@ class Tests(unittest.TestCase):
     def test_get_archive_file_list_unrecognized_archive(self):
         from check_manifest import get_archive_file_list, Failure
         with self.assertRaises(Failure) as cm:
-            get_archive_file_list('archive.rar')
-        self.assertEqual(str(cm.exception), 'Unrecognized archive type: .rar')
+            get_archive_file_list('/path/to/archive.rar')
+        self.assertEqual(str(cm.exception),
+                         'Unrecognized archive type: archive.rar')
 
     def test_get_archive_file_list_zip(self):
         from check_manifest import get_archive_file_list

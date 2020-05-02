@@ -319,8 +319,8 @@ def get_archive_file_list(archive_filename):
         with closing(tarfile.open(archive_filename)) as tf:
             filelist = map(unicodify, tf.getnames())
     else:
-        ext = os.path.splitext(archive_filename)[-1]
-        raise Failure('Unrecognized archive type: %s' % ext)
+        raise Failure('Unrecognized archive type: %s'
+                      % os.path.basename(archive_filename))
     # Hm, should we normalize_names() here?  Maybe, maybe not.  The only caller
     # of get_archive_file_list() is get_sdist_file_list(), and it calls the
     # normalize_names().
