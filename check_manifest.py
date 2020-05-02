@@ -153,6 +153,7 @@ def run(command, encoding=None, decode=True, cwd=None):
     if not encoding:
         encoding = locale.getpreferredencoding()
     try:
+        # Python 2.7 doesn't have subprocess.DEVNULL
         with open(os.devnull, 'rb') as devnull:
             pipe = subprocess.Popen(command, stdin=devnull,
                                     stdout=subprocess.PIPE,
@@ -259,12 +260,48 @@ def get_one_file_in(dirname):
     return os.path.join(dirname, files[0])
 
 
+#
+# File lists are a fundamental data structure here.  We want them to have
+# the following properties:
+#
+# - contain Unicode filenames (normalized to NFC on OS X)
+# - be sorted
+# - use os.path.sep as the directory separator
+#   (I'm not sure this is done correctly at the moment!)
+# - list directories as well as files (but without trailing slashes)
+#
+# We get these file lists from various sources (zip files, tar files, version
+# control systems) and we have to normalize them into our common format before
+# comparing
+#
+
+
+def get_sdist_file_list(sdist_filename):
+    """Return the list of interesting files in a source distribution.
+
+    Removes extra generated files like PKG-INFO and *.egg-info that are usually
+    present only in the sdist, but not in the VCS.
+
+    Supports .tar.gz and .zip sdists.
+    """
+    # The sorted() is probably redundant here, given that
+    # get_archive_file_list() returns a sorted list, but I'm not 100% sure
+    # normalize_names() won't affect the sort order.
+    # TODO: move normalize_names() into get_archive_file_list(), because
+    # get_vcs_files() first normalizes and then calls
+    # add_directories_and_sort().
+    return sorted(normalize_names(strip_sdist_extras(
+        strip_toplevel_name(get_archive_file_list(sdist_filename)))))
+
+
 def unicodify(filename):
     """Make sure filename is Unicode.
 
     Because the tarfile module on Python 2 doesn't return Unicode.
     """
     if isinstance(filename, bytes):
+        # XXX: Ah, but is it right to use the locale encoding here, or should I
+        # use sys.getfilesystemencoding()?  A good question!
         return filename.decode(locale.getpreferredencoding())
     else:
         return filename
@@ -277,13 +314,17 @@ def get_archive_file_list(archive_filename):
     """
     if archive_filename.endswith('.zip'):
         with closing(zipfile.ZipFile(archive_filename)) as zf:
-            return add_directories(zf.namelist())
+            filelist = zf.namelist()
     elif archive_filename.endswith(('.tar.gz', '.tar.bz2', '.tar')):
         with closing(tarfile.open(archive_filename)) as tf:
-            return add_directories(list(map(unicodify, tf.getnames())))
+            filelist = map(unicodify, tf.getnames())
     else:
         ext = os.path.splitext(archive_filename)[-1]
         raise Failure('Unrecognized archive type: %s' % ext)
+    # Hm, should we normalize_names() here?  Maybe, maybe not.  The only caller
+    # of get_archive_file_list() is get_sdist_file_list(), and it calls the
+    # normalize_names().
+    return add_directories_and_sort(filelist)
 
 
 def strip_toplevel_name(filelist):
@@ -302,6 +343,7 @@ def strip_toplevel_name(filelist):
     if not filelist:
         return filelist
     prefix = filelist[0]
+    # so here's a function we assume / is the directory separator
     if '/' in prefix:
         prefix = prefix.partition('/')[0] + '/'
         names = filelist
@@ -358,11 +400,14 @@ class Git(VCS):
         for subdir in submodules:
             subdir = os.path.relpath(subdir).replace(os.path.sep, '/')
             files += add_prefix_to_each(subdir, self._git_ls_files(subdir))
-        return add_directories(files)
+        return files
 
     @classmethod
     def _git_ls_files(cls, cwd=None):
         output = run(['git', 'ls-files', '-z'], encoding=cls._encoding, cwd=cwd)
+        # -z tells git to use \0 as a line terminator; split() treats it as a
+        # line separator, so we always get one empty line at the end, which we
+        # drop with the [:-1] slice
         return output.split('\0')[:-1]
 
     @classmethod
@@ -385,7 +430,7 @@ class Mercurial(VCS):
     def get_versioned_files(self):
         """List all files under Mercurial control in the current directory."""
         output = run(['hg', 'status', '-ncamd', '.'])
-        return add_directories(output.splitlines())
+        return output.splitlines()
 
 
 class Bazaar(VCS):
@@ -494,7 +539,7 @@ def detect_vcs(ui):
 def get_vcs_files(ui):
     """List all files under version control in the current directory."""
     vcs = detect_vcs(ui)
-    return normalize_names(vcs.get_versioned_files())
+    return add_directories_and_sort(normalize_names(vcs.get_versioned_files()))
 
 
 def normalize_names(names):
@@ -513,17 +558,19 @@ def normalize_name(name):
     name = os.path.normpath(name)
     name = unicodify(name)
     if sys.platform == 'darwin':
-        # Mac OSX may have problems comparing non-ascii filenames, so
+        # Mac OS X may have problems comparing non-ASCII filenames, so
         # we convert them.
         name = unicodedata.normalize('NFC', name)
     return name
 
 
-def add_directories(names):
+def add_directories_and_sort(names):
     """Git/Mercurial/zip files omit directories, let's add them back."""
+    # Let's make sure we iterate names once, in case it's an iterator and not a
+    # list.
     res = list(names)
-    seen = set(names)
-    for name in names:
+    seen = set(res)
+    for name in list(res):
         while True:
             name = os.path.dirname(name)
             if not name or name in seen:
@@ -576,7 +623,7 @@ WARN_ABOUT_FILES_IN_VCS = [
 
 IGNORE_BAD_IDEAS = []
 
-_sep = r'\\' if os.path.sep == '\\' else os.path.sep
+_sep = re.escape(os.path.sep)
 
 SUGGESTIONS = [(re.compile(pattern.replace('/', _sep)), suggestion) for pattern, suggestion in [
     # regexp -> suggestion
@@ -908,7 +955,7 @@ def check_manifest(source_tree='.', create=False, update=False,
         read_config()
         read_manifest(ui)
         ui.info_begin("listing source files under version control")
-        all_source_files = sorted(get_vcs_files(ui))
+        all_source_files = get_vcs_files(ui)
         source_files = strip_sdist_extras(all_source_files)
         ui.info_continue(": %d files and directories" % len(source_files))
         if not all_source_files:
@@ -918,8 +965,7 @@ def check_manifest(source_tree='.', create=False, update=False,
             build_sdist(tempdir, python=python)
             sdist_filename = get_one_file_in(tempdir)
             ui.info_continue(": %s" % os.path.basename(sdist_filename))
-            sdist_files = sorted(normalize_names(strip_sdist_extras(
-                strip_toplevel_name(get_archive_file_list(sdist_filename)))))
+            sdist_files = get_sdist_file_list(sdist_filename)
             ui.info_continue(": %d files and directories" % len(sdist_files))
             version = extract_version_from_filename(sdist_filename)
         existing_source_files = list(filter(os.path.exists, all_source_files))
@@ -945,8 +991,7 @@ def check_manifest(source_tree='.', create=False, update=False,
                     build_sdist(tempdir, python=python)
                     sdist_filename = get_one_file_in(tempdir)
                     ui.info_continue(": %s" % os.path.basename(sdist_filename))
-                    clean_sdist_files = sorted(normalize_names(strip_sdist_extras(
-                        strip_toplevel_name(get_archive_file_list(sdist_filename)))))
+                    clean_sdist_files = get_sdist_file_list(sdist_filename)
                     ui.info_continue(": %d files and directories" % len(clean_sdist_files))
         missing_from_manifest = set(source_files) - set(clean_sdist_files)
         missing_from_VCS = set(sdist_files + clean_sdist_files) - set(source_files)

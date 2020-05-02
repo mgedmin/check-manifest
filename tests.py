@@ -288,11 +288,12 @@ class Tests(unittest.TestCase):
                                           j("g", "h", "..", "i")]),
                          ["a", "b", j("c", "d"), j("e", "f"), j("g", "i")])
 
-    def test_add_directories(self):
-        from check_manifest import add_directories
+    def test_add_directories_and_sort(self):
+        from check_manifest import add_directories_and_sort
         j = os.path.join
-        self.assertEqual(add_directories(['a', 'b', j('c', 'd'), j('e', 'f')]),
-                         ['a', 'b', 'c', j('c', 'd'), 'e', j('e', 'f')])
+        self.assertEqual(
+            add_directories_and_sort(['a', 'b', j('c', 'd'), j('e', 'f')]),
+            ['a', 'b', 'c', j('c', 'd'), 'e', j('e', 'f')])
 
     def test_file_matches(self):
         from check_manifest import file_matches
@@ -1282,8 +1283,8 @@ class SvnHelper(VCSHelper):
         os.chdir('checkout')
 
     def _add_to_vcs(self, filenames):
-        from check_manifest import add_directories
-        self._run('svn', 'add', '-N', '--', *add_directories(filenames))
+        from check_manifest import add_directories_and_sort
+        self._run('svn', 'add', '-N', '--', *add_directories_and_sort(filenames))
 
     def _commit(self):
         self._run('svn', 'commit', '-m', 'Initial')
