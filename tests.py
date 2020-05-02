@@ -311,7 +311,7 @@ class Tests(unittest.TestCase):
                          patterns))
 
     def test_strip_sdist_extras(self):
-        from check_manifest import strip_sdist_extras
+        from check_manifest import strip_sdist_extras, IgnoreList
         filelist = list(map(os.path.normpath, [
             '.github',
             '.github/ISSUE_TEMPLATE',
@@ -342,14 +342,12 @@ class Tests(unittest.TestCase):
             'src/zope/foo/__init__.py',
             'src/zope/foo/language.po',
         ]))
-        self.assertEqual(strip_sdist_extras(filelist), expected)
+        ignore = IgnoreList.default()
+        self.assertEqual(strip_sdist_extras(ignore, filelist), expected)
 
     def test_strip_sdist_extras_with_manifest(self):
-        import check_manifest
-        from check_manifest import strip_sdist_extras
+        from check_manifest import strip_sdist_extras, IgnoreList
         from check_manifest import _get_ignore_from_manifest_lines
-        orig_ignore = check_manifest.IGNORE[:]
-        orig_ignore_regexps = check_manifest.IGNORE_REGEXPS[:]
         manifest_in = textwrap.dedent("""
             graft src
             exclude *.cfg
@@ -393,19 +391,9 @@ class Tests(unittest.TestCase):
             'src/zope/foo/language.po',
             'src/zope/foo/config.cfg',
         ]))
-
-        # This will change the definitions.
-        try:
-            # This is normally done in read_manifest:
-            ignore, ignore_regexps = _get_ignore_from_manifest_lines(manifest_in.splitlines(), self.ui)
-            check_manifest.IGNORE.extend(ignore)
-            check_manifest.IGNORE_REGEXPS.extend(ignore_regexps)
-            # Filter the file list.
-            result = strip_sdist_extras(filelist)
-        finally:
-            # Restore the original definitions
-            check_manifest.IGNORE[:] = orig_ignore
-            check_manifest.IGNORE_REGEXPS[:] = orig_ignore_regexps
+        ignore = IgnoreList.default()
+        ignore += _get_ignore_from_manifest_lines(manifest_in.splitlines(), self.ui)
+        result = strip_sdist_extras(ignore, filelist)
         self.assertEqual(result, expected)
 
     def test_find_bad_ideas(self):
@@ -517,48 +505,49 @@ class Tests(unittest.TestCase):
     def test_get_ignore_from_manifest_lines(self):
         from check_manifest import _get_ignore_from_manifest_lines
         from check_manifest import _glob_to_regexp as g2r
+        from check_manifest import IgnoreList
         j = os.path.join
         parse = partial(_get_ignore_from_manifest_lines, ui=self.ui)
         # The return value is a tuple with two lists:
         # ([<list of filename ignores>], [<list of regular expressions>])
         self.assertEqual(parse([]),
-                         ([], []))
+                         IgnoreList([], []))
         self.assertEqual(parse(['', ' ']),
-                         ([], []))
+                         IgnoreList([], []))
         self.assertEqual(parse(['exclude *.cfg']),
-                         ([], [g2r('*.cfg')]))
+                         IgnoreList([], [g2r('*.cfg')]))
         self.assertEqual(parse(['exclude          *.cfg']),
-                         ([], [g2r('*.cfg')]))
+                         IgnoreList([], [g2r('*.cfg')]))
         self.assertEqual(parse(['\texclude\t*.cfg foo.*   bar.txt']),
-                         (['bar.txt'], [g2r('*.cfg'), g2r('foo.*')]))
+                         IgnoreList(['bar.txt'], [g2r('*.cfg'), g2r('foo.*')]))
         self.assertEqual(parse(['exclude some/directory/*.cfg']),
-                         ([], [g2r('some/directory/*.cfg')]))
+                         IgnoreList([], [g2r('some/directory/*.cfg')]))
         self.assertEqual(parse(['include *.cfg']),
-                         ([], []))
+                         IgnoreList([], []))
         self.assertEqual(parse(['global-exclude *.pyc']),
-                         (['*.pyc'], []))
+                         IgnoreList(['*.pyc'], []))
         self.assertEqual(parse(['global-exclude *.pyc *.sh']),
-                         (['*.pyc', '*.sh'], []))
+                         IgnoreList(['*.pyc', '*.sh'], []))
         self.assertEqual(parse(['recursive-exclude dir *.pyc']),
-                         ([j('dir', '*.pyc')], []))
+                         IgnoreList([j('dir', '*.pyc')], []))
         self.assertEqual(parse(['recursive-exclude dir *.pyc foo*.sh']),
-                         ([j('dir', '*.pyc'), j('dir', 'foo*.sh'),
-                           j('dir', '*', 'foo*.sh')], []))
+                         IgnoreList([j('dir', '*.pyc'), j('dir', 'foo*.sh'),
+                                     j('dir', '*', 'foo*.sh')], []))
         self.assertEqual(parse(['recursive-exclude dir nopattern.xml']),
-                         ([j('dir', 'nopattern.xml'),
-                           j('dir', '*', 'nopattern.xml')], []))
+                         IgnoreList([j('dir', 'nopattern.xml'),
+                                     j('dir', '*', 'nopattern.xml')], []))
         # We should not fail when a recursive-exclude line is wrong:
         self.assertEqual(parse(['recursive-exclude dirwithoutpattern']),
-                         ([], []))
+                         IgnoreList([], []))
         self.assertEqual(parse(['prune dir']),
-                         (['dir', j('dir', '*')], []))
+                         IgnoreList(['dir', j('dir', '*')], []))
         # You should not add a slash at the end of a prune, but let's
         # not fail over it or end up with double slashes.
         self.assertEqual(parse(['prune dir/']),
-                         (['dir', j('dir', '*')], []))
+                         IgnoreList(['dir', j('dir', '*')], []))
         # You should also not have a leading slash
         self.assertEqual(parse(['prune /dir']),
-                         (['/dir', j('/dir', '*')], []))
+                         IgnoreList(['/dir', j('/dir', '*')], []))
         # And a mongo test case of everything at the end
         text = textwrap.dedent("""
             exclude *.02
@@ -574,7 +563,7 @@ class Tests(unittest.TestCase):
         """).splitlines()
         self.assertEqual(
             parse(text),
-            ([
+            IgnoreList([
                 'bar.txt',
                 '*.10',
                 '*.11',
@@ -594,7 +583,7 @@ class Tests(unittest.TestCase):
             ]))
 
     def test_get_ignore_from_manifest(self):
-        from check_manifest import _get_ignore_from_manifest
+        from check_manifest import _get_ignore_from_manifest, IgnoreList
         filename = os.path.join(self.make_temp_dir(), 'MANIFEST.in')
         self.create_file(filename, textwrap.dedent('''
            exclude \\
@@ -605,18 +594,20 @@ class Tests(unittest.TestCase):
            # docs/ folder
         '''))
         ui = MockUI()
-        self.assertEqual(_get_ignore_from_manifest(filename, ui), (['test.dat'], []))
+        self.assertEqual(_get_ignore_from_manifest(filename, ui),
+                         IgnoreList(['test.dat']))
         self.assertEqual(ui.warnings, [])
 
     def test_get_ignore_from_manifest_warnings(self):
-        from check_manifest import _get_ignore_from_manifest
+        from check_manifest import _get_ignore_from_manifest, IgnoreList
         filename = os.path.join(self.make_temp_dir(), 'MANIFEST.in')
         self.create_file(filename, textwrap.dedent('''
            # this is bad: a file should not end with a backslash
            exclude test.dat \\
         '''))
         ui = MockUI()
-        self.assertEqual(_get_ignore_from_manifest(filename, ui), (['test.dat'], []))
+        self.assertEqual(_get_ignore_from_manifest(filename, ui),
+                         IgnoreList(['test.dat']))
         self.assertEqual(ui.warnings, [
             "%s, line 2: continuation line immediately precedes end-of-file" % filename,
         ])
@@ -692,88 +683,82 @@ class TestConfiguration(unittest.TestCase):
         self.oldpwd = os.getcwd()
         self.tmpdir = tempfile.mkdtemp(prefix='test-', suffix='-check-manifest')
         os.chdir(self.tmpdir)
-        self.OLD_IGNORE = check_manifest.IGNORE
-        self.OLD_IGNORE_REGEXPS = check_manifest.IGNORE_REGEXPS
         self.OLD_IGNORE_BAD_IDEAS = check_manifest.IGNORE_BAD_IDEAS
-        check_manifest.IGNORE = ['default-ignore-rules']
-        check_manifest.IGNORE_REGEXPS = ['default-ignore-regexps']
         check_manifest.IGNORE_BAD_IDEAS = []
         self.ui = MockUI()
 
     def tearDown(self):
         import check_manifest
-        check_manifest.IGNORE = self.OLD_IGNORE
-        check_manifest.IGNORE_REGEXPS = self.OLD_IGNORE_REGEXPS
         check_manifest.IGNORE_BAD_IDEAS = self.OLD_IGNORE_BAD_IDEAS
         os.chdir(self.oldpwd)
         rmtree(self.tmpdir)
 
     def test_read_config_no_config(self):
         import check_manifest
-        check_manifest.read_config()
-        self.assertEqual(check_manifest.IGNORE, ['default-ignore-rules'])
+        ignore = check_manifest.read_config()
+        self.assertEqual(ignore, check_manifest.IgnoreList.default())
 
     def test_read_setup_config_no_section(self):
         import check_manifest
         with open('setup.cfg', 'w') as f:
             f.write('[pep8]\nignore =\n')
-        check_manifest.read_config()
-        self.assertEqual(check_manifest.IGNORE, ['default-ignore-rules'])
+        ignore = check_manifest.read_config()
+        self.assertEqual(ignore, check_manifest.IgnoreList.default())
 
     def test_read_pyproject_config_no_section(self):
         import check_manifest
         with open('pyproject.toml', 'w') as f:
             f.write('[tool.pep8]\nignore = []\n')
-        check_manifest.read_config()
-        self.assertEqual(check_manifest.IGNORE, ['default-ignore-rules'])
+        ignore = check_manifest.read_config()
+        self.assertEqual(ignore, check_manifest.IgnoreList.default())
 
     def test_read_setup_config_no_option(self):
         import check_manifest
         with open('setup.cfg', 'w') as f:
             f.write('[check-manifest]\n')
-        check_manifest.read_config()
-        self.assertEqual(check_manifest.IGNORE, ['default-ignore-rules'])
+        ignore = check_manifest.read_config()
+        self.assertEqual(ignore, check_manifest.IgnoreList.default())
 
     def test_read_pyproject_config_no_option(self):
         import check_manifest
         with open('pyproject.toml', 'w') as f:
             f.write('[tool.check-manifest]\n')
-        check_manifest.read_config()
-        self.assertEqual(check_manifest.IGNORE, ['default-ignore-rules'])
+        ignore = check_manifest.read_config()
+        self.assertEqual(ignore, check_manifest.IgnoreList.default())
 
     def test_read_setup_config_extra_ignores(self):
         import check_manifest
         with open('setup.cfg', 'w') as f:
             f.write('[check-manifest]\nignore = foo\n  bar\n')
-        check_manifest.read_config()
-        self.assertEqual(check_manifest.IGNORE,
-                         ['default-ignore-rules', 'foo', 'bar'])
+        ignore = check_manifest.read_config()
+        self.assertEqual(ignore,
+                         check_manifest.IgnoreList.default()
+                         + check_manifest.IgnoreList(['foo', 'bar']))
 
     def test_read_pyproject_config_extra_ignores(self):
         import check_manifest
         with open('pyproject.toml', 'w') as f:
             f.write('[tool.check-manifest]\nignore = ["foo", "bar"]\n')
-        check_manifest.read_config()
-        self.assertEqual(check_manifest.IGNORE,
-                         ['default-ignore-rules', 'foo', 'bar'])
+        ignore = check_manifest.read_config()
+        self.assertEqual(ignore,
+                         check_manifest.IgnoreList.default()
+                         + check_manifest.IgnoreList(['foo', 'bar']))
 
     def test_read_setup_config_override_ignores(self):
         import check_manifest
         with open('setup.cfg', 'w') as f:
             f.write('[check-manifest]\nignore = foo\n\n  bar\n')
             f.write('ignore-default-rules = yes\n')
-        check_manifest.read_config()
-        self.assertEqual(check_manifest.IGNORE,
-                         ['foo', 'bar'])
+        ignore = check_manifest.read_config()
+        self.assertEqual(ignore, check_manifest.IgnoreList(['foo', 'bar']))
 
     def test_read_pyproject_config_override_ignores(self):
         import check_manifest
         with open('pyproject.toml', 'w') as f:
             f.write('[tool.check-manifest]\nignore = ["foo", "bar"]\n')
             f.write('ignore-default-rules = true\n')
-        check_manifest.read_config()
-        self.assertEqual(check_manifest.IGNORE,
-                         ['foo', 'bar'])
+        ignore = check_manifest.read_config()
+        self.assertEqual(ignore, check_manifest.IgnoreList(['foo', 'bar']))
 
     def test_read_setup_config_ignore_bad_ideas(self):
         import check_manifest
@@ -795,8 +780,8 @@ class TestConfiguration(unittest.TestCase):
 
     def test_read_manifest_no_manifest(self):
         import check_manifest
-        check_manifest.read_manifest(self.ui)
-        self.assertEqual(check_manifest.IGNORE, ['default-ignore-rules'])
+        ignore = check_manifest.read_manifest(self.ui)
+        self.assertEqual(ignore, check_manifest.IgnoreList())
 
     def test_read_manifest(self):
         import check_manifest
@@ -804,11 +789,9 @@ class TestConfiguration(unittest.TestCase):
         with open('MANIFEST.in', 'w') as f:
             f.write('exclude *.gif\n')
             f.write('global-exclude *.png\n')
-        check_manifest.read_manifest(self.ui)
-        self.assertEqual(check_manifest.IGNORE,
-                         ['default-ignore-rules', '*.png'])
-        self.assertEqual(check_manifest.IGNORE_REGEXPS,
-                         ['default-ignore-regexps', g2r('*.gif')])
+        ignore = check_manifest.read_manifest(self.ui)
+        self.assertEqual(ignore.ignore, ['*.png'])
+        self.assertEqual(ignore.ignore_regexps, [g2r('*.gif')])
 
 
 class TestMain(unittest.TestCase):
@@ -824,17 +807,11 @@ class TestMain(unittest.TestCase):
         self._ui_patcher.start()
         self._orig_sys_argv = sys.argv
         sys.argv = ['check-manifest']
-        self.OLD_IGNORE = check_manifest.IGNORE
-        self.OLD_IGNORE_REGEXPS = check_manifest.IGNORE_REGEXPS
         self.OLD_IGNORE_BAD_IDEAS = check_manifest.IGNORE_BAD_IDEAS
-        check_manifest.IGNORE = ['default-ignore-rules']
-        check_manifest.IGNORE_REGEXPS = ['default-ignore-regexps']
         check_manifest.IGNORE_BAD_IDEAS = []
 
     def tearDown(self):
         import check_manifest
-        check_manifest.IGNORE = self.OLD_IGNORE
-        check_manifest.IGNORE_REGEXPS = self.OLD_IGNORE_REGEXPS
         check_manifest.IGNORE_BAD_IDEAS = self.OLD_IGNORE_BAD_IDEAS
         sys.argv = self._orig_sys_argv
         self._se_patcher.stop()
@@ -867,8 +844,8 @@ class TestMain(unittest.TestCase):
         import check_manifest
         sys.argv.append('--ignore=x,y,z')
         check_manifest.main()
-        self.assertEqual(check_manifest.IGNORE,
-                         ['default-ignore-rules', 'x', 'y', 'z'])
+        self.assertEqual(self._check_manifest.call_args.kwargs['extra_ignore'],
+                         check_manifest.IgnoreList(['x', 'y', 'z']))
 
     def test_ignore_bad_ideas_args(self):
         import check_manifest
@@ -1424,6 +1401,19 @@ class TestUserInterface(unittest.TestCase):
             "Forgot to turn the gas off!\n")
 
 
+class TestIgnoreList(unittest.TestCase):
+
+    def test_repr(self):
+        from check_manifest import IgnoreList
+        ignore = IgnoreList(['a'], ['b'])
+        self.assertEqual(repr(ignore), "IgnoreList(['a'], ['b'])")
+
+    def test_failed_addition(self):
+        from check_manifest import IgnoreList
+        with self.assertRaises(TypeError):
+            IgnoreList() + 42
+
+
 def pick_installed_vcs():
     preferred_order = [GitHelper, HgHelper, BzrHelper, SvnHelper]
     force = os.getenv('FORCE_TEST_VCS')
@@ -1533,6 +1523,13 @@ class TestCheckManifest(unittest.TestCase):
                     break
         subdir = self._create_repo_with_code_in_subdir()
         self.assertTrue(check_manifest(subdir, python=python),
+                        sys.stderr.getvalue())
+
+    def test_extra_ignore(self):
+        from check_manifest import check_manifest, IgnoreList
+        self._create_repo_with_code()
+        self._add_to_vcs('unrelated.txt')
+        self.assertTrue(check_manifest(extra_ignore=IgnoreList(['*.txt'])),
                         sys.stderr.getvalue())
 
     def test_suggestions(self):
@@ -1665,8 +1662,10 @@ class TestCheckManifest(unittest.TestCase):
             # under Python 3 unless we fork off a Python 2 subprocess.
             # Manually combining 'bzr ls' and 'bzr st' outputs just to
             # produce a cosmetic warning message seems like overkill.
-            self.assertIn("some files listed as being under source control are missing:\n  missing.py",
-                        sys.stderr.getvalue())
+            self.assertIn(
+                "some files listed as being under source control are missing:\n"
+                "  missing.py",
+                sys.stderr.getvalue())
 
 
 def test_suite():

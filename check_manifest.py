@@ -276,7 +276,7 @@ def get_one_file_in(dirname):
 #
 
 
-def get_sdist_file_list(sdist_filename):
+def get_sdist_file_list(sdist_filename, ignore):
     """Return the list of interesting files in a source distribution.
 
     Removes extra generated files like PKG-INFO and *.egg-info that are usually
@@ -290,7 +290,7 @@ def get_sdist_file_list(sdist_filename):
     # TODO: move normalize_names() into get_archive_file_list(), because
     # get_vcs_files() first normalizes and then calls
     # add_directories_and_sort().
-    return sorted(normalize_names(strip_sdist_extras(
+    return sorted(normalize_names(strip_sdist_extras(ignore,
         strip_toplevel_name(get_archive_file_list(sdist_filename)))))
 
 
@@ -584,8 +584,85 @@ def add_directories_and_sort(names):
 # Packaging logic
 #
 
+class IgnoreList(object):
+
+    def __init__(self, ignore=(), _ignore_regexps=()):
+        self.ignore = list(ignore)
+        self.ignore_regexps = list(_ignore_regexps)
+
+    @classmethod
+    def default(cls):
+        return cls(DEFAULT_IGNORE)
+
+    def clear(self):
+        self.ignore = []
+        self.ignore_regexps = []
+
+    def __repr__(self):
+        return 'IgnoreList(%r, %r)' % (self.ignore, self.ignore_regexps)
+
+    def __eq__(self, other):
+        return (isinstance(other, IgnoreList) and self.ignore == other.ignore
+                and self.ignore_regexps == other.ignore_regexps)
+
+    def __iadd__(self, other):
+        assert isinstance(other, IgnoreList)
+        self.ignore += other.ignore
+        self.ignore_regexps += other.ignore_regexps
+        return self
+
+    def __add__(self, other):
+        if not isinstance(other, IgnoreList):
+            return NotImplemented
+        result = IgnoreList()
+        result.ignore = self.ignore + other.ignore
+        result.ignore_regexps = self.ignore_regexps + other.ignore_regexps
+        return result
+
+    def exclude(self, *patterns):
+        # An exclude of 'dirname/*css' can match 'dirname/foo.css'
+        # but not 'dirname/subdir/bar.css'.  We need a regular
+        # expression for that, since fnmatch doesn't pay attention to
+        # directory separators.
+        for pat in patterns:
+            if '*' in pat or '?' in pat or '[!' in pat:
+                self.ignore_regexps.append(_glob_to_regexp(pat))
+            else:
+                self.ignore.append(pat)
+
+    def global_exclude(self, *patterns):
+        for pat in patterns:
+            self.ignore.append(pat)
+
+    def recursive_exclude(self, dirname, *patterns):
+        # Strip path separator for clarity.
+        dirname = dirname.rstrip('/\\')
+        for pattern in patterns:
+            if pattern.startswith('*'):
+                self.ignore.append(dirname + os.path.sep + pattern)
+            else:
+                # 'recursive-exclude plone metadata.xml' should
+                # exclude plone/metadata.xml and
+                # plone/*/metadata.xml, where * can be any number
+                # of sub directories.  We could use a regexp, but
+                # two ignores seems easier.
+                self.ignore.append(dirname + os.path.sep + pattern)
+                self.ignore.append(
+                    dirname + os.path.sep + '*' + os.path.sep + pattern)
+
+    def prune(self, subdir):
+        subdir = subdir.rstrip('/\\')
+        self.ignore.append(subdir)
+        self.ignore.append(subdir + os.path.sep + '*')
+
+    def filter(self, filelist):
+        return [name for name in filelist
+                if not file_matches(name, self.ignore)
+                and not file_matches_regexps(name, self.ignore_regexps)]
+
+
 # it's fine if any of these are missing in the VCS or in the sdist
-IGNORE = [
+DEFAULT_IGNORE = [
     'PKG-INFO',     # always generated
     '*.egg-info',   # always generated
     '*.egg-info/*', # always generated
@@ -600,12 +677,6 @@ IGNORE = [
     # it's convenient to ship compiled .mo files in sdists, but they shouldn't
     # be checked in
     '*.mo',
-]
-
-IGNORE_REGEXPS = [
-    # Regular expressions for filename to ignore.  This is useful for
-    # filename patterns where the '*' part must not search in
-    # directories.
 ]
 
 WARN_ABOUT_FILES_IN_VCS = [
@@ -654,14 +725,18 @@ CFG_IGNORE_BAD_IDEAS = (CFG_SECTION_CHECK_MANIFEST, 'ignore-bad-ideas')
 
 def read_config():
     """Read configuration from file if possible."""
-    # XXX modifies global state, which is kind of evil
+    ignore = IgnoreList.default()
     config = _load_config()
     if config.get(CFG_IGNORE_DEFAULT_RULES[1], False):
-        del IGNORE[:]
+        ignore.clear()
     if CFG_IGNORE[1] in config:
-        IGNORE.extend(p for p in config[CFG_IGNORE[1]] if p)
+        for p in config[CFG_IGNORE[1]]:
+            if p:
+                ignore.exclude(p)
     if CFG_IGNORE_BAD_IDEAS[1] in config:
+        # XXX modifies global state, which is kind of evil
         IGNORE_BAD_IDEAS.extend(p for p in config[CFG_IGNORE_BAD_IDEAS[1]] if p)
+    return ignore
 
 
 def _load_config():
@@ -713,12 +788,9 @@ def read_manifest(ui):
 
     We use that to ignore anything the MANIFEST.in ignores.
     """
-    # XXX modifies global state, which is kind of evil
     if not os.path.isfile('MANIFEST.in'):
-        return
-    ignore, ignore_regexps = _get_ignore_from_manifest('MANIFEST.in', ui)
-    IGNORE.extend(ignore)
-    IGNORE_REGEXPS.extend(ignore_regexps)
+        return IgnoreList()
+    return _get_ignore_from_manifest('MANIFEST.in', ui)
 
 
 def _glob_to_regexp(pat):
@@ -769,8 +841,7 @@ def _get_ignore_from_manifest_lines(lines, ui):
     Returns a list of standard ignore patterns and a list of regular
     expressions to ignore.
     """
-    ignore = []
-    ignore_regexps = []
+    ignore = IgnoreList()
     for line in lines:
         try:
             cmd, rest = line.split(None, 1)
@@ -784,18 +855,9 @@ def _get_ignore_from_manifest_lines(lines, ui):
             if part.endswith('/'):
                 ui.warning("ERROR: Trailing slashes are not allowed in MANIFEST.in on Windows: %s" % part)
         if cmd == 'exclude':
-            # An exclude of 'dirname/*css' can match 'dirname/foo.css'
-            # but not 'dirname/subdir/bar.css'.  We need a regular
-            # expression for that, since fnmatch doesn't pay attention to
-            # directory separators.
-            for pat in rest.split():
-                if '*' in pat or '?' in pat or '[!' in pat:
-                    ignore_regexps.append(_glob_to_regexp(pat))
-                else:
-                    # No need for special handling.
-                    ignore.append(pat)
+            ignore.exclude(*rest.split())
         elif cmd == 'global-exclude':
-            ignore.extend(rest.split())
+            ignore.global_exclude(*rest.split())
         elif cmd == 'recursive-exclude':
             try:
                 dirname, patterns = rest.split(None, 1)
@@ -807,32 +869,18 @@ def _get_ignore_from_manifest_lines(lines, ui):
                     % line
                 )
                 continue
-            # Strip path separator for clarity.
-            dirname = dirname.rstrip(os.path.sep)
-            for pattern in patterns.split():
-                if pattern.startswith('*'):
-                    ignore.append(dirname + os.path.sep + pattern)
-                else:
-                    # 'recursive-exclude plone metadata.xml' should
-                    # exclude plone/metadata.xml and
-                    # plone/*/metadata.xml, where * can be any number
-                    # of sub directories.  We could use a regexp, but
-                    # two ignores seems easier.
-                    ignore.append(dirname + os.path.sep + pattern)
-                    ignore.append(
-                        dirname + os.path.sep + '*' + os.path.sep + pattern)
+            ignore.recursive_exclude(dirname, *patterns.split())
         elif cmd == 'prune':
-            # rest is considered to be a directory name.  It should
-            # not contain a path separator, as it actually has no
-            # effect in that case, but that could differ per python
-            # version.  We strip it here to avoid double separators.
-            # XXX: mg: I'm not 100% sure the above is correct, AFAICS
-            # all pythons from 2.6 complain if the path has a leading or
-            # trailing slash -- on Windows, that is.
-            rest = rest.rstrip('/\\')
-            ignore.append(rest)
-            ignore.append(rest + os.path.sep + '*')
-    return ignore, ignore_regexps
+            ignore.prune(rest)
+        # XXX: This ignores all 'include'/'global-include'/'recusive-include'/'graft' commands,
+        # which is wrong!  Quoting the documentation:
+        #
+        #    The order of commands in the manifest template matters: initially,
+        #    we have the list of default files as described above, and each
+        #    command in the template adds to or removes from that list of
+        #    files.
+        #           -- https://docs.python.org/3.8/distutils/sourcedist.html#specifying-the-files-to-distribute
+    return ignore
 
 
 def file_matches(filename, patterns):
@@ -847,15 +895,13 @@ def file_matches_regexps(filename, patterns):
     return any(re.match(pat, filename) for pat in patterns)
 
 
-def strip_sdist_extras(filelist):
+def strip_sdist_extras(ignore, filelist):
     """Strip generated files that are only present in source distributions.
 
     We also strip files that are ignored for other reasons, like
     command line arguments, setup.cfg rules or MANIFEST.in rules.
     """
-    return [name for name in filelist
-            if not file_matches(name, IGNORE)
-            and not file_matches_regexps(name, IGNORE_REGEXPS)]
+    return ignore.filter(filelist)
 
 
 def find_bad_ideas(filelist):
@@ -938,7 +984,7 @@ def build_sdist(tempdir, python=sys.executable):
 
 
 def check_manifest(source_tree='.', create=False, update=False,
-                   python=sys.executable, ui=None):
+                   python=sys.executable, ui=None, extra_ignore=None):
     """Compare a generated source distribution with list of files in a VCS.
 
     Returns True if the manifest is fine.
@@ -952,11 +998,13 @@ def check_manifest(source_tree='.', create=False, update=False,
         if not is_package():
             raise Failure(
                 'This is not a Python project (no setup.py/pyproject.toml).')
-        read_config()
-        read_manifest(ui)
+        ignore = read_config()
+        ignore += read_manifest(ui)
+        if extra_ignore:
+            ignore += extra_ignore
         ui.info_begin("listing source files under version control")
         all_source_files = get_vcs_files(ui)
-        source_files = strip_sdist_extras(all_source_files)
+        source_files = strip_sdist_extras(ignore, all_source_files)
         ui.info_continue(": %d files and directories" % len(source_files))
         if not all_source_files:
             raise Failure('There are no files added to version control!')
@@ -965,7 +1013,7 @@ def check_manifest(source_tree='.', create=False, update=False,
             build_sdist(tempdir, python=python)
             sdist_filename = get_one_file_in(tempdir)
             ui.info_continue(": %s" % os.path.basename(sdist_filename))
-            sdist_files = get_sdist_file_list(sdist_filename)
+            sdist_files = get_sdist_file_list(sdist_filename, ignore)
             ui.info_continue(": %d files and directories" % len(sdist_files))
             version = extract_version_from_filename(sdist_filename)
         existing_source_files = list(filter(os.path.exists, all_source_files))
@@ -991,7 +1039,7 @@ def check_manifest(source_tree='.', create=False, update=False,
                     build_sdist(tempdir, python=python)
                     sdist_filename = get_one_file_in(tempdir)
                     ui.info_continue(": %s" % os.path.basename(sdist_filename))
-                    clean_sdist_files = get_sdist_file_list(sdist_filename)
+                    clean_sdist_files = get_sdist_file_list(sdist_filename, ignore)
                     ui.info_continue(": %d files and directories" % len(clean_sdist_files))
         missing_from_manifest = set(source_files) - set(clean_sdist_files)
         missing_from_VCS = set(sdist_files + clean_sdist_files) - set(source_files)
@@ -1071,10 +1119,12 @@ def main():
                         'matching these comma-separated patterns')
     args = parser.parse_args()
 
+    ignore = IgnoreList()
     if args.ignore:
-        IGNORE.extend(args.ignore.split(','))
+        ignore.exclude(*args.ignore.split(','))
 
     if args.ignore_bad_ideas:
+        # XXX global state bad
         IGNORE_BAD_IDEAS.extend(args.ignore_bad_ideas.split(','))
 
     ui = UI(verbosity=args.quiet + args.verbose)
@@ -1082,7 +1132,7 @@ def main():
     try:
         if not check_manifest(args.source_tree, create=args.create,
                               update=args.update, python=args.python,
-                              ui=ui):
+                              ui=ui, extra_ignore=ignore):
             sys.exit(1)
     except Failure as e:
         ui.error(str(e))
