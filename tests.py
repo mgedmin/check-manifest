@@ -679,77 +679,72 @@ class Tests(unittest.TestCase):
 class TestConfiguration(unittest.TestCase):
 
     def setUp(self):
-        import check_manifest
         self.oldpwd = os.getcwd()
         self.tmpdir = tempfile.mkdtemp(prefix='test-', suffix='-check-manifest')
         os.chdir(self.tmpdir)
-        self.OLD_IGNORE_BAD_IDEAS = check_manifest.IGNORE_BAD_IDEAS
-        check_manifest.IGNORE_BAD_IDEAS = []
         self.ui = MockUI()
 
     def tearDown(self):
-        import check_manifest
-        check_manifest.IGNORE_BAD_IDEAS = self.OLD_IGNORE_BAD_IDEAS
         os.chdir(self.oldpwd)
         rmtree(self.tmpdir)
 
     def test_read_config_no_config(self):
         import check_manifest
-        ignore = check_manifest.read_config()
+        ignore, ignore_bad_ideas = check_manifest.read_config()
         self.assertEqual(ignore, check_manifest.IgnoreList.default())
 
     def test_read_setup_config_no_section(self):
         import check_manifest
         with open('setup.cfg', 'w') as f:
             f.write('[pep8]\nignore =\n')
-        ignore = check_manifest.read_config()
+        ignore, ignore_bad_ideas = check_manifest.read_config()
         self.assertEqual(ignore, check_manifest.IgnoreList.default())
 
     def test_read_pyproject_config_no_section(self):
         import check_manifest
         with open('pyproject.toml', 'w') as f:
             f.write('[tool.pep8]\nignore = []\n')
-        ignore = check_manifest.read_config()
+        ignore, ignore_bad_ideas = check_manifest.read_config()
         self.assertEqual(ignore, check_manifest.IgnoreList.default())
 
     def test_read_setup_config_no_option(self):
         import check_manifest
         with open('setup.cfg', 'w') as f:
             f.write('[check-manifest]\n')
-        ignore = check_manifest.read_config()
+        ignore, ignore_bad_ideas = check_manifest.read_config()
         self.assertEqual(ignore, check_manifest.IgnoreList.default())
 
     def test_read_pyproject_config_no_option(self):
         import check_manifest
         with open('pyproject.toml', 'w') as f:
             f.write('[tool.check-manifest]\n')
-        ignore = check_manifest.read_config()
+        ignore, ignore_bad_ideas = check_manifest.read_config()
         self.assertEqual(ignore, check_manifest.IgnoreList.default())
 
     def test_read_setup_config_extra_ignores(self):
         import check_manifest
         with open('setup.cfg', 'w') as f:
-            f.write('[check-manifest]\nignore = foo\n  bar\n')
-        ignore = check_manifest.read_config()
+            f.write('[check-manifest]\nignore = foo\n  bar*\n')
+        ignore, ignore_bad_ideas = check_manifest.read_config()
         self.assertEqual(ignore,
                          check_manifest.IgnoreList.default()
-                         + check_manifest.IgnoreList(['foo', 'bar']))
+                         + check_manifest.IgnoreList(['foo', 'bar*']))
 
     def test_read_pyproject_config_extra_ignores(self):
         import check_manifest
         with open('pyproject.toml', 'w') as f:
-            f.write('[tool.check-manifest]\nignore = ["foo", "bar"]\n')
-        ignore = check_manifest.read_config()
+            f.write('[tool.check-manifest]\nignore = ["foo", "bar*"]\n')
+        ignore, ignore_bad_ideas = check_manifest.read_config()
         self.assertEqual(ignore,
                          check_manifest.IgnoreList.default()
-                         + check_manifest.IgnoreList(['foo', 'bar']))
+                         + check_manifest.IgnoreList(['foo', 'bar*']))
 
     def test_read_setup_config_override_ignores(self):
         import check_manifest
         with open('setup.cfg', 'w') as f:
             f.write('[check-manifest]\nignore = foo\n\n  bar\n')
             f.write('ignore-default-rules = yes\n')
-        ignore = check_manifest.read_config()
+        ignore, ignore_bad_ideas = check_manifest.read_config()
         self.assertEqual(ignore, check_manifest.IgnoreList(['foo', 'bar']))
 
     def test_read_pyproject_config_override_ignores(self):
@@ -757,7 +752,7 @@ class TestConfiguration(unittest.TestCase):
         with open('pyproject.toml', 'w') as f:
             f.write('[tool.check-manifest]\nignore = ["foo", "bar"]\n')
             f.write('ignore-default-rules = true\n')
-        ignore = check_manifest.read_config()
+        ignore, ignore_bad_ideas = check_manifest.read_config()
         self.assertEqual(ignore, check_manifest.IgnoreList(['foo', 'bar']))
 
     def test_read_setup_config_ignore_bad_ideas(self):
@@ -766,17 +761,19 @@ class TestConfiguration(unittest.TestCase):
             f.write('[check-manifest]\n'
                     'ignore-bad-ideas = \n'
                     '  foo\n'
-                    '  bar\n')
-        check_manifest.read_config()
-        self.assertEqual(check_manifest.IGNORE_BAD_IDEAS, ['foo', 'bar'])
+                    '  bar*\n')
+        ignore, ignore_bad_ideas = check_manifest.read_config()
+        self.assertEqual(ignore_bad_ideas,
+                         check_manifest.IgnoreList(['foo', 'bar*']))
 
     def test_read_pyproject_config_ignore_bad_ideas(self):
         import check_manifest
         with open('pyproject.toml', 'w') as f:
             f.write('[tool.check-manifest]\n'
-                    'ignore-bad-ideas = ["foo", "bar"]\n')
-        check_manifest.read_config()
-        self.assertEqual(check_manifest.IGNORE_BAD_IDEAS, ['foo', 'bar'])
+                    'ignore-bad-ideas = ["foo", "bar*"]\n')
+        ignore, ignore_bad_ideas = check_manifest.read_config()
+        self.assertEqual(ignore_bad_ideas,
+                         check_manifest.IgnoreList(['foo', 'bar*']))
 
     def test_read_manifest_no_manifest(self):
         import check_manifest
@@ -785,19 +782,17 @@ class TestConfiguration(unittest.TestCase):
 
     def test_read_manifest(self):
         import check_manifest
-        from check_manifest import _glob_to_regexp as g2r
+        from check_manifest import _glob_to_regexp as g2r, IgnoreList
         with open('MANIFEST.in', 'w') as f:
             f.write('exclude *.gif\n')
             f.write('global-exclude *.png\n')
         ignore = check_manifest.read_manifest(self.ui)
-        self.assertEqual(ignore.ignore, ['*.png'])
-        self.assertEqual(ignore.ignore_regexps, [g2r('*.gif')])
+        self.assertEqual(ignore, IgnoreList(['*.png'], [g2r('*.gif')]))
 
 
 class TestMain(unittest.TestCase):
 
     def setUp(self):
-        import check_manifest
         self._cm_patcher = mock.patch('check_manifest.check_manifest')
         self._check_manifest = self._cm_patcher.start()
         self._se_patcher = mock.patch('sys.exit')
@@ -807,12 +802,8 @@ class TestMain(unittest.TestCase):
         self._ui_patcher.start()
         self._orig_sys_argv = sys.argv
         sys.argv = ['check-manifest']
-        self.OLD_IGNORE_BAD_IDEAS = check_manifest.IGNORE_BAD_IDEAS
-        check_manifest.IGNORE_BAD_IDEAS = []
 
     def tearDown(self):
-        import check_manifest
-        check_manifest.IGNORE_BAD_IDEAS = self.OLD_IGNORE_BAD_IDEAS
         sys.argv = self._orig_sys_argv
         self._se_patcher.stop()
         self._cm_patcher.stop()
@@ -842,17 +833,17 @@ class TestMain(unittest.TestCase):
 
     def test_extra_ignore_args(self):
         import check_manifest
-        sys.argv.append('--ignore=x,y,z')
+        sys.argv.append('--ignore=x,y,z*')
         check_manifest.main()
         self.assertEqual(self._check_manifest.call_args.kwargs['extra_ignore'],
-                         check_manifest.IgnoreList(['x', 'y', 'z']))
+                         check_manifest.IgnoreList(['x', 'y', 'z*']))
 
     def test_ignore_bad_ideas_args(self):
         import check_manifest
-        sys.argv.append('--ignore-bad-ideas=x,y,z')
+        sys.argv.append('--ignore-bad-ideas=x,y,z*')
         check_manifest.main()
-        self.assertEqual(check_manifest.IGNORE_BAD_IDEAS,
-                         ['x', 'y', 'z'])
+        self.assertEqual(self._check_manifest.call_args.kwargs['extra_ignore_bad_ideas'],
+                         check_manifest.IgnoreList(['x', 'y', 'z*']))
 
     def test_verbose_arg(self):
         import check_manifest
@@ -1628,19 +1619,18 @@ class TestCheckManifest(unittest.TestCase):
                       sys.stderr.getvalue())
 
     def test_ignore_bad_ideas(self):
-        from check_manifest import check_manifest
+        from check_manifest import check_manifest, IgnoreList
         self._create_repo_with_code()
         with open('setup.cfg', 'w') as f:
             f.write('[check-manifest]\n'
                     'ignore =\n'
                     '  subdir/bar.egg-info\n'
                     'ignore-bad-ideas =\n'
-                    '  *.mo\n'
                     '  subdir/bar.egg-info\n')
         self._add_to_vcs('foo.egg-info')
         self._add_to_vcs('moo.mo')
         self._add_to_vcs(os.path.join('subdir', 'bar.egg-info'))
-        self.assertFalse(check_manifest())
+        self.assertFalse(check_manifest(extra_ignore_bad_ideas=IgnoreList(['*.mo'])))
         self.assertIn("you have foo.egg-info in source control!",
                       sys.stderr.getvalue())
         self.assertNotIn("moo.mo", sys.stderr.getvalue())

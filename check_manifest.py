@@ -692,8 +692,6 @@ WARN_ABOUT_FILES_IN_VCS = [
     '.#*',
 ]
 
-IGNORE_BAD_IDEAS = []
-
 _sep = re.escape(os.path.sep)
 
 SUGGESTIONS = [(re.compile(pattern.replace('/', _sep)), suggestion) for pattern, suggestion in [
@@ -726,17 +724,19 @@ CFG_IGNORE_BAD_IDEAS = (CFG_SECTION_CHECK_MANIFEST, 'ignore-bad-ideas')
 def read_config():
     """Read configuration from file if possible."""
     ignore = IgnoreList.default()
+    ignore_bad_ideas = IgnoreList()
     config = _load_config()
     if config.get(CFG_IGNORE_DEFAULT_RULES[1], False):
         ignore.clear()
     if CFG_IGNORE[1] in config:
         for p in config[CFG_IGNORE[1]]:
             if p:
-                ignore.exclude(p)
+                ignore.global_exclude(p)
     if CFG_IGNORE_BAD_IDEAS[1] in config:
-        # XXX modifies global state, which is kind of evil
-        IGNORE_BAD_IDEAS.extend(p for p in config[CFG_IGNORE_BAD_IDEAS[1]] if p)
-    return ignore
+        for p in config[CFG_IGNORE_BAD_IDEAS[1]]:
+            if p:
+                ignore_bad_ideas.global_exclude(p)
+    return ignore, ignore_bad_ideas
 
 
 def _load_config():
@@ -984,7 +984,8 @@ def build_sdist(tempdir, python=sys.executable):
 
 
 def check_manifest(source_tree='.', create=False, update=False,
-                   python=sys.executable, ui=None, extra_ignore=None):
+                   python=sys.executable, ui=None, extra_ignore=None,
+                   extra_ignore_bad_ideas=None):
     """Compare a generated source distribution with list of files in a VCS.
 
     Returns True if the manifest is fine.
@@ -998,10 +999,12 @@ def check_manifest(source_tree='.', create=False, update=False,
         if not is_package():
             raise Failure(
                 'This is not a Python project (no setup.py/pyproject.toml).')
-        ignore = read_config()
+        ignore, ignore_bad_ideas = read_config()
         ignore += read_manifest(ui)
         if extra_ignore:
             ignore += extra_ignore
+        if extra_ignore_bad_ideas:
+            ignore_bad_ideas += extra_ignore_bad_ideas
         ui.info_begin("listing source files under version control")
         all_source_files = get_vcs_files(ui)
         source_files = strip_sdist_extras(ignore, all_source_files)
@@ -1075,8 +1078,7 @@ def check_manifest(source_tree='.', create=False, update=False,
                 ui.info("don't know how to come up with rules matching any of the files, sorry!")
             all_ok = False
         bad_ideas = find_bad_ideas(all_source_files)
-        filtered_bad_ideas = [bad_idea for bad_idea in bad_ideas
-                              if not file_matches(bad_idea, IGNORE_BAD_IDEAS)]
+        filtered_bad_ideas = ignore_bad_ideas.filter(bad_ideas)
         if filtered_bad_ideas:
             ui.warning(
                 "you have %s in source control!\n"
@@ -1121,18 +1123,19 @@ def main():
 
     ignore = IgnoreList()
     if args.ignore:
-        ignore.exclude(*args.ignore.split(','))
+        ignore.global_exclude(*args.ignore.split(','))
 
+    ignore_bad_ideas = IgnoreList()
     if args.ignore_bad_ideas:
-        # XXX global state bad
-        IGNORE_BAD_IDEAS.extend(args.ignore_bad_ideas.split(','))
+        ignore_bad_ideas.global_exclude(*args.ignore_bad_ideas.split(','))
 
     ui = UI(verbosity=args.quiet + args.verbose)
 
     try:
         if not check_manifest(args.source_tree, create=args.create,
                               update=args.update, python=args.python,
-                              ui=ui, extra_ignore=ignore):
+                              ui=ui, extra_ignore=ignore,
+                              extra_ignore_bad_ideas=ignore_bad_ideas):
             sys.exit(1)
     except Failure as e:
         ui.error(str(e))
