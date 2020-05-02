@@ -13,6 +13,7 @@ import textwrap
 import unittest
 import zipfile
 from contextlib import closing
+from functools import partial
 from io import BytesIO
 from xml.etree import ElementTree as ET
 
@@ -38,17 +39,36 @@ else:
     HAS_OEM_CODEC = True
 
 
+class MockUI(object):
+
+    def __init__(self, verbosity=1):
+        self.verbosity = verbosity
+        self.warnings = []
+        self.errors = []
+
+    def info(self, message):
+        pass
+
+    def info_begin(self, message):
+        pass
+
+    def info_cont(self, message):
+        pass
+
+    def info_end(self, message):
+        pass
+
+    def warning(self, message):
+        self.warnings.append(message)
+
+    def error(self, message):
+        self.errors.append(message)
+
+
 class Tests(unittest.TestCase):
 
     def setUp(self):
-        import check_manifest
-        self.warnings = []
-        self._real_warning = check_manifest.warning
-        check_manifest.warning = self.warnings.append
-
-    def tearDown(self):
-        import check_manifest
-        check_manifest.warning = self._real_warning
+        self.ui = MockUI()
 
     def make_temp_dir(self):
         tmpdir = tempfile.mkdtemp(prefix='test-', suffix='-check-manifest')
@@ -251,10 +271,11 @@ class Tests(unittest.TestCase):
 
     def test_detect_vcs_no_vcs(self):
         from check_manifest import detect_vcs, Failure
+        ui = MockUI()
         with mock.patch('check_manifest.VCS.detect', staticmethod(lambda *a: False)):
             with mock.patch('check_manifest.Git.detect', staticmethod(lambda *a: False)):
                 with self.assertRaises(Failure) as cm:
-                    detect_vcs()
+                    detect_vcs(ui)
                 self.assertEqual(str(cm.exception),
                                  "Couldn't find version control data"
                                  " (git/hg/bzr/svn supported)")
@@ -324,7 +345,7 @@ class Tests(unittest.TestCase):
     def test_strip_sdist_extras_with_manifest(self):
         import check_manifest
         from check_manifest import strip_sdist_extras
-        from check_manifest import _get_ignore_from_manifest_lines as parse
+        from check_manifest import _get_ignore_from_manifest_lines
         orig_ignore = check_manifest.IGNORE[:]
         orig_ignore_regexps = check_manifest.IGNORE_REGEXPS[:]
         manifest_in = textwrap.dedent("""
@@ -374,7 +395,7 @@ class Tests(unittest.TestCase):
         # This will change the definitions.
         try:
             # This is normally done in read_manifest:
-            ignore, ignore_regexps = parse(manifest_in.splitlines())
+            ignore, ignore_regexps = _get_ignore_from_manifest_lines(manifest_in.splitlines(), self.ui)
             check_manifest.IGNORE.extend(ignore)
             check_manifest.IGNORE_REGEXPS.extend(ignore_regexps)
             # Filter the file list.
@@ -492,9 +513,10 @@ class Tests(unittest.TestCase):
             self.assertEqual(g2r('foo/*.py'), r'foo\/[^%s]*\.py\Z(?ms)' % sep)
 
     def test_get_ignore_from_manifest_lines(self):
-        from check_manifest import _get_ignore_from_manifest_lines as parse
+        from check_manifest import _get_ignore_from_manifest_lines
         from check_manifest import _glob_to_regexp as g2r
         j = os.path.join
+        parse = partial(_get_ignore_from_manifest_lines, ui=self.ui)
         # The return value is a tuple with two lists:
         # ([<list of filename ignores>], [<list of regular expressions>])
         self.assertEqual(parse([]),
@@ -570,7 +592,7 @@ class Tests(unittest.TestCase):
             ]))
 
     def test_get_ignore_from_manifest(self):
-        from check_manifest import _get_ignore_from_manifest as parse
+        from check_manifest import _get_ignore_from_manifest
         filename = os.path.join(self.make_temp_dir(), 'MANIFEST.in')
         self.create_file(filename, textwrap.dedent('''
            exclude \\
@@ -580,18 +602,20 @@ class Tests(unittest.TestCase):
            # https://github.com/mgedmin/check-manifest/issues/66
            # docs/ folder
         '''))
-        self.assertEqual(parse(filename), (['test.dat'], []))
-        self.assertEqual(self.warnings, [])
+        ui = MockUI()
+        self.assertEqual(_get_ignore_from_manifest(filename, ui), (['test.dat'], []))
+        self.assertEqual(ui.warnings, [])
 
     def test_get_ignore_from_manifest_warnings(self):
-        from check_manifest import _get_ignore_from_manifest as parse
+        from check_manifest import _get_ignore_from_manifest
         filename = os.path.join(self.make_temp_dir(), 'MANIFEST.in')
         self.create_file(filename, textwrap.dedent('''
            # this is bad: a file should not end with a backslash
            exclude test.dat \\
         '''))
-        self.assertEqual(parse(filename), (['test.dat'], []))
-        self.assertEqual(self.warnings, [
+        ui = MockUI()
+        self.assertEqual(_get_ignore_from_manifest(filename, ui), (['test.dat'], []))
+        self.assertEqual(ui.warnings, [
             "%s, line 2: continuation line immediately precedes end-of-file" % filename,
         ])
 
@@ -672,6 +696,7 @@ class TestConfiguration(unittest.TestCase):
         check_manifest.IGNORE = ['default-ignore-rules']
         check_manifest.IGNORE_REGEXPS = ['default-ignore-regexps']
         check_manifest.IGNORE_BAD_IDEAS = []
+        self.ui = MockUI()
 
     def tearDown(self):
         import check_manifest
@@ -768,7 +793,7 @@ class TestConfiguration(unittest.TestCase):
 
     def test_read_manifest_no_manifest(self):
         import check_manifest
-        check_manifest.read_manifest()
+        check_manifest.read_manifest(self.ui)
         self.assertEqual(check_manifest.IGNORE, ['default-ignore-rules'])
 
     def test_read_manifest(self):
@@ -777,7 +802,7 @@ class TestConfiguration(unittest.TestCase):
         with open('MANIFEST.in', 'w') as f:
             f.write('exclude *.gif\n')
             f.write('global-exclude *.png\n')
-        check_manifest.read_manifest()
+        check_manifest.read_manifest(self.ui)
         self.assertEqual(check_manifest.IGNORE,
                          ['default-ignore-rules', '*.png'])
         self.assertEqual(check_manifest.IGNORE_REGEXPS,
@@ -792,8 +817,9 @@ class TestMain(unittest.TestCase):
         self._check_manifest = self._cm_patcher.start()
         self._se_patcher = mock.patch('sys.exit')
         self._sys_exit = self._se_patcher.start()
-        self._error_patcher = mock.patch('check_manifest.error')
-        self._error = self._error_patcher.start()
+        self.ui = MockUI()
+        self._ui_patcher = mock.patch('check_manifest.UI', self._make_ui)
+        self._ui_patcher.start()
         self._orig_sys_argv = sys.argv
         sys.argv = ['check-manifest']
         self.OLD_IGNORE = check_manifest.IGNORE
@@ -811,7 +837,11 @@ class TestMain(unittest.TestCase):
         sys.argv = self._orig_sys_argv
         self._se_patcher.stop()
         self._cm_patcher.stop()
-        self._error_patcher.stop()
+        self._ui_patcher.stop()
+
+    def _make_ui(self, verbosity):
+        self.ui.verbosity = verbosity
+        return self.ui
 
     def test(self):
         from check_manifest import main
@@ -828,7 +858,7 @@ class TestMain(unittest.TestCase):
         from check_manifest import main, Failure
         self._check_manifest.side_effect = Failure('msg')
         main()
-        self._error.assert_called_with('msg')
+        self.assertEqual(self.ui.errors, ['msg'])
         self._sys_exit.assert_called_with(2)
 
     def test_extra_ignore_args(self):
@@ -847,31 +877,24 @@ class TestMain(unittest.TestCase):
 
     def test_verbose_arg(self):
         import check_manifest
-        check_manifest.VERBOSE = False
         sys.argv.append('--verbose')
         check_manifest.main()
-        self.assertTrue(check_manifest.VERBOSE)
-        check_manifest.VERBOSE = False
+        self.assertEqual(self.ui.verbosity, 2)
 
     def test_quiet_arg(self):
         import check_manifest
-        check_manifest.QUIET = False
         sys.argv.append('--quiet')
         check_manifest.main()
-        self.assertTrue(check_manifest.QUIET)
-        check_manifest.QUIET = False
+        self.assertEqual(self.ui.verbosity, 0)
 
     def test_verbose_and_quiet_arg(self):
         import check_manifest
-        check_manifest.VERBOSE = False
-        check_manifest.QUIET = False
         sys.argv.append('--verbose')
         sys.argv.append('--quiet')
         check_manifest.main()
-        self.assertFalse(check_manifest.VERBOSE)
-        self.assertFalse(check_manifest.QUIET)
-        check_manifest.VERBOSE = False
-        check_manifest.QUIET = False
+        # the two arguments cancel each other out:
+        # 1 (default verbosity) + 1 - 1 = 1.
+        self.assertEqual(self.ui.verbosity, 1)
 
 
 class TestZestIntegration(unittest.TestCase):
@@ -881,8 +904,12 @@ class TestZestIntegration(unittest.TestCase):
         sys.modules['zest.releaser'] = mock.Mock()
         sys.modules['zest.releaser.utils'] = mock.Mock()
         self.ask = sys.modules['zest.releaser.utils'].ask
+        self.ui = MockUI()
+        self._ui_patcher = mock.patch('check_manifest.UI', return_value=self.ui)
+        self._ui_patcher.start()
 
     def tearDown(self):
+        self._ui_patcher.stop()
         del sys.modules['zest.releaser.utils']
         del sys.modules['zest.releaser']
         del sys.modules['zest']
@@ -913,11 +940,10 @@ class TestZestIntegration(unittest.TestCase):
         sys_exit.assert_not_called()
 
     @mock.patch('check_manifest.is_package', lambda d: True)
-    @mock.patch('check_manifest.error')
     @mock.patch('sys.exit')
     @mock.patch('check_manifest.check_manifest')
     def test_zest_releaser_check_error_user_aborts(self, check_manifest,
-                                                   sys_exit, error):
+                                                   sys_exit):
         from check_manifest import zest_releaser_check
         self.ask.side_effect = [True, False]
         check_manifest.return_value = False
@@ -925,11 +951,10 @@ class TestZestIntegration(unittest.TestCase):
         sys_exit.assert_called_with(1)
 
     @mock.patch('check_manifest.is_package', lambda d: True)
-    @mock.patch('check_manifest.error')
     @mock.patch('sys.exit')
     @mock.patch('check_manifest.check_manifest')
     def test_zest_releaser_check_error_user_plods_on(self, check_manifest,
-                                                     sys_exit, error):
+                                                     sys_exit):
         from check_manifest import zest_releaser_check
         self.ask.side_effect = [True, True]
         check_manifest.return_value = False
@@ -937,29 +962,27 @@ class TestZestIntegration(unittest.TestCase):
         sys_exit.assert_not_called()
 
     @mock.patch('check_manifest.is_package', lambda d: True)
-    @mock.patch('check_manifest.error')
     @mock.patch('sys.exit')
     @mock.patch('check_manifest.check_manifest')
     def test_zest_releaser_check_failure_user_aborts(self, check_manifest,
-                                                     sys_exit, error):
+                                                     sys_exit):
         from check_manifest import zest_releaser_check, Failure
         self.ask.side_effect = [True, False]
         check_manifest.side_effect = Failure('msg')
         zest_releaser_check(dict(workingdir='.'))
-        error.assert_called_with('msg')
+        self.assertEqual(self.ui.errors, ['msg'])
         sys_exit.assert_called_with(2)
 
     @mock.patch('check_manifest.is_package', lambda d: True)
-    @mock.patch('check_manifest.error')
     @mock.patch('sys.exit')
     @mock.patch('check_manifest.check_manifest')
     def test_zest_releaser_check_failure_user_plods_on(self, check_manifest,
-                                                       sys_exit, error):
+                                                       sys_exit):
         from check_manifest import zest_releaser_check, Failure
         self.ask.side_effect = [True, True]
         check_manifest.side_effect = Failure('msg')
         zest_releaser_check(dict(workingdir='.'))
-        error.assert_called_with('msg')
+        self.assertEqual(self.ui.errors, ['msg'])
         sys_exit.assert_not_called()
 
 
@@ -1004,6 +1027,7 @@ class VCSMixin(object):
         self.tmpdir = tempfile.mkdtemp(prefix='test-', suffix='-check-manifest')
         self.olddir = os.getcwd()
         os.chdir(self.tmpdir)
+        self.ui = MockUI()
 
     def tearDown(self):
         os.chdir(self.olddir)
@@ -1040,7 +1064,7 @@ class VCSMixin(object):
         self._commit()
         self._create_files(['b/x.txt', 'd/d.txt', 'i.txt'])
         j = os.path.join
-        self.assertEqual(get_vcs_files(),
+        self.assertEqual(get_vcs_files(self.ui),
                          ['a.txt', 'b', j('b', 'b.txt'), j('b', 'c'),
                           j('b', 'c', 'd.txt')])
 
@@ -1050,7 +1074,7 @@ class VCSMixin(object):
         self._create_and_add_to_vcs(['a.txt', 'b/b.txt', 'b/c/d.txt'])
         self._create_files(['b/x.txt', 'd/d.txt', 'i.txt'])
         j = os.path.join
-        self.assertEqual(get_vcs_files(),
+        self.assertEqual(get_vcs_files(self.ui),
                          ['a.txt', 'b', j('b', 'b.txt'), j('b', 'c'),
                           j('b', 'c', 'd.txt')])
 
@@ -1063,7 +1087,7 @@ class VCSMixin(object):
         self._create_and_add_to_vcs(['a.txt'])
         self._commit()
         os.unlink('a.txt')
-        self.assertEqual(get_vcs_files(), ['a.txt'])
+        self.assertEqual(get_vcs_files(self.ui), ['a.txt'])
 
     def test_get_vcs_files_in_a_subdir(self):
         from check_manifest import get_vcs_files
@@ -1073,7 +1097,7 @@ class VCSMixin(object):
         self._create_files(['b/x.txt', 'd/d.txt', 'i.txt'])
         os.chdir('b')
         j = os.path.join
-        self.assertEqual(get_vcs_files(), ['b.txt', 'c', j('c', 'd.txt')])
+        self.assertEqual(get_vcs_files(self.ui), ['b.txt', 'c', j('c', 'd.txt')])
 
     def test_get_vcs_files_nonascii_filenames(self):
         # This test will fail if your locale is incapable of expressing
@@ -1083,12 +1107,12 @@ class VCSMixin(object):
         # A spelling of u"\xe9.txt" that works on Python 3.2 too
         filename = b'\xc3\xa9.txt'.decode('UTF-8')
         self._create_and_add_to_vcs([filename])
-        self.assertEqual(get_vcs_files(), [filename])
+        self.assertEqual(get_vcs_files(self.ui), [filename])
 
     def test_get_vcs_files_empty(self):
         from check_manifest import get_vcs_files
         self._init_vcs()
-        self.assertEqual(get_vcs_files(), [])
+        self.assertEqual(get_vcs_files(self.ui), [])
 
 
 class GitHelper(VCSHelper):
@@ -1130,13 +1154,13 @@ class TestGit(VCSMixin, unittest.TestCase):
     def test_detect_git_submodule(self):
         from check_manifest import detect_vcs, Failure
         with self.assertRaises(Failure) as cm:
-            detect_vcs()
+            detect_vcs(self.ui)
         self.assertEqual(str(cm.exception),
                          "Couldn't find version control data"
                          " (git/hg/bzr/svn supported)")
         # now create a .git file like in a submodule
         open(os.path.join(self.tmpdir, '.git'), 'w').close()
-        self.assertEqual(detect_vcs().metadata_name, '.git')
+        self.assertEqual(detect_vcs(self.ui).metadata_name, '.git')
 
     def test_get_versioned_files_with_git_submodules(self):
         from check_manifest import get_vcs_files
@@ -1150,7 +1174,7 @@ class TestGit(VCSMixin, unittest.TestCase):
         os.chdir('main')
         self.vcs._run('git', 'submodule', 'update', '--init', '--recursive')
         self.assertEqual(
-            get_vcs_files(),
+            get_vcs_files(self.ui),
             [fn.replace('/', os.path.sep) for fn in [
                 '.gitmodules',
                 'file5',
@@ -1278,144 +1302,123 @@ class TestSvn(VCSMixin, unittest.TestCase):
         self._create_files(['a.txt', 'ext/b.txt'])
         self.vcs._run('svn', 'add', 'a.txt', 'ext/b.txt')
         j = os.path.join
-        self.assertEqual(get_vcs_files(),
+        self.assertEqual(get_vcs_files(self.ui),
                          ['a.txt', 'ext', j('ext', 'b.txt')])
 
 
-class UIMixin(object):
-
-    def setUp(self):
-        import check_manifest
-        self.old_VERBOSE = check_manifest.VERBOSE
-        self.real_stdout = sys.stdout
-        self.real_stderr = sys.stderr
-        sys.stdout = StringIO()
-        sys.stderr = StringIO()
-
-    def tearDown(self):
-        import check_manifest
-        sys.stderr = self.real_stderr
-        sys.stdout = self.real_stdout
-        check_manifest.VERBOSE = self.old_VERBOSE
-
-
-class TestSvnExtraErrors(UIMixin, unittest.TestCase):
+class TestSvnExtraErrors(unittest.TestCase):
 
     def test_svn_xml_parsing_warning(self):
         from check_manifest import Subversion
+        ui = MockUI()
+        svn = Subversion(ui)
         entry = ET.XML('<entry path="foo/bar.txt"></entry>')
-        self.assertFalse(Subversion.is_interesting(entry))
+        self.assertFalse(svn.is_interesting(entry))
         self.assertEqual(
-            sys.stderr.getvalue(),
-            'svn status --xml parse error: <entry path="foo/bar.txt">'
-            ' without <wc-status>\n')
+            ui.warnings,
+            ['svn status --xml parse error:'
+             ' <entry path="foo/bar.txt"> without <wc-status>'])
 
 
-class TestUserInterface(UIMixin, unittest.TestCase):
+class TestUserInterface(unittest.TestCase):
+
+    def make_ui(self, verbosity=1):
+        from check_manifest import UI
+        ui = UI(verbosity=verbosity)
+        ui.stdout = StringIO()
+        ui.stderr = StringIO()
+        return ui
 
     def test_info(self):
-        import check_manifest
-        check_manifest.VERBOSE = False
-        check_manifest.info("Reticulating splines")
-        self.assertEqual(sys.stdout.getvalue(),
+        ui = self.make_ui(verbosity=1)
+        ui.info("Reticulating splines")
+        self.assertEqual(ui.stdout.getvalue(),
                          "Reticulating splines\n")
 
     def test_info_verbose(self):
-        import check_manifest
-        check_manifest.VERBOSE = True
-        check_manifest.info("Reticulating splines")
-        self.assertEqual(sys.stdout.getvalue(),
+        ui = self.make_ui(verbosity=2)
+        ui.info("Reticulating splines")
+        self.assertEqual(ui.stdout.getvalue(),
                          "Reticulating splines\n")
 
     def test_info_quiet(self):
-        import check_manifest
-        check_manifest.VERBOSE = False
-        check_manifest.QUIET = True
-        check_manifest.info("Reticulating splines")
-        self.assertEqual(sys.stdout.getvalue(), "")
-        check_manifest.QUIET = False
+        ui = self.make_ui(verbosity=0)
+        ui.info("Reticulating splines")
+        self.assertEqual(ui.stdout.getvalue(), "")
 
     def test_info_begin_continue_end(self):
-        import check_manifest
-        check_manifest.VERBOSE = False
-        check_manifest.info_begin("Reticulating splines...")
-        check_manifest.info_continue(" nearly done...")
-        check_manifest.info_continue(" almost done...")
-        check_manifest.info_end(" done!")
-        self.assertEqual(sys.stdout.getvalue(), "")
+        ui = self.make_ui(verbosity=1)
+        ui.info_begin("Reticulating splines...")
+        ui.info_continue(" nearly done...")
+        ui.info_continue(" almost done...")
+        ui.info_end(" done!")
+        self.assertEqual(ui.stdout.getvalue(), "")
 
     def test_info_begin_continue_end_verbose(self):
-        import check_manifest
-        check_manifest.VERBOSE = True
-        check_manifest.info_begin("Reticulating splines...")
-        check_manifest.info_continue(" nearly done...")
-        check_manifest.info_continue(" almost done...")
-        check_manifest.info_end(" done!")
+        ui = self.make_ui(verbosity=2)
+        ui.info_begin("Reticulating splines...")
+        ui.info_continue(" nearly done...")
+        ui.info_continue(" almost done...")
+        ui.info_end(" done!")
         self.assertEqual(
-            sys.stdout.getvalue(),
+            ui.stdout.getvalue(),
             "Reticulating splines... nearly done... almost done... done!\n")
 
     def test_info_emits_newline_when_needed(self):
-        import check_manifest
-        check_manifest.VERBOSE = False
-        check_manifest.info_begin("Computering...")
-        check_manifest.info("Forgot to turn the gas off!")
+        ui = self.make_ui(verbosity=1)
+        ui.info_begin("Computering...")
+        ui.info("Forgot to turn the gas off!")
         self.assertEqual(
-            sys.stdout.getvalue(),
+            ui.stdout.getvalue(),
             "Forgot to turn the gas off!\n")
 
     def test_info_emits_newline_when_needed_verbose(self):
-        import check_manifest
-        check_manifest.VERBOSE = True
-        check_manifest.info_begin("Computering...")
-        check_manifest.info("Forgot to turn the gas off!")
+        ui = self.make_ui(verbosity=2)
+        ui.info_begin("Computering...")
+        ui.info("Forgot to turn the gas off!")
         self.assertEqual(
-            sys.stdout.getvalue(),
+            ui.stdout.getvalue(),
             "Computering...\n"
             "Forgot to turn the gas off!\n")
 
     def test_warning(self):
-        import check_manifest
-        check_manifest.VERBOSE = False
-        check_manifest.info_begin("Computering...")
-        check_manifest.warning("Forgot to turn the gas off!")
-        self.assertEqual(sys.stdout.getvalue(), "")
+        ui = self.make_ui(verbosity=1)
+        ui.info_begin("Computering...")
+        ui.warning("Forgot to turn the gas off!")
+        self.assertEqual(ui.stdout.getvalue(), "")
         self.assertEqual(
-            sys.stderr.getvalue(),
+            ui.stderr.getvalue(),
             "Forgot to turn the gas off!\n")
 
     def test_warning_verbose(self):
-        import check_manifest
-        check_manifest.VERBOSE = True
-        check_manifest.info_begin("Computering...")
-        check_manifest.warning("Forgot to turn the gas off!")
+        ui = self.make_ui(verbosity=2)
+        ui.info_begin("Computering...")
+        ui.warning("Forgot to turn the gas off!")
         self.assertEqual(
-            sys.stdout.getvalue(),
+            ui.stdout.getvalue(),
             "Computering...\n")
         self.assertEqual(
-            sys.stderr.getvalue(),
+            ui.stderr.getvalue(),
             "Forgot to turn the gas off!\n")
 
     def test_error(self):
-        import check_manifest
-        check_manifest.VERBOSE = False
-        check_manifest.info_begin("Computering...")
-        check_manifest.error("Forgot to turn the gas off!")
-        self.assertEqual(sys.stdout.getvalue(), "")
+        ui = self.make_ui(verbosity=1)
+        ui.info_begin("Computering...")
+        ui.error("Forgot to turn the gas off!")
+        self.assertEqual(ui.stdout.getvalue(), "")
         self.assertEqual(
-            sys.stderr.getvalue(),
+            ui.stderr.getvalue(),
             "Forgot to turn the gas off!\n")
 
     def test_error_verbose(self):
-        import check_manifest
-        check_manifest.VERBOSE = True
-        check_manifest.info_begin("Computering...")
-        check_manifest.error("Forgot to turn the gas off!")
+        ui = self.make_ui(verbosity=2)
+        ui.info_begin("Computering...")
+        ui.error("Forgot to turn the gas off!")
         self.assertEqual(
-            sys.stdout.getvalue(),
+            ui.stdout.getvalue(),
             "Computering...\n")
         self.assertEqual(
-            sys.stderr.getvalue(),
+            ui.stderr.getvalue(),
             "Forgot to turn the gas off!\n")
 
 

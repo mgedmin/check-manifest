@@ -9,7 +9,7 @@ supported).
 Since the first check can fail to catch missing MANIFEST.in entries when
 you've got the right setuptools version control system support plugins
 installed, the script copies all the versioned files into a temporary
-directory and building the source distribution again.  This also avoids issues
+directory and builds the source distribution again.  This also avoids issues
 with stale egg-info/SOURCES.txt files that may cause files not mentioned in
 MANIFEST.in to be included nevertheless.
 """
@@ -63,59 +63,59 @@ class Failure(Exception):
 # User interface
 #
 
-VERBOSE = False
-QUIET = False
+class UI(object):
 
-_to_be_continued = False
-def _check_tbc():
-    global _to_be_continued
-    if _to_be_continued:
-        print()
-        _to_be_continued = False
+    def __init__(self, verbosity=1):
+        self.verbosity = verbosity
+        self._to_be_continued = False
+        self.stdout = sys.stdout
+        self.stderr = sys.stderr
 
+    @property
+    def quiet(self):
+        return self.verbosity < 1
 
-def info(message):
-    if QUIET:
-        return
-    _check_tbc()
-    print(message)
+    @property
+    def verbose(self):
+        return self.verbosity >= 2
 
+    def _check_tbc(self):
+        if self._to_be_continued:
+            print(file=self.stdout)
+            self._to_be_continued = False
 
-def info_begin(message):
-    if not VERBOSE:
-        return
-    _check_tbc()
-    sys.stdout.write(message)
-    sys.stdout.flush()
-    global _to_be_continued
-    _to_be_continued = True
+    def info(self, message):
+        if self.quiet:
+            return
+        self._check_tbc()
+        print(message, file=self.stdout)
 
+    def info_begin(self, message):
+        if not self.verbose:
+            return
+        self._check_tbc()
+        print(message, end="", file=self.stdout)
+        self._to_be_continued = True
 
-def info_continue(message):
-    if not VERBOSE:
-        return
-    sys.stdout.write(message)
-    sys.stdout.flush()
-    global _to_be_continued
-    _to_be_continued = True
+    def info_continue(self, message):
+        if not self.verbose:
+            return
+        print(message, end="", file=self.stdout)
+        self._to_be_continued = True
 
+    def info_end(self, message):
+        if not self.verbose:
+            return
+        print(message, file=self.stdout)
+        self._to_be_continued = False
 
-def info_end(message):
-    if not VERBOSE:
-        return
-    print(message)
-    global _to_be_continued
-    _to_be_continued = False
+    def error(self, message):
+        self._check_tbc()
+        print(message, file=self.stderr)
 
-
-def error(message):
-    _check_tbc()
-    print(message, file=sys.stderr)
-
-
-def warning(message):
-    _check_tbc()
-    print(message, file=sys.stderr)
+    def warning(self, message):
+        self._check_tbc()
+        print(message, file=self.stderr)
 
 
 def format_list(list_of_strings):
@@ -328,9 +328,15 @@ def add_prefix_to_each(prefix, filelist):
 
 class VCS(object):
 
+    def __init__(self, ui):
+        self.ui = ui
+
     @classmethod
     def detect(cls, location):
         return os.path.isdir(os.path.join(location, cls.metadata_name))
+
+    def get_versioned_files(self):
+        raise NotImplementedError('this is an abstract method')
 
 
 class Git(VCS):
@@ -345,14 +351,13 @@ class Git(VCS):
         # .git can be a file for submodules
         return os.path.exists(os.path.join(location, cls.metadata_name))
 
-    @classmethod
-    def get_versioned_files(cls):
+    def get_versioned_files(self):
         """List all files versioned by git in the current directory."""
-        files = cls._git_ls_files()
-        submodules = cls._list_submodules()
+        files = self._git_ls_files()
+        submodules = self._list_submodules()
         for subdir in submodules:
             subdir = os.path.relpath(subdir).replace(os.path.sep, '/')
-            files += add_prefix_to_each(subdir, cls._git_ls_files(subdir))
+            files += add_prefix_to_each(subdir, self._git_ls_files(subdir))
         return add_directories(files)
 
     @classmethod
@@ -377,8 +382,7 @@ class Git(VCS):
 class Mercurial(VCS):
     metadata_name = '.hg'
 
-    @staticmethod
-    def get_versioned_files():
+    def get_versioned_files(self):
         """List all files under Mercurial control in the current directory."""
         output = run(['hg', 'status', '-ncamd', '.'])
         return add_directories(output.splitlines())
@@ -412,10 +416,9 @@ class Bazaar(VCS):
         # first, since I don't have a Mac OS X machine and cannot test.
         return encoding
 
-    @classmethod
-    def get_versioned_files(cls):
+    def get_versioned_files(self):
         """List all files versioned in Bazaar in the current directory."""
-        encoding = cls._get_terminal_encoding()
+        encoding = self._get_terminal_encoding()
         output = run(['bzr', 'ls', '-VR'], encoding=encoding)
         return output.splitlines()
 
@@ -423,16 +426,14 @@ class Bazaar(VCS):
 class Subversion(VCS):
     metadata_name = '.svn'
 
-    @classmethod
-    def get_versioned_files(cls):
+    def get_versioned_files(self):
         """List all files under SVN control in the current directory."""
         output = run(['svn', 'st', '-vq', '--xml'], decode=False)
         tree = ET.XML(output)
         return sorted(entry.get('path') for entry in tree.findall('.//entry')
-                      if cls.is_interesting(entry))
+                      if self.is_interesting(entry))
 
-    @staticmethod
-    def is_interesting(entry):
+    def is_interesting(self, entry):
         """Is this entry interesting?
 
         ``entry`` is an XML node representing one entry of the svn status
@@ -464,8 +465,10 @@ class Subversion(VCS):
             return False
         status = entry.find('wc-status')
         if status is None:
-            warning('svn status --xml parse error: <entry path="%s"> without'
-                    ' <wc-status>' % entry.get('path'))
+            self.ui.warning(
+                'svn status --xml parse error: <entry path="%s"> without'
+                ' <wc-status>' % entry.get('path')
+            )
             return False
         # For SVN externals we get two entries: one mentioning the
         # existence of the external, and one about the status of the external.
@@ -474,13 +477,13 @@ class Subversion(VCS):
         return True
 
 
-def detect_vcs():
+def detect_vcs(ui):
     """Detect the version control system used for the current directory."""
     location = os.path.abspath('.')
     while True:
         for vcs in Git, Mercurial, Bazaar, Subversion:
             if vcs.detect(location):
-                return vcs
+                return vcs(ui)
         parent = os.path.dirname(location)
         if parent == location:
             raise Failure("Couldn't find version control data"
@@ -488,9 +491,9 @@ def detect_vcs():
         location = parent
 
 
-def get_vcs_files():
+def get_vcs_files(ui):
     """List all files under version control in the current directory."""
-    vcs = detect_vcs()
+    vcs = detect_vcs(ui)
     return normalize_names(vcs.get_versioned_files())
 
 
@@ -658,7 +661,7 @@ def _load_config():
     return {}
 
 
-def read_manifest():
+def read_manifest(ui):
     """Read existing configuration from MANIFEST.in.
 
     We use that to ignore anything the MANIFEST.in ignores.
@@ -666,7 +669,7 @@ def read_manifest():
     # XXX modifies global state, which is kind of evil
     if not os.path.isfile('MANIFEST.in'):
         return
-    ignore, ignore_regexps = _get_ignore_from_manifest('MANIFEST.in')
+    ignore, ignore_regexps = _get_ignore_from_manifest('MANIFEST.in', ui)
     IGNORE.extend(ignore)
     IGNORE_REGEXPS.extend(ignore_regexps)
 
@@ -681,7 +684,7 @@ def _glob_to_regexp(pat):
     return glob_to_re(pat)
 
 
-def _get_ignore_from_manifest(filename):
+def _get_ignore_from_manifest(filename, ui):
     """Gather the various ignore patterns from a MANIFEST.in.
 
     Returns a list of standard ignore patterns and a list of regular
@@ -694,7 +697,7 @@ def _get_ignore_from_manifest(filename):
             raise Failure(self.gen_error(msg, line))
 
         def warn(self, msg, line=None):
-            warning(self.gen_error(msg, line))
+            ui.warning(self.gen_error(msg, line))
 
     template = MyTextFile(filename,
                           strip_comments=True,
@@ -707,10 +710,10 @@ def _get_ignore_from_manifest(filename):
         lines = template.readlines()
     finally:
         template.close()
-    return _get_ignore_from_manifest_lines(lines)
+    return _get_ignore_from_manifest_lines(lines, ui)
 
 
-def _get_ignore_from_manifest_lines(lines):
+def _get_ignore_from_manifest_lines(lines, ui):
     """Gather the various ignore patterns from a MANIFEST.in.
 
     'lines' should be a list of strings with comments removed
@@ -730,9 +733,9 @@ def _get_ignore_from_manifest_lines(lines):
         for part in rest.split():
             # distutils enforces these warnings on Windows only
             if part.startswith('/'):
-                warning("ERROR: Leading slashes are not allowed in MANIFEST.in on Windows: %s" % part)
+                ui.warning("ERROR: Leading slashes are not allowed in MANIFEST.in on Windows: %s" % part)
             if part.endswith('/'):
-                warning("ERROR: Trailing slashes are not allowed in MANIFEST.in on Windows: %s" % part)
+                ui.warning("ERROR: Trailing slashes are not allowed in MANIFEST.in on Windows: %s" % part)
         if cmd == 'exclude':
             # An exclude of 'dirname/*css' can match 'dirname/foo.css'
             # but not 'dirname/subdir/bar.css'.  We need a regular
@@ -751,9 +754,11 @@ def _get_ignore_from_manifest_lines(lines):
                 dirname, patterns = rest.split(None, 1)
             except ValueError:
                 # Wrong MANIFEST.in line.
-                warning("You have a wrong line in MANIFEST.in: %r\n"
-                        "'recursive-exclude' expects <dir> <pattern1> "
-                        "<pattern2> ..." % line)
+                ui.warning(
+                    "You have a wrong line in MANIFEST.in: %r\n"
+                    "'recursive-exclude' expects <dir> <pattern1> <pattern2>..."
+                    % line
+                )
                 continue
             # Strip path separator for clarity.
             dirname = dirname.rstrip(os.path.sep)
@@ -886,11 +891,13 @@ def build_sdist(tempdir, python=sys.executable):
 
 
 def check_manifest(source_tree='.', create=False, update=False,
-                   python=sys.executable):
+                   python=sys.executable, ui=None):
     """Compare a generated source distribution with list of files in a VCS.
 
     Returns True if the manifest is fine.
     """
+    if ui is None:
+        ui = UI()
     all_ok = True
     if os.path.sep in python:
         python = os.path.abspath(python)
@@ -899,28 +906,28 @@ def check_manifest(source_tree='.', create=False, update=False,
             raise Failure(
                 'This is not a Python project (no setup.py/pyproject.toml).')
         read_config()
-        read_manifest()
-        info_begin("listing source files under version control")
-        all_source_files = sorted(get_vcs_files())
+        read_manifest(ui)
+        ui.info_begin("listing source files under version control")
+        all_source_files = sorted(get_vcs_files(ui))
         source_files = strip_sdist_extras(all_source_files)
-        info_continue(": %d files and directories" % len(source_files))
+        ui.info_continue(": %d files and directories" % len(source_files))
         if not all_source_files:
             raise Failure('There are no files added to version control!')
-        info_begin("building an sdist")
+        ui.info_begin("building an sdist")
         with mkdtemp('-sdist') as tempdir:
             build_sdist(tempdir, python=python)
             sdist_filename = get_one_file_in(tempdir)
-            info_continue(": %s" % os.path.basename(sdist_filename))
+            ui.info_continue(": %s" % os.path.basename(sdist_filename))
             sdist_files = sorted(normalize_names(strip_sdist_extras(
                 strip_toplevel_name(get_archive_file_list(sdist_filename)))))
-            info_continue(": %d files and directories" % len(sdist_files))
+            ui.info_continue(": %d files and directories" % len(sdist_files))
             version = extract_version_from_filename(sdist_filename)
         existing_source_files = list(filter(os.path.exists, all_source_files))
         missing_source_files = sorted(set(all_source_files) - set(existing_source_files))
         if missing_source_files:
-            warning("some files listed as being under source control are missing:\n%s"
-                    % format_list(missing_source_files))
-        info_begin("copying source files to a temporary directory")
+            ui.warning("some files listed as being under source control are missing:\n%s"
+                       % format_list(missing_source_files))
+        ui.info_begin("copying source files to a temporary directory")
         with mkdtemp('-sources') as tempsourcedir:
             copy_files(existing_source_files, tempsourcedir)
             for filename in 'MANIFEST.in', 'setup.py', 'pyproject.toml':
@@ -931,61 +938,60 @@ def check_manifest(source_tree='.', create=False, update=False,
                     # missing from source control; if we don't do this,
                     # things get very confusing for the user!
                     copy_files([filename], tempsourcedir)
-            info_begin("building a clean sdist")
+            ui.info_begin("building a clean sdist")
             with cd(tempsourcedir):
                 with mkdtemp('-sdist') as tempdir:
                     os.environ['SETUPTOOLS_SCM_PRETEND_VERSION'] = version
                     build_sdist(tempdir, python=python)
                     sdist_filename = get_one_file_in(tempdir)
-                    info_continue(": %s" % os.path.basename(sdist_filename))
+                    ui.info_continue(": %s" % os.path.basename(sdist_filename))
                     clean_sdist_files = sorted(normalize_names(strip_sdist_extras(
                         strip_toplevel_name(get_archive_file_list(sdist_filename)))))
-                    info_continue(": %d files and directories" % len(clean_sdist_files))
+                    ui.info_continue(": %d files and directories" % len(clean_sdist_files))
         missing_from_manifest = set(source_files) - set(clean_sdist_files)
         missing_from_VCS = set(sdist_files + clean_sdist_files) - set(source_files)
         if not missing_from_manifest and not missing_from_VCS:
-            info("lists of files in version control and sdist match")
+            ui.info("lists of files in version control and sdist match")
         else:
-            error("lists of files in version control and sdist do not match!\n%s"
-                  % format_missing(missing_from_VCS, missing_from_manifest,
-                                   "VCS", "sdist"))
+            ui.error(
+                "lists of files in version control and sdist do not match!\n%s"
+                % format_missing(missing_from_VCS, missing_from_manifest, "VCS", "sdist"))
             suggestions, unknowns = find_suggestions(missing_from_manifest)
             user_asked_for_help = update or (create and not
                                                 os.path.exists('MANIFEST.in'))
             if 'MANIFEST.in' not in existing_source_files:
                 if suggestions and not user_asked_for_help:
-                    info("no MANIFEST.in found; you can run 'check-manifest -c' to create one")
+                    ui.info("no MANIFEST.in found; you can run 'check-manifest -c' to create one")
                 else:
-                    info("no MANIFEST.in found")
+                    ui.info("no MANIFEST.in found")
             if suggestions:
-                info("suggested MANIFEST.in rules:\n%s"
-                     % format_list(suggestions))
+                ui.info("suggested MANIFEST.in rules:\n%s" % format_list(suggestions))
                 if user_asked_for_help:
                     existed = os.path.exists('MANIFEST.in')
                     with open('MANIFEST.in', 'a') as f:
                         if not existed:
-                            info("creating MANIFEST.in")
+                            ui.info("creating MANIFEST.in")
                         else:
-                            info("updating MANIFEST.in")
+                            ui.info("updating MANIFEST.in")
                             f.write('\n# added by check_manifest.py\n')
                         f.write('\n'.join(suggestions) + '\n')
                     if unknowns:
-                        info("don't know how to come up with rules matching\n%s"
-                             % format_list(unknowns))
+                        ui.info("don't know how to come up with rules matching\n%s"
+                                % format_list(unknowns))
             elif user_asked_for_help:
-                info("don't know how to come up with rules"
-                     " matching any of the files, sorry!")
+                ui.info("don't know how to come up with rules matching any of the files, sorry!")
             all_ok = False
         bad_ideas = find_bad_ideas(all_source_files)
         filtered_bad_ideas = [bad_idea for bad_idea in bad_ideas
                               if not file_matches(bad_idea, IGNORE_BAD_IDEAS)]
         if filtered_bad_ideas:
-            warning("you have %s in source control!\nthat's a bad idea:"
-                    " auto-generated files should not be versioned"
-                    % filtered_bad_ideas[0])
+            ui.warning(
+                "you have %s in source control!\n"
+                "that's a bad idea: auto-generated files should not be versioned"
+                % filtered_bad_ideas[0])
             if len(filtered_bad_ideas) > 1:
-                warning("this also applies to the following:\n%s"
-                        % format_list(filtered_bad_ideas[1:]))
+                ui.warning("this also applies to the following:\n%s"
+                           % format_list(filtered_bad_ideas[1:]))
             all_ok = False
     return all_ok
 
@@ -1026,20 +1032,15 @@ def main():
     if args.ignore_bad_ideas:
         IGNORE_BAD_IDEAS.extend(args.ignore_bad_ideas.split(','))
 
-    verbosity = args.quiet + args.verbose
-    if verbosity >= 2:
-        global VERBOSE
-        VERBOSE = True
-    if not verbosity:
-        global QUIET
-        QUIET = True
+    ui = UI(verbosity=args.quiet + args.verbose)
 
     try:
         if not check_manifest(args.source_tree, create=args.create,
-                              update=args.update, python=args.python):
+                              update=args.update, python=args.python,
+                              ui=ui):
             sys.exit(1)
     except Failure as e:
-        error(str(e))
+        ui.error(str(e))
         sys.exit(2)
 
 
@@ -1062,14 +1063,15 @@ def zest_releaser_check(data):
         return
     if not ask("Do you want to run check-manifest?"):
         return
+    ui = UI()
     try:
-        if not check_manifest(source_tree):
-            if not ask("MANIFEST.in has problems. "
+        if not check_manifest(source_tree, ui=ui):
+            if not ask("MANIFEST.in has problems."
                        " Do you want to continue despite that?", default=False):
                 sys.exit(1)
     except Failure as e:
-        error(str(e))
-        if not ask("Something bad happened. "
+        ui.error(str(e))
+        if not ask("Something bad happened."
                    " Do you want to continue despite that?", default=False):
             sys.exit(2)
 
