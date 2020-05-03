@@ -626,28 +626,36 @@ class IgnoreList(object):
         self._regexps += other._regexps
         return self
 
+    def _path(self, path):
+        return path.replace('/', os.path.sep)
+
     def exclude(self, *patterns):
         for pat in patterns:
+            pat = self._path(pat)
             self._regexps.append(translate_pattern(pat, anchor=True))
         return self
 
     def global_exclude(self, *patterns):
         for pat in patterns:
+            pat = self._path(pat)
             self._regexps.append(translate_pattern(pat, anchor=False))
         return self
 
     def recursive_exclude(self, dirname, *patterns):
+        dirname = self._path(dirname)
         for pat in patterns:
+            pat = self._path(pat)
             self._regexps.append(translate_pattern(pat, prefix=dirname))
         return self
 
     def prune(self, subdir):
+        subdir = self._path(subdir)
         self._regexps.append(translate_pattern(None, prefix=subdir))
         return self
 
     def filter(self, filelist):
         return [name for name in filelist
-                if not any(rx.search(name) for rx in self._regexps)]
+                if not any(rx.search(self._path(name)) for rx in self._regexps)]
 
 
 WARN_ABOUT_FILES_IN_VCS = [
