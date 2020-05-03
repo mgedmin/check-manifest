@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """Check the MANIFEST.in file in a Python source package for completeness.
 
 This script works by building a source distribution archive (by running
@@ -13,10 +13,10 @@ directory and builds the source distribution again.  This also avoids issues
 with stale egg-info/SOURCES.txt files that may cause files not mentioned in
 MANIFEST.in to be included nevertheless.
 """
-from __future__ import print_function
 
 import argparse
 import codecs
+import configparser
 import fnmatch
 import locale
 import os
@@ -33,18 +33,7 @@ import zipfile
 from contextlib import contextmanager, closing
 from distutils.filelist import translate_pattern
 from distutils.text_file import TextFile
-
-try:
-    from xml.etree import cElementTree as ET
-except ImportError:
-    # Python 3.9+
-    from xml.etree import ElementTree as ET
-
-try:
-    import ConfigParser
-except ImportError:
-    # Python 3.x
-    import configparser as ConfigParser
+from xml.etree import ElementTree as ET
 
 import toml
 
@@ -63,7 +52,7 @@ class Failure(Exception):
 # User interface
 #
 
-class UI(object):
+class UI:
 
     def __init__(self, verbosity=1):
         self.verbosity = verbosity
@@ -382,7 +371,7 @@ def add_prefix_to_each(prefix, filelist):
     return [posixpath.join(prefix, name) for name in filelist]
 
 
-class VCS(object):
+class VCS:
 
     def __init__(self, ui):
         self.ui = ui
@@ -582,7 +571,7 @@ def normalize_name(name):
 # Packaging logic
 #
 
-class IgnoreList(object):
+class IgnoreList:
 
     def __init__(self):
         self._regexps = []
@@ -731,7 +720,7 @@ def _load_config():
             return config["tool"][CFG_SECTION_CHECK_MANIFEST]
 
     search_files = ['setup.cfg', 'tox.ini']
-    config_parser = ConfigParser.ConfigParser()
+    config_parser = configparser.ConfigParser()
     for filename in search_files:
         if (config_parser.read([filename])
                 and config_parser.has_section(CFG_SECTION_CHECK_MANIFEST)):

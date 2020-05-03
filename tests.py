@@ -15,13 +15,8 @@ import unittest
 import zipfile
 from contextlib import closing
 from functools import partial
-from io import BytesIO
+from io import BytesIO, StringIO
 from xml.etree import ElementTree as ET
-
-try:
-    from cStringIO import StringIO  # Python 2.x
-except ImportError:
-    from io import StringIO         # Python 3.x
 
 import mock
 
