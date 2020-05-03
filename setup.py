@@ -57,7 +57,7 @@ setup(
     python_requires=">=3.5",
     install_requires=['toml', 'pep517'],
     extras_require={
-        'test': ['mock'],
+        'test': ['mock >= 3.0.0'],
     },
     entry_points={
         'console_scripts': [
