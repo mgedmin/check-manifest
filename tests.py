@@ -1388,7 +1388,7 @@ class TestIgnoreList(unittest.TestCase):
             'subdir/afile.txt',
             'adir/file.txt',  # make sure * doesn't match /
         ]), [
-            # no bar.txt!  because https://bugs.python.org/issue14106
+            'bar.txt',
             'adir/file.txt',
         ])
 

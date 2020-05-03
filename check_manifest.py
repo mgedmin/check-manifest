@@ -31,11 +31,11 @@ import tempfile
 import unicodedata
 import zipfile
 from contextlib import contextmanager, closing
-from distutils.filelist import translate_pattern
 from distutils.text_file import TextFile
 from xml.etree import ElementTree as ET
 
 import toml
+from setuptools.command.egg_info import translate_pattern
 
 
 __version__ = '0.42.dev0'
@@ -621,30 +621,30 @@ class IgnoreList:
     def exclude(self, *patterns):
         for pat in patterns:
             pat = self._path(pat)
-            self._regexps.append(translate_pattern(pat, anchor=True))
+            self._regexps.append(translate_pattern(pat))
         return self
 
     def global_exclude(self, *patterns):
         for pat in patterns:
-            pat = self._path(pat)
-            self._regexps.append(translate_pattern(pat, anchor=False))
+            pat = os.path.join('**', self._path(pat))
+            self._regexps.append(translate_pattern(pat))
         return self
 
     def recursive_exclude(self, dirname, *patterns):
         dirname = self._path(dirname)
         for pat in patterns:
-            pat = self._path(pat)
-            self._regexps.append(translate_pattern(pat, prefix=dirname))
+            pat = os.path.join(dirname, '**', self._path(pat))
+            self._regexps.append(translate_pattern(pat))
         return self
 
     def prune(self, subdir):
-        subdir = self._path(subdir)
-        self._regexps.append(translate_pattern(None, prefix=subdir))
+        pat = os.path.join(self._path(subdir), '**')
+        self._regexps.append(translate_pattern(pat))
         return self
 
     def filter(self, filelist):
         return [name for name in filelist
-                if not any(rx.search(self._path(name)) for rx in self._regexps)]
+                if not any(rx.match(self._path(name)) for rx in self._regexps)]
 
 
 WARN_ABOUT_FILES_IN_VCS = [

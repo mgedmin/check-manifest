@@ -55,9 +55,15 @@ setup(
     py_modules=['check_manifest'],
     zip_safe=False,
     python_requires=">=3.5",
-    install_requires=['toml', 'pep517'],
+    install_requires=[
+        'pep517',
+        'setuptools',
+        'toml',
+    ],
     extras_require={
-        'test': ['mock >= 3.0.0'],
+        'test': [
+            'mock >= 3.0.0',
+        ],
     },
     entry_points={
         'console_scripts': [
