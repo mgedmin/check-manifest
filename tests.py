@@ -1675,7 +1675,7 @@ class TestCheckManifest(unittest.TestCase):
         with open('MANIFEST.in') as f:
             self.assertEqual(
                 f.read(),
-                "#tbd\n# added by check_manifest.py\ninclude *.txt\n")
+                "#tbd\n# added by check-manifest\ninclude *.txt\n")
 
     def test_suggestions_all_unknown_patterns(self):
         from check_manifest import check_manifest

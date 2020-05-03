@@ -1017,7 +1017,7 @@ def check_manifest(source_tree='.', create=False, update=False,
                             ui.info("creating MANIFEST.in")
                         else:
                             ui.info("updating MANIFEST.in")
-                            f.write('\n# added by check_manifest.py\n')
+                            f.write('\n# added by check-manifest\n')
                         f.write('\n'.join(suggestions) + '\n')
                     if unknowns:
                         ui.info("don't know how to come up with rules matching\n%s"
