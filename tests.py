@@ -397,7 +397,7 @@ class Tests(unittest.TestCase):
 
     def test_find_bad_ideas(self):
         from check_manifest import find_bad_ideas
-        filelist = list(map(os.path.normpath, [
+        filelist = [
             '.gitignore',
             'setup.py',
             'setup.cfg',
@@ -411,11 +411,11 @@ class Tests(unittest.TestCase):
             'src/zope/foo/language.mo',
             'src/zope.foo.egg-info',
             'src/zope.foo.egg-info/SOURCES.txt',
-        ]))
-        expected = list(map(os.path.normpath, [
+        ]
+        expected = [
             'src/zope/foo/language.mo',
             'src/zope.foo.egg-info',
-        ]))
+        ]
         self.assertEqual(find_bad_ideas(filelist), expected)
 
     def test_find_suggestions(self):
@@ -426,38 +426,31 @@ class Tests(unittest.TestCase):
                          ([], ['unknown.file~']))
         self.assertEqual(find_suggestions(['README.txt', 'CHANGES.txt']),
                          (['include *.txt'], []))
-        filelist = list(map(os.path.normpath, [
+        filelist = [
             'docs/index.rst',
             'docs/image.png',
             'docs/Makefile',
             'docs/unknown-file',
             'src/etc/blah/blah/Makefile',
-        ]))
+        ]
         expected_rules = [
             'recursive-include docs *.png',
             'recursive-include docs *.rst',
             'recursive-include docs Makefile',
             'recursive-include src Makefile',
         ]
-        expected_unknowns = [os.path.normpath('docs/unknown-file')]
+        expected_unknowns = ['docs/unknown-file']
         self.assertEqual(find_suggestions(filelist),
                          (expected_rules, expected_unknowns))
 
     def test_find_suggestions_generic_fallback_rules(self):
         from check_manifest import find_suggestions
-        n = os.path.normpath
         self.assertEqual(find_suggestions(['Changelog']),
                          (['include Changelog'], []))
         self.assertEqual(find_suggestions(['id-lang.map']),
                          (['include *.map'], []))
-        self.assertEqual(find_suggestions([n('src/id-lang.map')]),
+        self.assertEqual(find_suggestions(['src/id-lang.map']),
                          (['recursive-include src *.map'], []))
-
-    def test_find_suggestions_ignores_directories(self):
-        from check_manifest import find_suggestions
-        with mock.patch('os.path.isdir', lambda d: True):
-            self.assertEqual(find_suggestions(['SOMEDIR']),
-                             ([], []))
 
     def test_is_package(self):
         from check_manifest import is_package
