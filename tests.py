@@ -4,6 +4,7 @@ import codecs
 import doctest
 import locale
 import os
+import posixpath
 import shutil
 import subprocess
 import sys
@@ -219,7 +220,7 @@ class Tests(unittest.TestCase):
         filename = os.path.join(self.make_temp_dir(), 'archive.zip')
         self.create_zip_file(filename, ['a', 'b/c'])
         self.assertEqual(get_archive_file_list(filename),
-                         ['a', 'b', 'b/c'])
+                         ['a', 'b/c'])
 
     def test_get_archive_file_list_zip_nonascii(self):
         from check_manifest import get_archive_file_list
@@ -234,7 +235,7 @@ class Tests(unittest.TestCase):
         filename = os.path.join(self.make_temp_dir(), 'archive.tar')
         self.create_tar_file(filename, ['a', 'b/c'])
         self.assertEqual(get_archive_file_list(filename),
-                         ['a', 'b', 'b/c'])
+                         ['a', 'b/c'])
 
     def test_get_archive_file_list_tar_nonascii(self):
         from check_manifest import get_archive_file_list
@@ -287,32 +288,29 @@ class Tests(unittest.TestCase):
         self.assertEqual(normalize_names(["a", j("b", ""), j("c", "d"),
                                           j("e", "f", ""),
                                           j("g", "h", "..", "i")]),
-                         ["a", "b", j("c", "d"), j("e", "f"), j("g", "i")])
+                         ["a", "b", "c/d", "e/f", "g/i"])
 
-    def test_add_directories_and_sort(self):
-        from check_manifest import add_directories_and_sort
+    def test_canonical_file_list(self):
+        from check_manifest import canonical_file_list
         j = os.path.join
         self.assertEqual(
-            add_directories_and_sort(['a', 'b', j('c', 'd'), j('e', 'f')]),
-            ['a', 'b', 'c', j('c', 'd'), 'e', j('e', 'f')])
+            canonical_file_list(['b', 'a', 'c', j('c', 'd'), j('e', 'f'),
+                                 'g', j('g', 'h', 'i', 'j')]),
+            ['a', 'b', 'c/d', 'e/f', 'g/h/i/j'])
 
     def test_file_matches(self):
         from check_manifest import file_matches
-        # On Windows we might get the pattern list from setup.cfg using / as
-        # the directory separator, but the filenames we're matching against
-        # will use os.path.sep
         patterns = ['setup.cfg', '*.egg-info', '*.egg-info/*']
-        j = os.path.join
         self.assertFalse(file_matches('setup.py', patterns))
         self.assertTrue(file_matches('setup.cfg', patterns))
-        self.assertTrue(file_matches(j('src', 'zope.foo.egg-info'), patterns))
-        self.assertTrue(
-            file_matches(j('src', 'zope.foo.egg-info', 'SOURCES.txt'),
-                         patterns))
+        self.assertTrue(file_matches('src/zope.foo.egg-info', patterns))
+        self.assertTrue(file_matches('src/zope.foo.egg-info/SOURCES.txt',
+                                     patterns))
 
     def test_strip_sdist_extras(self):
         from check_manifest import strip_sdist_extras, IgnoreList
-        filelist = list(map(os.path.normpath, [
+        from check_manifest import canonical_file_list
+        filelist = canonical_file_list([
             '.github',
             '.github/ISSUE_TEMPLATE',
             '.github/ISSUE_TEMPLATE/bug_report.md',
@@ -331,8 +329,8 @@ class Tests(unittest.TestCase):
             'src/zope/foo/language.mo',
             'src/zope.foo.egg-info',
             'src/zope.foo.egg-info/SOURCES.txt',
-        ]))
-        expected = list(map(os.path.normpath, [
+        ])
+        expected = canonical_file_list([
             'setup.py',
             'README.txt',
             'src',
@@ -341,12 +339,13 @@ class Tests(unittest.TestCase):
             'src/zope/foo',
             'src/zope/foo/__init__.py',
             'src/zope/foo/language.po',
-        ]))
+        ])
         ignore = IgnoreList.default()
         self.assertEqual(strip_sdist_extras(ignore, filelist), expected)
 
     def test_strip_sdist_extras_with_manifest(self):
         from check_manifest import strip_sdist_extras, IgnoreList
+        from check_manifest import canonical_file_list
         from check_manifest import _get_ignore_from_manifest_lines
         manifest_in = textwrap.dedent("""
             graft src
@@ -355,7 +354,7 @@ class Tests(unittest.TestCase):
             prune src/dump
             recursive-exclude src/zope *.sh
         """)
-        filelist = list(map(os.path.normpath, [
+        filelist = canonical_file_list([
             '.github/ISSUE_TEMPLATE/bug_report.md',
             '.gitignore',
             'setup.py',
@@ -377,8 +376,8 @@ class Tests(unittest.TestCase):
             'src/zope/foo/foohelper.sh',
             'src/zope.foo.egg-info',
             'src/zope.foo.egg-info/SOURCES.txt',
-        ]))
-        expected = list(map(os.path.normpath, [
+        ])
+        expected = canonical_file_list([
             'setup.py',
             'MANIFEST.in',
             'README.txt',
@@ -390,7 +389,7 @@ class Tests(unittest.TestCase):
             'src/zope/foo/__init__.py',
             'src/zope/foo/language.po',
             'src/zope/foo/config.cfg',
-        ]))
+        ])
         ignore = IgnoreList.default()
         ignore += _get_ignore_from_manifest_lines(manifest_in.splitlines(), self.ui)
         result = strip_sdist_extras(ignore, filelist)
@@ -474,80 +473,39 @@ class Tests(unittest.TestCase):
         self.assertEqual(e('dist/foo_bar-1.2.3.dev4+g12345.zip'), '1.2.3.dev4+g12345')
         self.assertEqual(e('dist/foo_bar-1.2.3.dev4+g12345.tar.gz'), '1.2.3.dev4+g12345')
 
-    def test_glob_to_regexp(self):
-        from check_manifest import _glob_to_regexp as g2r
-        sep = os.path.sep.replace('\\', '\\\\')
-        if sys.version_info >= (3, 7):
-            self.assertEqual(g2r('foo.py'), r'(?s:foo\.py)\Z')
-            self.assertEqual(g2r('foo/bar.py'), r'(?s:foo/bar\.py)\Z')
-            self.assertEqual(g2r('foo*.py'), r'(?s:foo[^%s]*\.py)\Z' % sep)
-            self.assertEqual(g2r('foo?.py'), r'(?s:foo[^%s]\.py)\Z' % sep)
-            self.assertEqual(g2r('foo[123].py'), r'(?s:foo[123]\.py)\Z')
-            self.assertEqual(g2r('foo[!123].py'), r'(?s:foo[^123]\.py)\Z')
-            self.assertEqual(g2r('foo/*.py'), r'(?s:foo/[^%s]*\.py)\Z' % sep)
-        elif sys.version_info >= (3, 6):
-            self.assertEqual(g2r('foo.py'), r'(?s:foo\.py)\Z')
-            self.assertEqual(g2r('foo/bar.py'), r'(?s:foo\/bar\.py)\Z')
-            self.assertEqual(g2r('foo*.py'), r'(?s:foo[^%s]*\.py)\Z' % sep)
-            self.assertEqual(g2r('foo?.py'), r'(?s:foo[^%s]\.py)\Z' % sep)
-            self.assertEqual(g2r('foo[123].py'), r'(?s:foo[123]\.py)\Z')
-            self.assertEqual(g2r('foo[!123].py'), r'(?s:foo[^123]\.py)\Z')
-            self.assertEqual(g2r('foo/*.py'), r'(?s:foo\/[^%s]*\.py)\Z' % sep)
-        else:
-            self.assertEqual(g2r('foo.py'), r'foo\.py\Z(?ms)')
-            self.assertEqual(g2r('foo/bar.py'), r'foo\/bar\.py\Z(?ms)')
-            self.assertEqual(g2r('foo*.py'), r'foo[^%s]*\.py\Z(?ms)' % sep)
-            self.assertEqual(g2r('foo?.py'), r'foo[^%s]\.py\Z(?ms)' % sep)
-            self.assertEqual(g2r('foo[123].py'), r'foo[123]\.py\Z(?ms)')
-            self.assertEqual(g2r('foo[!123].py'), r'foo[^123]\.py\Z(?ms)')
-            self.assertEqual(g2r('foo/*.py'), r'foo\/[^%s]*\.py\Z(?ms)' % sep)
-
     def test_get_ignore_from_manifest_lines(self):
         from check_manifest import _get_ignore_from_manifest_lines
-        from check_manifest import _glob_to_regexp as g2r
         from check_manifest import IgnoreList
-        j = os.path.join
         parse = partial(_get_ignore_from_manifest_lines, ui=self.ui)
-        # The return value is a tuple with two lists:
-        # ([<list of filename ignores>], [<list of regular expressions>])
         self.assertEqual(parse([]),
-                         IgnoreList([], []))
+                         IgnoreList())
         self.assertEqual(parse(['', ' ']),
-                         IgnoreList([], []))
+                         IgnoreList())
         self.assertEqual(parse(['exclude *.cfg']),
-                         IgnoreList([], [g2r('*.cfg')]))
+                         IgnoreList().exclude('*.cfg'))
         self.assertEqual(parse(['exclude          *.cfg']),
-                         IgnoreList([], [g2r('*.cfg')]))
+                         IgnoreList().exclude('*.cfg'))
         self.assertEqual(parse(['\texclude\t*.cfg foo.*   bar.txt']),
-                         IgnoreList(['bar.txt'], [g2r('*.cfg'), g2r('foo.*')]))
+                         IgnoreList().exclude('*.cfg', 'foo.*', 'bar.txt'))
         self.assertEqual(parse(['exclude some/directory/*.cfg']),
-                         IgnoreList([], [g2r('some/directory/*.cfg')]))
+                         IgnoreList().exclude('some/directory/*.cfg'))
         self.assertEqual(parse(['include *.cfg']),
-                         IgnoreList([], []))
+                         IgnoreList())
         self.assertEqual(parse(['global-exclude *.pyc']),
-                         IgnoreList(['*.pyc'], []))
+                         IgnoreList().global_exclude('*.pyc'))
         self.assertEqual(parse(['global-exclude *.pyc *.sh']),
-                         IgnoreList(['*.pyc', '*.sh'], []))
+                         IgnoreList().global_exclude('*.pyc', '*.sh'))
         self.assertEqual(parse(['recursive-exclude dir *.pyc']),
-                         IgnoreList([j('dir', '*.pyc')], []))
+                         IgnoreList().recursive_exclude('dir', '*.pyc'))
         self.assertEqual(parse(['recursive-exclude dir *.pyc foo*.sh']),
-                         IgnoreList([j('dir', '*.pyc'), j('dir', 'foo*.sh'),
-                                     j('dir', '*', 'foo*.sh')], []))
+                         IgnoreList().recursive_exclude('dir', '*.pyc', 'foo*.sh'))
         self.assertEqual(parse(['recursive-exclude dir nopattern.xml']),
-                         IgnoreList([j('dir', 'nopattern.xml'),
-                                     j('dir', '*', 'nopattern.xml')], []))
+                         IgnoreList().recursive_exclude('dir', 'nopattern.xml'))
         # We should not fail when a recursive-exclude line is wrong:
         self.assertEqual(parse(['recursive-exclude dirwithoutpattern']),
-                         IgnoreList([], []))
+                         IgnoreList())
         self.assertEqual(parse(['prune dir']),
-                         IgnoreList(['dir', j('dir', '*')], []))
-        # You should not add a slash at the end of a prune, but let's
-        # not fail over it or end up with double slashes.
-        self.assertEqual(parse(['prune dir/']),
-                         IgnoreList(['dir', j('dir', '*')], []))
-        # You should also not have a leading slash
-        self.assertEqual(parse(['prune /dir']),
-                         IgnoreList(['/dir', j('/dir', '*')], []))
+                         IgnoreList().prune('dir'))
         # And a mongo test case of everything at the end
         text = textwrap.dedent("""
             exclude *.02
@@ -563,24 +521,26 @@ class Tests(unittest.TestCase):
         """).splitlines()
         self.assertEqual(
             parse(text),
-            IgnoreList([
-                'bar.txt',
-                '*.10',
-                '*.11',
-                '*.12',
-                '30',
-                j('30', '*'),
-                j('40', '*.41'),
-                j('42', '*.43'),
-                j('42', '44.*'),
-                j('42', '*', '44.*'),
-            ], [
-                g2r('*.02'),
-                g2r('*.03'),
-                g2r('04.*'),
-                g2r('*.05'),
-                g2r('some/directory/*.cfg'),
-            ]))
+            IgnoreList()
+            .exclude('*.02', '*.03', '04.*', 'bar.txt', '*.05', 'some/directory/*.cfg')
+            .global_exclude('*.10', '*.11', '*.12')
+            .prune('30')
+            .recursive_exclude('40', '*.41')
+            .recursive_exclude('42', '*.43', '44.*')
+        )
+
+    def test_get_ignore_from_manifest_lines_warns(self):
+        from check_manifest import _get_ignore_from_manifest_lines, IgnoreList
+        parse = partial(_get_ignore_from_manifest_lines, ui=self.ui)
+        text = textwrap.dedent("""
+            graft a/
+            recursive-include /b *.txt
+        """).splitlines()
+        self.assertEqual(parse(text), IgnoreList())
+        self.assertEqual(self.ui.warnings, [
+            'ERROR: Trailing slashes are not allowed in MANIFEST.in on Windows: a/',
+            'ERROR: Leading slashes are not allowed in MANIFEST.in on Windows: /b',
+        ])
 
     def test_get_ignore_from_manifest(self):
         from check_manifest import _get_ignore_from_manifest, IgnoreList
@@ -595,7 +555,7 @@ class Tests(unittest.TestCase):
         '''))
         ui = MockUI()
         self.assertEqual(_get_ignore_from_manifest(filename, ui),
-                         IgnoreList(['test.dat']))
+                         IgnoreList().exclude('test.dat'))
         self.assertEqual(ui.warnings, [])
 
     def test_get_ignore_from_manifest_warnings(self):
@@ -607,7 +567,7 @@ class Tests(unittest.TestCase):
         '''))
         ui = MockUI()
         self.assertEqual(_get_ignore_from_manifest(filename, ui),
-                         IgnoreList(['test.dat']))
+                         IgnoreList().exclude('test.dat'))
         self.assertEqual(ui.warnings, [
             "%s, line 2: continuation line immediately precedes end-of-file" % filename,
         ])
@@ -726,18 +686,16 @@ class TestConfiguration(unittest.TestCase):
         with open('setup.cfg', 'w') as f:
             f.write('[check-manifest]\nignore = foo\n  bar*\n')
         ignore, ignore_bad_ideas = check_manifest.read_config()
-        self.assertEqual(ignore,
-                         check_manifest.IgnoreList.default()
-                         + check_manifest.IgnoreList(['foo', 'bar*']))
+        expected = check_manifest.IgnoreList.default().global_exclude('foo', 'bar*')
+        self.assertEqual(ignore, expected)
 
     def test_read_pyproject_config_extra_ignores(self):
         import check_manifest
         with open('pyproject.toml', 'w') as f:
             f.write('[tool.check-manifest]\nignore = ["foo", "bar*"]\n')
         ignore, ignore_bad_ideas = check_manifest.read_config()
-        self.assertEqual(ignore,
-                         check_manifest.IgnoreList.default()
-                         + check_manifest.IgnoreList(['foo', 'bar*']))
+        expected = check_manifest.IgnoreList.default().global_exclude('foo', 'bar*')
+        self.assertEqual(ignore, expected)
 
     def test_read_setup_config_override_ignores(self):
         import check_manifest
@@ -745,7 +703,8 @@ class TestConfiguration(unittest.TestCase):
             f.write('[check-manifest]\nignore = foo\n\n  bar\n')
             f.write('ignore-default-rules = yes\n')
         ignore, ignore_bad_ideas = check_manifest.read_config()
-        self.assertEqual(ignore, check_manifest.IgnoreList(['foo', 'bar']))
+        expected = check_manifest.IgnoreList().global_exclude('foo', 'bar')
+        self.assertEqual(ignore, expected)
 
     def test_read_pyproject_config_override_ignores(self):
         import check_manifest
@@ -753,7 +712,8 @@ class TestConfiguration(unittest.TestCase):
             f.write('[tool.check-manifest]\nignore = ["foo", "bar"]\n')
             f.write('ignore-default-rules = true\n')
         ignore, ignore_bad_ideas = check_manifest.read_config()
-        self.assertEqual(ignore, check_manifest.IgnoreList(['foo', 'bar']))
+        expected = check_manifest.IgnoreList().global_exclude('foo', 'bar')
+        self.assertEqual(ignore, expected)
 
     def test_read_setup_config_ignore_bad_ideas(self):
         import check_manifest
@@ -763,8 +723,8 @@ class TestConfiguration(unittest.TestCase):
                     '  foo\n'
                     '  bar*\n')
         ignore, ignore_bad_ideas = check_manifest.read_config()
-        self.assertEqual(ignore_bad_ideas,
-                         check_manifest.IgnoreList(['foo', 'bar*']))
+        expected = check_manifest.IgnoreList().global_exclude('foo', 'bar*')
+        self.assertEqual(ignore_bad_ideas, expected)
 
     def test_read_pyproject_config_ignore_bad_ideas(self):
         import check_manifest
@@ -772,8 +732,8 @@ class TestConfiguration(unittest.TestCase):
             f.write('[tool.check-manifest]\n'
                     'ignore-bad-ideas = ["foo", "bar*"]\n')
         ignore, ignore_bad_ideas = check_manifest.read_config()
-        self.assertEqual(ignore_bad_ideas,
-                         check_manifest.IgnoreList(['foo', 'bar*']))
+        expected = check_manifest.IgnoreList().global_exclude('foo', 'bar*')
+        self.assertEqual(ignore_bad_ideas, expected)
 
     def test_read_manifest_no_manifest(self):
         import check_manifest
@@ -782,12 +742,12 @@ class TestConfiguration(unittest.TestCase):
 
     def test_read_manifest(self):
         import check_manifest
-        from check_manifest import _glob_to_regexp as g2r, IgnoreList
+        from check_manifest import IgnoreList
         with open('MANIFEST.in', 'w') as f:
             f.write('exclude *.gif\n')
             f.write('global-exclude *.png\n')
         ignore = check_manifest.read_manifest(self.ui)
-        self.assertEqual(ignore, IgnoreList(['*.png'], [g2r('*.gif')]))
+        self.assertEqual(ignore, IgnoreList().exclude('*.gif').global_exclude('*.png'))
 
 
 class TestMain(unittest.TestCase):
@@ -835,15 +795,17 @@ class TestMain(unittest.TestCase):
         import check_manifest
         sys.argv.append('--ignore=x,y,z*')
         check_manifest.main()
+        ignore = check_manifest.IgnoreList().global_exclude('x', 'y', 'z*')
         self.assertEqual(self._check_manifest.call_args.kwargs['extra_ignore'],
-                         check_manifest.IgnoreList(['x', 'y', 'z*']))
+                         ignore)
 
     def test_ignore_bad_ideas_args(self):
         import check_manifest
         sys.argv.append('--ignore-bad-ideas=x,y,z*')
         check_manifest.main()
+        ignore = check_manifest.IgnoreList().global_exclude('x', 'y', 'z*')
         self.assertEqual(self._check_manifest.call_args.kwargs['extra_ignore_bad_ideas'],
-                         check_manifest.IgnoreList(['x', 'y', 'z*']))
+                         ignore)
 
     def test_verbose_arg(self):
         import check_manifest
@@ -1033,20 +995,16 @@ class VCSMixin(object):
         self._create_and_add_to_vcs(['a.txt', 'b/b.txt', 'b/c/d.txt'])
         self._commit()
         self._create_files(['b/x.txt', 'd/d.txt', 'i.txt'])
-        j = os.path.join
         self.assertEqual(get_vcs_files(self.ui),
-                         ['a.txt', 'b', j('b', 'b.txt'), j('b', 'c'),
-                          j('b', 'c', 'd.txt')])
+                         ['a.txt', 'b/b.txt', 'b/c/d.txt'])
 
     def test_get_vcs_files_added_but_uncommitted(self):
         from check_manifest import get_vcs_files
         self._init_vcs()
         self._create_and_add_to_vcs(['a.txt', 'b/b.txt', 'b/c/d.txt'])
         self._create_files(['b/x.txt', 'd/d.txt', 'i.txt'])
-        j = os.path.join
         self.assertEqual(get_vcs_files(self.ui),
-                         ['a.txt', 'b', j('b', 'b.txt'), j('b', 'c'),
-                          j('b', 'c', 'd.txt')])
+                         ['a.txt', 'b/b.txt', 'b/c/d.txt'])
 
     def test_get_vcs_files_deleted_but_not_removed(self):
         if self.vcs.command == 'bzr':
@@ -1066,8 +1024,7 @@ class VCSMixin(object):
         self._commit()
         self._create_files(['b/x.txt', 'd/d.txt', 'i.txt'])
         os.chdir('b')
-        j = os.path.join
-        self.assertEqual(get_vcs_files(self.ui), ['b.txt', 'c', j('c', 'd.txt')])
+        self.assertEqual(get_vcs_files(self.ui), ['b.txt', 'c/d.txt'])
 
     def test_get_vcs_files_nonascii_filenames(self):
         # This test will fail if your locale is incapable of expressing
@@ -1145,20 +1102,16 @@ class TestGit(VCSMixin, unittest.TestCase):
         self.vcs._run('git', 'submodule', 'update', '--init', '--recursive')
         self.assertEqual(
             get_vcs_files(self.ui),
-            [fn.replace('/', os.path.sep) for fn in [
+            [
                 '.gitmodules',
                 'file5',
-                'sub1',
                 'sub1/file1',
                 'sub1/file2',
-                'subdir',
                 'subdir/file6',
-                'subdir/sub2',
                 'subdir/sub2/.gitmodules',
                 'subdir/sub2/file3',
-                'subdir/sub2/sub3',
                 'subdir/sub2/sub3/file4',
-            ]])
+            ])
 
 
 class BzrHelper(VCSHelper):
@@ -1251,9 +1204,14 @@ class SvnHelper(VCSHelper):
         self._run('svn', 'co', 'file:///' + os.path.abspath('repo').replace(os.path.sep, '/'), 'checkout')
         os.chdir('checkout')
 
+    def _add_directories_and_sort(self, filelist):
+        from check_manifest import normalize_names
+        names = set(normalize_names(filelist))
+        names.update([posixpath.dirname(fn) for fn in names])
+        return sorted(names - {''})
+
     def _add_to_vcs(self, filenames):
-        from check_manifest import add_directories_and_sort
-        self._run('svn', 'add', '-N', '--', *add_directories_and_sort(filenames))
+        self._run('svn', 'add', '-N', '--', *self._add_directories_and_sort(filenames))
 
     def _commit(self):
         self._run('svn', 'commit', '-m', 'Initial')
@@ -1271,9 +1229,8 @@ class TestSvn(VCSMixin, unittest.TestCase):
         self.vcs._run('svn', 'up')
         self._create_files(['a.txt', 'ext/b.txt'])
         self.vcs._run('svn', 'add', 'a.txt', 'ext/b.txt')
-        j = os.path.join
         self.assertEqual(get_vcs_files(self.ui),
-                         ['a.txt', 'ext', j('ext', 'b.txt')])
+                         ['a.txt', 'ext/b.txt'])
 
 
 class TestSvnExtraErrors(unittest.TestCase):
@@ -1394,15 +1351,182 @@ class TestUserInterface(unittest.TestCase):
 
 class TestIgnoreList(unittest.TestCase):
 
+    def setUp(self):
+        from check_manifest import IgnoreList
+        self.ignore = IgnoreList()
+
     def test_repr(self):
         from check_manifest import IgnoreList
-        ignore = IgnoreList(['a'], ['b'])
-        self.assertEqual(repr(ignore), "IgnoreList(['a'], ['b'])")
+        ignore = IgnoreList()
+        self.assertEqual(repr(ignore), "IgnoreList([])")
 
-    def test_failed_addition(self):
+    def test_exclude_pattern(self):
+        self.ignore.exclude('*.txt')
+        self.assertEqual(self.ignore.filter([
+            'foo.md',
+            'bar.txt',
+            'subdir/bar.txt',
+        ]), [
+            'foo.md',
+            'subdir/bar.txt',
+        ])
+
+    def test_exclude_file(self):
+        self.ignore.exclude('bar.txt')
+        self.assertEqual(self.ignore.filter([
+            'foo.md',
+            'bar.txt',
+            'subdir/bar.txt',
+        ]), [
+            'foo.md',
+            'subdir/bar.txt',
+        ])
+
+    def test_exclude_doest_apply_to_directories(self):
+        self.ignore.exclude('subdir')
+        self.assertEqual(self.ignore.filter([
+            'foo.md',
+            'subdir/bar.txt',
+        ]), [
+            'foo.md',
+            'subdir/bar.txt',
+        ])
+
+    def test_global_exclude(self):
+        self.ignore.global_exclude('a*.txt')
+        self.assertEqual(self.ignore.filter([
+            'bar.txt',        # make sure full filenames are matched
+            'afile.txt',
+            'subdir/afile.txt',
+            'adir/file.txt',  # make sure * doesn't match /
+        ]), [
+            # no bar.txt!  because https://bugs.python.org/issue14106
+            'adir/file.txt',
+        ])
+
+    def test_global_exclude_does_not_apply_to_directories(self):
+        self.ignore.global_exclude('subdir')
+        self.assertEqual(self.ignore.filter([
+            'bar.txt',
+            'subdir/afile.txt',
+        ]), [
+            'bar.txt',
+            'subdir/afile.txt',
+        ])
+
+    def test_recursive_exclude(self):
+        self.ignore.recursive_exclude('subdir', 'a*.txt')
+        self.assertEqual(self.ignore.filter([
+            'afile.txt',
+            'subdir/afile.txt',
+            'subdir/extra/afile.txt',
+            'subdir/adir/file.txt',
+            'other/afile.txt',
+        ]), [
+            'afile.txt',
+            'subdir/adir/file.txt',
+            'other/afile.txt',
+        ])
+
+    def test_recursive_exclude_does_not_apply_to_directories(self):
+        self.ignore.recursive_exclude('subdir', 'dir')
+        self.assertEqual(self.ignore.filter([
+            'afile.txt',
+            'subdir/dir/afile.txt',
+        ]), [
+            'afile.txt',
+            'subdir/dir/afile.txt',
+        ])
+
+    def test_recursive_exclude_can_prune(self):
+        self.ignore.recursive_exclude('subdir', '*')
+        self.assertEqual(self.ignore.filter([
+            'afile.txt',
+            'subdir/afile.txt',
+            'subdir/dir/afile.txt',
+            'subdir/dir/dir/afile.txt',
+        ]), [
+            'afile.txt',
+        ])
+
+    def test_prune(self):
+        self.ignore.prune('subdir')
+        self.assertEqual(self.ignore.filter([
+            'foo.md',
+            'subdir/bar.txt',
+            'unrelated/subdir/baz.txt',
+        ]), [
+            'foo.md',
+            'unrelated/subdir/baz.txt',
+        ])
+
+    def test_prune_subdir(self):
+        self.ignore.prune('a/b')
+        self.assertEqual(self.ignore.filter([
+            'foo.md',
+            'a/b/bar.txt',
+            'a/c/bar.txt',
+        ]), [
+            'foo.md',
+            'a/c/bar.txt',
+        ])
+
+    def test_prune_glob(self):
+        self.ignore.prune('su*r')
+        self.assertEqual(self.ignore.filter([
+            'foo.md',
+            'subdir/bar.txt',
+            'unrelated/subdir/baz.txt',
+        ]), [
+            'foo.md',
+            'unrelated/subdir/baz.txt',
+        ])
+
+    def test_prune_glob_is_not_too_greedy(self):
+        self.ignore.prune('su*r')
+        self.assertEqual(self.ignore.filter([
+            'foo.md',
+            # super-unrelated/subdir matches su*r if you allow * to match /,
+            # which fnmatch does!
+            'super-unrelated/subdir/qux.txt',
+        ]), [
+            'foo.md',
+            'super-unrelated/subdir/qux.txt',
+        ])
+
+    def test_default_excludes_pkg_info(self):
         from check_manifest import IgnoreList
-        with self.assertRaises(TypeError):
-            IgnoreList() + 42
+        ignore = IgnoreList.default()
+        self.assertEqual(ignore.filter([
+            'PKG-INFO',
+            'bar.txt',
+        ]), [
+            'bar.txt',
+        ])
+
+    def test_default_excludes_egg_info(self):
+        from check_manifest import IgnoreList
+        ignore = IgnoreList.default()
+        self.assertEqual(ignore.filter([
+            'mypackage.egg-info/PKG-INFO',
+            'mypackage.egg-info/SOURCES.txt',
+            'mypackage.egg-info/requires.txt',
+            'bar.txt',
+        ]), [
+            'bar.txt',
+        ])
+
+    def test_default_excludes_egg_info_in_a_subdirectory(self):
+        from check_manifest import IgnoreList
+        ignore = IgnoreList.default()
+        self.assertEqual(ignore.filter([
+            'src/mypackage.egg-info/PKG-INFO',
+            'src/mypackage.egg-info/SOURCES.txt',
+            'src/mypackage.egg-info/requires.txt',
+            'bar.txt',
+        ]), [
+            'bar.txt',
+        ])
 
 
 def pick_installed_vcs():
@@ -1520,7 +1644,8 @@ class TestCheckManifest(unittest.TestCase):
         from check_manifest import check_manifest, IgnoreList
         self._create_repo_with_code()
         self._add_to_vcs('unrelated.txt')
-        self.assertTrue(check_manifest(extra_ignore=IgnoreList(['*.txt'])),
+        ignore = IgnoreList().global_exclude('*.txt')
+        self.assertTrue(check_manifest(extra_ignore=ignore),
                         sys.stderr.getvalue())
 
     def test_suggestions(self):
@@ -1630,7 +1755,8 @@ class TestCheckManifest(unittest.TestCase):
         self._add_to_vcs('foo.egg-info')
         self._add_to_vcs('moo.mo')
         self._add_to_vcs(os.path.join('subdir', 'bar.egg-info'))
-        self.assertFalse(check_manifest(extra_ignore_bad_ideas=IgnoreList(['*.mo'])))
+        ignore = IgnoreList().global_exclude('*.mo')
+        self.assertFalse(check_manifest(extra_ignore_bad_ideas=ignore))
         self.assertIn("you have foo.egg-info in source control!",
                       sys.stderr.getvalue())
         self.assertNotIn("moo.mo", sys.stderr.getvalue())

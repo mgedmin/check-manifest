@@ -10,3 +10,4 @@ tmp/
 build/
 tags
 coverage.xml
+.mypy_cache/

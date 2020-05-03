@@ -8,6 +8,28 @@ Changelog
 - Added ``-q``/``--quiet`` command line argument. This will reduce the verbosity
   of informational output, e.g. for use in a CI pipeline.
 
+- Rewrote the ignore logic to be more compatible with distutils.  This might
+  have introduced some regressions, so please file bugs!  One side effect of
+  this is that ``--ignore`` (or the ``ignore`` setting in the config file)
+  is now handled the same way as ``global-exclude`` in a ``MANIFEST.in``, which
+  means:
+
+  - it's matched anywhere in the file tree
+  - it's matched against a filename *suffix* rather than an entire filename,
+    due to https://bugs.python.org/issue14106
+  - it's ignored if it matches a directory
+
+  You can ignore directories only by ignoring every file inside it.
+  There's no way currently of specifying that that works for arbitrarily
+  nested trees, but you can try ``--ignore=dir/*,dir/*/*,dir/*/*/*``
+  until you get the result you want.
+
+  This decision is not cast in stone: I may in the future change the
+  handling of ``--ignore`` to match files and directories, because there's no
+  reason it has to be distutils-compatible.
+
+- Drop Python 2.7 support.
+
 
 0.41 (2020-02-25)
 -----------------
