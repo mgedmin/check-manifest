@@ -30,8 +30,8 @@ import tarfile
 import tempfile
 import unicodedata
 import zipfile
-from distutils.filelist import glob_to_re
 from contextlib import contextmanager, closing
+from distutils.filelist import translate_pattern
 from distutils.text_file import TextFile
 
 try:
@@ -266,14 +266,37 @@ def get_one_file_in(dirname):
 #
 # - contain Unicode filenames (normalized to NFC on OS X)
 # - be sorted
-# - use os.path.sep as the directory separator
-#   (I'm not sure this is done correctly at the moment!)
-# - list directories as well as files (but without trailing slashes)
+# - use / as the directory separator
+# - list only files, but not directories
 #
 # We get these file lists from various sources (zip files, tar files, version
 # control systems) and we have to normalize them into our common format before
-# comparing
+# comparing.
 #
+
+
+def canonical_file_list(filelist):
+    """Return the file list convered to a canonical form.
+
+    This means:
+
+    - converted to Unicode normal form C, when running on Mac OS X
+    - sorted alphabetically
+    - use / as the directory separator
+    - list files but not directories
+
+    Caveat: since it works on file lists taken from archives and such, it
+    doesn't know whether a particular filename refers to a file or a directory,
+    unless it finds annother filename that is inside the first one.  In other
+    words, canonical_file_list() will not remove the names of empty directories
+    if those appear in the initial file list.
+    """
+    names = set(normalize_names(filelist))
+    for name in list(names):
+        while name:
+            name = posixpath.dirname(name)
+            names.discard(name)
+    return sorted(names)
 
 
 def get_sdist_file_list(sdist_filename, ignore):
@@ -284,27 +307,9 @@ def get_sdist_file_list(sdist_filename, ignore):
 
     Supports .tar.gz and .zip sdists.
     """
-    # The sorted() is probably redundant here, given that
-    # get_archive_file_list() returns a sorted list, but I'm not 100% sure
-    # normalize_names() won't affect the sort order.
-    # TODO: move normalize_names() into get_archive_file_list(), because
-    # get_vcs_files() first normalizes and then calls
-    # add_directories_and_sort().
-    return sorted(normalize_names(strip_sdist_extras(ignore,
-        strip_toplevel_name(get_archive_file_list(sdist_filename)))))
-
-
-def unicodify(filename):
-    """Make sure filename is Unicode.
-
-    Because the tarfile module on Python 2 doesn't return Unicode.
-    """
-    if isinstance(filename, bytes):
-        # XXX: Ah, but is it right to use the locale encoding here, or should I
-        # use sys.getfilesystemencoding()?  A good question!
-        return filename.decode(locale.getpreferredencoding())
-    else:
-        return filename
+    return strip_sdist_extras(
+        ignore,
+        strip_toplevel_name(get_archive_file_list(sdist_filename)))
 
 
 def get_archive_file_list(archive_filename):
@@ -321,10 +326,20 @@ def get_archive_file_list(archive_filename):
     else:
         raise Failure('Unrecognized archive type: %s'
                       % os.path.basename(archive_filename))
-    # Hm, should we normalize_names() here?  Maybe, maybe not.  The only caller
-    # of get_archive_file_list() is get_sdist_file_list(), and it calls the
-    # normalize_names().
-    return add_directories_and_sort(filelist)
+    return canonical_file_list(filelist)
+
+
+def unicodify(filename):
+    """Make sure filename is Unicode.
+
+    Because the tarfile module on Python 2 doesn't return Unicode.
+    """
+    if isinstance(filename, bytes):
+        # XXX: Ah, but is it right to use the locale encoding here, or should I
+        # use sys.getfilesystemencoding()?  A good question!
+        return filename.decode(locale.getpreferredencoding())
+    else:
+        return filename
 
 
 def strip_toplevel_name(filelist):
@@ -360,8 +375,7 @@ def strip_toplevel_name(filelist):
 def add_prefix_to_each(prefix, filelist):
     """Add a prefix to each name in a file list.
 
-        >>> filelist = add_prefix_to_each('foo/bar', ['a', 'b', 'c/d'])
-        >>> [f.replace(os.path.sep, '/') for f in filelist]
+        >>> add_prefix_to_each('foo/bar', ['a', 'b', 'c/d'])
         ['foo/bar/a', 'foo/bar/b', 'foo/bar/c/d']
 
     """
@@ -539,12 +553,12 @@ def detect_vcs(ui):
 def get_vcs_files(ui):
     """List all files under version control in the current directory."""
     vcs = detect_vcs(ui)
-    return add_directories_and_sort(normalize_names(vcs.get_versioned_files()))
+    return canonical_file_list(vcs.get_versioned_files())
 
 
 def normalize_names(names):
     """Normalize file names."""
-    return list(map(normalize_name, names))
+    return [normalize_name(name) for name in names]
 
 
 def normalize_name(name):
@@ -555,29 +569,13 @@ def normalize_name(name):
     And encodings may trip us up too, especially when comparing lists
     of files.  Plus maybe lowercase versus uppercase.
     """
-    name = os.path.normpath(name)
-    name = unicodify(name)
+    name = os.path.normpath(name).replace(os.path.sep, '/')
+    name = unicodify(name)  # XXX is this necessary?
     if sys.platform == 'darwin':
         # Mac OS X may have problems comparing non-ASCII filenames, so
         # we convert them.
         name = unicodedata.normalize('NFC', name)
     return name
-
-
-def add_directories_and_sort(names):
-    """Git/Mercurial/zip files omit directories, let's add them back."""
-    # Let's make sure we iterate names once, in case it's an iterator and not a
-    # list.
-    res = list(names)
-    seen = set(res)
-    for name in list(res):
-        while True:
-            name = os.path.dirname(name)
-            if not name or name in seen:
-                break
-            res.append(name)
-            seen.add(name)
-    return sorted(res)
 
 
 #
@@ -586,98 +584,71 @@ def add_directories_and_sort(names):
 
 class IgnoreList(object):
 
-    def __init__(self, ignore=(), _ignore_regexps=()):
-        self.ignore = list(ignore)
-        self.ignore_regexps = list(_ignore_regexps)
+    def __init__(self):
+        self._regexps = []
 
     @classmethod
     def default(cls):
-        return cls(DEFAULT_IGNORE)
+        return (
+            cls()
+            # these are always generated
+            .global_exclude('PKG-INFO')
+            .global_exclude('*.egg-info/*')
+            # setup.cfg is always generated, but sometimes also kept in source control
+            .global_exclude('setup.cfg')
+            # it's not a problem if the sdist is lacking these files:
+            .global_exclude(
+                '.hgtags', '.hgsigs', '.hgignore', '.gitignore', '.bzrignore',
+                '.gitattributes',
+            )
+            # GitHub template files
+            .prune('.github')
+            # we can do without these in sdists
+            .global_exclude('.travis.yml')
+            .global_exclude('Jenkinsfile')
+            # It's convenient to ship compiled .mo files in sdists, but they
+            # shouldn't be checked in, so don't complain that they're missing
+            # from VCS
+            .global_exclude('*.mo')
+        )
 
     def clear(self):
-        self.ignore = []
-        self.ignore_regexps = []
+        self._regexps = []
 
     def __repr__(self):
-        return 'IgnoreList(%r, %r)' % (self.ignore, self.ignore_regexps)
+        return 'IgnoreList(%r)' % (self._regexps)
 
     def __eq__(self, other):
-        return (isinstance(other, IgnoreList) and self.ignore == other.ignore
-                and self.ignore_regexps == other.ignore_regexps)
+        return isinstance(other, IgnoreList) and self._regexps == other._regexps
 
     def __iadd__(self, other):
         assert isinstance(other, IgnoreList)
-        self.ignore += other.ignore
-        self.ignore_regexps += other.ignore_regexps
+        self._regexps += other._regexps
         return self
 
-    def __add__(self, other):
-        if not isinstance(other, IgnoreList):
-            return NotImplemented
-        result = IgnoreList()
-        result.ignore = self.ignore + other.ignore
-        result.ignore_regexps = self.ignore_regexps + other.ignore_regexps
-        return result
-
     def exclude(self, *patterns):
-        # An exclude of 'dirname/*css' can match 'dirname/foo.css'
-        # but not 'dirname/subdir/bar.css'.  We need a regular
-        # expression for that, since fnmatch doesn't pay attention to
-        # directory separators.
         for pat in patterns:
-            if '*' in pat or '?' in pat or '[!' in pat:
-                self.ignore_regexps.append(_glob_to_regexp(pat))
-            else:
-                self.ignore.append(pat)
+            self._regexps.append(translate_pattern(pat, anchor=True))
+        return self
 
     def global_exclude(self, *patterns):
         for pat in patterns:
-            self.ignore.append(pat)
+            self._regexps.append(translate_pattern(pat, anchor=False))
+        return self
 
     def recursive_exclude(self, dirname, *patterns):
-        # Strip path separator for clarity.
-        dirname = dirname.rstrip('/\\')
-        for pattern in patterns:
-            if pattern.startswith('*'):
-                self.ignore.append(dirname + os.path.sep + pattern)
-            else:
-                # 'recursive-exclude plone metadata.xml' should
-                # exclude plone/metadata.xml and
-                # plone/*/metadata.xml, where * can be any number
-                # of sub directories.  We could use a regexp, but
-                # two ignores seems easier.
-                self.ignore.append(dirname + os.path.sep + pattern)
-                self.ignore.append(
-                    dirname + os.path.sep + '*' + os.path.sep + pattern)
+        for pat in patterns:
+            self._regexps.append(translate_pattern(pat, prefix=dirname))
+        return self
 
     def prune(self, subdir):
-        subdir = subdir.rstrip('/\\')
-        self.ignore.append(subdir)
-        self.ignore.append(subdir + os.path.sep + '*')
+        self._regexps.append(translate_pattern(None, prefix=subdir))
+        return self
 
     def filter(self, filelist):
         return [name for name in filelist
-                if not file_matches(name, self.ignore)
-                and not file_matches_regexps(name, self.ignore_regexps)]
+                if not any(rx.search(name) for rx in self._regexps)]
 
-
-# it's fine if any of these are missing in the VCS or in the sdist
-DEFAULT_IGNORE = [
-    'PKG-INFO',     # always generated
-    '*.egg-info',   # always generated
-    '*.egg-info/*', # always generated
-    'setup.cfg',    # always generated, sometimes also kept in source control
-    # it's not a problem if the sdist is lacking these files:
-    '.hgtags', '.hgsigs', '.hgignore', '.gitignore', '.bzrignore',
-    '.gitattributes',
-    '.github',      # GitHub template files
-    '.github/*',    # GitHub template files
-    '.travis.yml',
-    'Jenkinsfile',
-    # it's convenient to ship compiled .mo files in sdists, but they shouldn't
-    # be checked in
-    '*.mo',
-]
 
 WARN_ABOUT_FILES_IN_VCS = [
     # generated files should not be committed into the VCS
@@ -692,9 +663,7 @@ WARN_ABOUT_FILES_IN_VCS = [
     '.#*',
 ]
 
-_sep = re.escape(os.path.sep)
-
-SUGGESTIONS = [(re.compile(pattern.replace('/', _sep)), suggestion) for pattern, suggestion in [
+SUGGESTIONS = [(re.compile(pattern), suggestion) for pattern, suggestion in [
     # regexp -> suggestion
     ('^([^/]+[.](cfg|ini))$',       r'include \1'),
     ('^([.]travis[.]yml)$',         r'include \1'),
@@ -793,21 +762,10 @@ def read_manifest(ui):
     return _get_ignore_from_manifest('MANIFEST.in', ui)
 
 
-def _glob_to_regexp(pat):
-    """Compile a glob pattern into a regexp.
-
-    We need to do this because fnmatch allows * to match /, which we
-    don't want.  E.g. a MANIFEST.in exclude of 'dirname/*css' should
-    match 'dirname/foo.css' but not 'dirname/subdir/bar.css'.
-    """
-    return glob_to_re(pat)
-
-
 def _get_ignore_from_manifest(filename, ui):
     """Gather the various ignore patterns from a MANIFEST.in.
 
-    Returns a list of standard ignore patterns and a list of regular
-    expressions to ignore.
+    Returns an IgnoreList instance.
     """
 
     class MyTextFile(TextFile):
@@ -838,8 +796,7 @@ def _get_ignore_from_manifest_lines(lines, ui):
     'lines' should be a list of strings with comments removed
     and continuation lines joined.
 
-    Returns a list of standard ignore patterns and a list of regular
-    expressions to ignore.
+    Returns an IgnoreList instance.
     """
     ignore = IgnoreList()
     for line in lines:
@@ -890,11 +847,6 @@ def file_matches(filename, patterns):
                for pat in patterns)
 
 
-def file_matches_regexps(filename, patterns):
-    """Does this filename match any of the regular expressions?"""
-    return any(re.match(pat, filename) for pat in patterns)
-
-
 def strip_sdist_extras(ignore, filelist):
     """Strip generated files that are only present in source distributions.
 
@@ -911,7 +863,11 @@ def find_bad_ideas(filelist):
 
 
 def find_suggestions(filelist):
-    """Suggest MANIFEST.in patterns for missing files."""
+    """Suggest MANIFEST.in patterns for missing files.
+
+    Returns two lists: one with suggested MANIGEST.in commands, and one with
+    files for which no suggestions were offered.
+    """
     suggestions = set()
     unknowns = []
     for filename in filelist:
