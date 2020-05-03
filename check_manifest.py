@@ -879,11 +879,6 @@ def find_suggestions(filelist):
     suggestions = set()
     unknowns = []
     for filename in filelist:
-        if os.path.isdir(filename):
-            # it's impossible to add empty directories via MANIFEST.in anyway,
-            # and non-empty directories will be added automatically when we
-            # specify patterns for files inside them
-            continue
         for pattern, suggestion in SUGGESTIONS:
             m = pattern.match(filename)
             if m is not None:
