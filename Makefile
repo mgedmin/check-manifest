@@ -1,7 +1,3 @@
-PYTHON = python
-FILE_WITH_VERSION = check_manifest.py
-FILE_WITH_CHANGELOG = CHANGES.rst
-
 .PHONY: all
 all:
 	@echo "Nothing to build.  Try 'make test' perhaps?"
@@ -24,6 +20,7 @@ diff-cover: coverage
 .PHONY: distcheck
 distcheck: distcheck-self  # also release.mk will add other checks
 
+FILE_WITH_VERSION = check_manifest.py
 DISTCHECK_DIFF_OPTS = $(DISTCHECK_DIFF_DEFAULT_OPTS) -x .github
 include release.mk
 

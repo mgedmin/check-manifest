@@ -38,7 +38,7 @@ import toml
 from setuptools.command.egg_info import translate_pattern
 
 
-__version__ = '0.42.dev0'
+__version__ = '0.42'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
 __licence__ = 'MIT'
 __url__ = 'https://github.com/mgedmin/check-manifest'

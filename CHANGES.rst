@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.42 (unreleased)
+0.42 (2020-05-03)
 -----------------
 
 - Added ``-q``/``--quiet`` command line argument. This will reduce the verbosity
