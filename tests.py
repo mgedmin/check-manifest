@@ -909,7 +909,8 @@ class TestZestIntegration(unittest.TestCase):
 
 class VCSHelper(object):
 
-    command: Optional[str] = None  # override in subclasses
+    # override in subclasses
+    command = None  # type: Optional[str]
 
     def is_installed(self):
         try:
