@@ -198,7 +198,7 @@ class Tests(unittest.TestCase):
 
     def test_unicodify(self):
         from check_manifest import unicodify
-        nonascii = b'\xc3\xa9.txt'.decode('UTF-8') # because Py3.2 lacks u''
+        nonascii = "\u00E9.txt"
         self.assertEqual(unicodify(nonascii), nonascii)
         self.assertEqual(
             unicodify(nonascii.encode(locale.getpreferredencoding())),
@@ -221,7 +221,7 @@ class Tests(unittest.TestCase):
     def test_get_archive_file_list_zip_nonascii(self):
         from check_manifest import get_archive_file_list
         filename = os.path.join(self.make_temp_dir(), 'archive.zip')
-        nonascii = b'\xc3\xa9.txt'.decode('UTF-8') # because Py3.2 lacks u''
+        nonascii = "\u00E9.txt"
         self.create_zip_file(filename, [nonascii])
         self.assertEqual(get_archive_file_list(filename),
                          [nonascii])
@@ -236,7 +236,7 @@ class Tests(unittest.TestCase):
     def test_get_archive_file_list_tar_nonascii(self):
         from check_manifest import get_archive_file_list
         filename = os.path.join(self.make_temp_dir(), 'archive.tar')
-        nonascii = b'\xc3\xa9.txt'.decode('UTF-8') # because Py3.2 lacks u''
+        nonascii = "\u00E9.txt"
         self.create_tar_file(filename, [nonascii])
         self.assertEqual(get_archive_file_list(filename),
                          [nonascii])
@@ -1020,8 +1020,7 @@ class VCSMixin(object):
         # "eacute".  UTF-8 or Latin-1 should work.
         from check_manifest import get_vcs_files
         self._init_vcs()
-        # A spelling of u"\xe9.txt" that works on Python 3.2 too
-        filename = b'\xc3\xa9.txt'.decode('UTF-8')
+        filename = "\u00E9.txt"
         self._create_and_add_to_vcs([filename])
         self.assertEqual(get_vcs_files(self.ui), [filename])
 
