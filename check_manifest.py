@@ -30,8 +30,9 @@ import tarfile
 import tempfile
 import unicodedata
 import zipfile
-from contextlib import contextmanager, closing
+from contextlib import closing, contextmanager
 from distutils.text_file import TextFile
+from typing import List, Optional, Union
 from xml.etree import ElementTree as ET
 
 import toml
@@ -127,35 +128,39 @@ def format_missing(missing_from_a, missing_from_b, name_a, name_b):
 #
 
 class CommandFailed(Failure):
-    def __init__(self, command, status, output):
-        Failure.__init__(self, "%s failed (status %s):\n%s" % (
+    def __init__(self, command: List[str], status: int, output: str) -> None:
+        super().__init__("%s failed (status %s):\n%s" % (
                                command, status, output))
 
 
-def run(command, encoding=None, decode=True, cwd=None):
+def run(
+    command: List[str],
+    *,
+    encoding: Optional[str] = None,
+    decode: bool = True,
+    cwd: Optional[str] = None  # Python 3.5 forbids trailing comma here!
+) -> Union[str, bytes]:
     """Run a command [cmd, arg1, arg2, ...].
 
-    Returns the output (stdout + stderr).
+    Returns the output (stdout only).
 
     Raises CommandFailed in cases of error.
     """
     if not encoding:
         encoding = locale.getpreferredencoding()
     try:
-        # Python 2.7 doesn't have subprocess.DEVNULL
-        with open(os.devnull, 'rb') as devnull:
-            pipe = subprocess.Popen(command, stdin=devnull,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE, cwd=cwd)
+        pipe = subprocess.Popen(command, stdin=subprocess.DEVNULL,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, cwd=cwd)
     except OSError as e:
         raise Failure("could not run %s: %s" % (command, e))
     output, stderr = pipe.communicate()
-    if decode:
-        output = output.decode(encoding)
-    stderr = stderr.decode(encoding, 'replace')
     status = pipe.wait()
     if status != 0:
-        raise CommandFailed(command, status, output + stderr)
+        raise CommandFailed(command, status,
+                            (output + stderr).decode(encoding, 'replace'))
+    if decode:
+        return output.decode(encoding)
     return output
 
 
@@ -311,6 +316,7 @@ def get_archive_file_list(archive_filename):
             filelist = zf.namelist()
     elif archive_filename.endswith(('.tar.gz', '.tar.bz2', '.tar')):
         with closing(tarfile.open(archive_filename)) as tf:
+            # XXX: is unicodify() necessary now that Py2 is no longer supported?
             filelist = map(unicodify, tf.getnames())
     else:
         raise Failure('Unrecognized archive type: %s'

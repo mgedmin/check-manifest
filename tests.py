@@ -16,6 +16,7 @@ import zipfile
 from contextlib import closing
 from functools import partial
 from io import BytesIO, StringIO
+from typing import Optional
 from xml.etree import ElementTree as ET
 
 import mock
@@ -908,7 +909,7 @@ class TestZestIntegration(unittest.TestCase):
 
 class VCSHelper(object):
 
-    command = None  # override in subclasses
+    command: Optional[str] = None  # override in subclasses
 
     def is_installed(self):
         try:
