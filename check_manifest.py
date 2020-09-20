@@ -406,33 +406,14 @@ class Git(VCS):
 
     def get_versioned_files(self):
         """List all files versioned by git in the current directory."""
-        files = self._git_ls_files()
-        submodules = self._list_submodules()
-        for subdir in submodules:
-            subdir = os.path.relpath(subdir).replace(os.path.sep, '/')
-            files += add_prefix_to_each(subdir, self._git_ls_files(subdir))
-        return files
-
-    @classmethod
-    def _git_ls_files(cls, cwd=None):
-        output = run(['git', 'ls-files', '-z'], encoding=cls._encoding, cwd=cwd)
+        output = run(
+            ["git", "ls-files", "-z", "--recurse-submodules"],
+            encoding=self._encoding,
+        )
         # -z tells git to use \0 as a line terminator; split() treats it as a
         # line separator, so we always get one empty line at the end, which we
         # drop with the [:-1] slice
-        return output.split('\0')[:-1]
-
-    @classmethod
-    def _list_submodules(cls):
-        # This is incredibly expensive on my Jenkins instance (50 seconds for
-        # each invocation, even when there are no submodules whatsoever).
-        # Curiously, I cannot reproduce that in Appveyor, or even on the same
-        # Jenkins machine but when I run the tests manually.  Still, 2-hour
-        # Jenkins runs are bad, so let's avoid running 'git submodule' when
-        # there's no .gitmodules file.
-        if not os.path.exists('.gitmodules'):
-            return []
-        return run(['git', 'submodule', '--quiet', 'foreach', '--recursive',
-                    'printf "%s/%s\\n" $toplevel $path'], encoding=cls._encoding).splitlines()
+        return output.split("\0")[:-1]
 
 
 class Mercurial(VCS):

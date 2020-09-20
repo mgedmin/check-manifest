@@ -1102,6 +1102,10 @@ class TestGit(VCSMixin, unittest.TestCase):
                 'subdir/sub2/sub3/file4',
             ])
 
+    def test_get_versioned_files_with_git_submodules_with_git_index_file_set(self):
+        with mock.patch.dict(os.environ, {"GIT_INDEX_FILE": ".git/index"}):
+            self.test_get_versioned_files_with_git_submodules()
+
 
 class BzrHelper(VCSHelper):
 
