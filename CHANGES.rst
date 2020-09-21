@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.43 (unreleased)
+0.43 (2020-09-21)
 -----------------
 
 - Fix collecting files versioned by ``git`` when a project has submodules and
