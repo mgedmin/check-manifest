@@ -5,7 +5,11 @@ Changelog
 0.43 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Fix collecting files versioned by ``git`` when a project has submodules and
+  ``GIT_INDEX_FILE`` is set.  This bug was triggered when ``check-manifest``
+  was run as part of a git hook (
+  `#122 <https://github.com/mgedmin/check-manifest/issues/122>`__,
+  `#123 <https://github.com/mgedmin/check-manifest/pull/123>`__).
 
 
 0.42 (2020-05-03)
