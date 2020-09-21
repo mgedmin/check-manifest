@@ -369,16 +369,6 @@ def strip_toplevel_name(filelist):
     return [name[len(prefix):] for name in names if name != prefix]
 
 
-def add_prefix_to_each(prefix, filelist):
-    """Add a prefix to each name in a file list.
-
-        >>> add_prefix_to_each('foo/bar', ['a', 'b', 'c/d'])
-        ['foo/bar/a', 'foo/bar/b', 'foo/bar/c/d']
-
-    """
-    return [posixpath.join(prefix, name) for name in filelist]
-
-
 class VCS:
 
     def __init__(self, ui):
