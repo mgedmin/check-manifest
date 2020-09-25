@@ -17,6 +17,8 @@ Changelog
   `#122 <https://github.com/mgedmin/check-manifest/issues/122>`__,
   `#123 <https://github.com/mgedmin/check-manifest/pull/123>`__).
 
+Note: check-manifest 0.43 requires ``git`` version 2.11 or later.
+
 
 0.42 (2020-05-03)
 -----------------
