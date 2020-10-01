@@ -394,10 +394,14 @@ class Git(VCS):
         # .git can be a file for submodules
         return os.path.exists(os.path.join(location, cls.metadata_name))
 
+    def _has_submodules(cls):
+        return os.path.exists(".gitmodules")
+
     def get_versioned_files(self):
         """List all files versioned by git in the current directory."""
+        extra_args = ["--recurse-submodules"] if self._has_submodules() else []
         output = run(
-            ["git", "ls-files", "-z", "--recurse-submodules"],
+            ["git", "ls-files", "-z"] + extra_args,
             encoding=self._encoding,
         )
         # -z tells git to use \0 as a line terminator; split() treats it as a
