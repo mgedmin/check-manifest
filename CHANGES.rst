@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.44 (unreleased)
+0.44 (2020-10-03)
 -----------------
 
 - Try to avoid passing ``--recurse-submodules`` to ``git ls`` if the project
