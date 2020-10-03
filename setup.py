@@ -33,6 +33,7 @@ setup(
     url=url,
     description='Check MANIFEST.in in a Python source package for completeness',
     long_description=long_description,
+    long_description_content_type='text/x-rst',
     keywords=['distutils', 'setuptools', 'packaging', 'manifest', 'checker',
               'linter'],
     classifiers=[
