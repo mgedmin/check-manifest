@@ -5,7 +5,11 @@ Changelog
 0.44 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Try to avoid passing ``--recurse-submodules`` to ``git ls`` if the project
+  doesn't use git submodules (i.e. doesn't have a ``.gitsubmodules`` file).
+  This should make check-manifest work again with older git versions, as long
+  as you don't use submodules (`#124
+  <https://github.com/mgedmin/check-manifest/issues/124>`__).
 
 
 0.43 (2020-09-21)
