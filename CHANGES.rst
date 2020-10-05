@@ -5,7 +5,7 @@ Changelog
 0.45 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Drop Python 3.5 support.
 
 
 0.44 (2020-10-03)
