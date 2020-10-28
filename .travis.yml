@@ -1,26 +1,34 @@
 language: python
 cache: pip
 python:
-    - 3.6
-    - 3.7
-    - 3.8
-    - 3.9
-    - pypy3
+  - 3.6
+  - 3.7
+  - 3.8
+  - 3.9
+  - pypy3
 env:
-    - FORCE_TEST_VCS=bzr
-    - FORCE_TEST_VCS=git
-    - FORCE_TEST_VCS=hg
-    - FORCE_TEST_VCS=svn
+  - FORCE_TEST_VCS=bzr
+  - FORCE_TEST_VCS=git
+  - FORCE_TEST_VCS=hg
+  - FORCE_TEST_VCS=svn
 install:
-    - pip install -U pip
-    - pip install coverage coveralls pytest flake8
-    - pip install -e .[test]
+  - pip install -U pip
+  - pip install coverage coveralls pytest flake8
+  - pip install -e .[test]
 script:
-    - SKIP_NO_TESTS=1 coverage run -m pytest
-    - coverage report -m
-    - python check_manifest.py
-    - flake8 *.py
+  - SKIP_NO_TESTS=1 coverage run -m pytest
+  - coverage report -m
+  - python check_manifest.py
+  - flake8 *.py
 after_script:
-    - coveralls
+  - coveralls
+
 notifications:
-    email: false
+  irc:
+    channels:
+      - "chat.freenode.net##mgedmin"
+    on_success: change
+    on_failure: always
+    template:
+      # ping my nick so I get a pushbullet notification on my phone
+      - "mgedmin: %{repository_name} (%{branch}) build %{result}: %{build_url}"
