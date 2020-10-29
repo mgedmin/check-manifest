@@ -17,7 +17,7 @@ install:
     - pip install -e .[test]
 script:
     - SKIP_NO_TESTS=1 coverage run -m pytest
-    - coverage report -m
+    - coverage report -m --fail-under=$(if [[ $FORCE_TEST_VCS == bzr ]]; then printf 99; else printf 100; fi)
     - python check_manifest.py
     - flake8 *.py
 after_script:
