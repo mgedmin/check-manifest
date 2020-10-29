@@ -140,8 +140,8 @@ git-workflow. Add the following to your ``.pre-commit-config.yaml``.
         -   id: check-manifest
 
 
-.. |buildstatus| image:: https://api.travis-ci.org/mgedmin/check-manifest.svg?branch=master
-.. _buildstatus: https://travis-ci.org/mgedmin/check-manifest
+.. |buildstatus| image:: https://api.travis-ci.com/mgedmin/check-manifest.svg?branch=master
+.. _buildstatus: https://travis-ci.com/mgedmin/check-manifest
 
 .. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/mgedmin/check-manifest?branch=master&svg=true
 .. _appveyor: https://ci.appveyor.com/project/mgedmin/check-manifest
