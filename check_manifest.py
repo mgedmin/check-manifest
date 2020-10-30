@@ -897,7 +897,7 @@ def should_use_pep_517():
     return True
 
 
-def build_sdist(tempdir, python=sys.executable):
+def build_sdist(tempdir, python=sys.executable, build_isolation=True):
     """Build a source distribution in a temporary directory.
 
     Should be run with the current working directory inside the Python package
@@ -905,18 +905,22 @@ def build_sdist(tempdir, python=sys.executable):
     """
     if should_use_pep_517():
         # I could do this in-process with
-        #   import pep517.envbuild
-        #   pep517.envbuild.build_sdist('.', tempdir)
+        #   import build.__main__
+        #   build.__main__.build('.', tempdir)
         # but then it would print a bunch of things to stdout and I'd have to
         # worry about exceptions
-        run([python, '-m', 'pep517.build', '--source', '-o', tempdir, '.'])
+        cmd = [python, '-m', 'build', '--sdist', '.', '--outdir', tempdir]
+        if not build_isolation:
+            cmd.append('--no-isolation')
+        run(cmd)
     else:
         run([python, 'setup.py', 'sdist', '-d', tempdir])
 
 
 def check_manifest(source_tree='.', create=False, update=False,
                    python=sys.executable, ui=None, extra_ignore=None,
-                   extra_ignore_bad_ideas=None):
+                   extra_ignore_bad_ideas=None,
+                   build_isolation=True):
     """Compare a generated source distribution with list of files in a VCS.
 
     Returns True if the manifest is fine.
@@ -944,7 +948,7 @@ def check_manifest(source_tree='.', create=False, update=False,
             raise Failure('There are no files added to version control!')
         ui.info_begin("building an sdist")
         with mkdtemp('-sdist') as tempdir:
-            build_sdist(tempdir, python=python)
+            build_sdist(tempdir, python=python, build_isolation=build_isolation)
             sdist_filename = get_one_file_in(tempdir)
             ui.info_continue(": %s" % os.path.basename(sdist_filename))
             sdist_files = get_sdist_file_list(sdist_filename, ignore)
@@ -970,7 +974,7 @@ def check_manifest(source_tree='.', create=False, update=False,
             with cd(tempsourcedir):
                 with mkdtemp('-sdist') as tempdir:
                     os.environ['SETUPTOOLS_SCM_PRETEND_VERSION'] = version
-                    build_sdist(tempdir, python=python)
+                    build_sdist(tempdir, python=python, build_isolation=build_isolation)
                     sdist_filename = get_one_file_in(tempdir)
                     ui.info_continue(": %s" % os.path.basename(sdist_filename))
                     clean_sdist_files = get_sdist_file_list(sdist_filename, ignore)
@@ -1050,6 +1054,12 @@ def main():
     parser.add_argument('--ignore-bad-ideas', metavar='patterns',
                         default=[], help='ignore bad idea files/directories '
                         'matching these comma-separated patterns')
+    parser.add_argument(
+        '--no-build-isolation', dest='build_isolation', action='store_false',
+        help='Disable isolation when building a modern source distribution. '
+        'Build dependencies specified by PEP 518 must be already installed if '
+        'this option is used.',
+    )
     args = parser.parse_args()
 
     ignore = IgnoreList()
@@ -1066,7 +1076,8 @@ def main():
         if not check_manifest(args.source_tree, create=args.create,
                               update=args.update, python=args.python,
                               ui=ui, extra_ignore=ignore,
-                              extra_ignore_bad_ideas=ignore_bad_ideas):
+                              extra_ignore_bad_ideas=ignore_bad_ideas,
+                              build_isolation=args.build_isolation):
             sys.exit(1)
     except Failure as e:
         ui.error(str(e))

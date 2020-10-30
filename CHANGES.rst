@@ -9,6 +9,15 @@ Changelog
 
 - Drop Python 3.5 support.
 
+- Switch from ``pep517`` to `python-build <https://pypi.org/p/build>`__ (
+  `#128 <https://github.com/mgedmin/check-manifest/pull/128>`__).
+
+- Add ``--no-build-isolation`` option so check-manifest can succeed building
+  pep517-based distributions without an internet connection.  With
+  ``--no-build-isolation``, you must preinstall the ``build-system.requires``
+  beforehand. (
+  `#128 <https://github.com/mgedmin/check-manifest/pull/128>`__).
+
 
 0.44 (2020-10-03)
 -----------------

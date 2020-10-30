@@ -57,7 +57,7 @@ setup(
     zip_safe=False,
     python_requires=">=3.6",
     install_requires=[
-        'pep517',
+        'build>=0.1',
         'setuptools',
         'toml',
     ],

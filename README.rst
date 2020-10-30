@@ -139,6 +139,21 @@ git-workflow. Add the following to your ``.pre-commit-config.yaml``.
         hooks:
         -   id: check-manifest
 
+If you are running pre-commit without a network, you can utilize
+``args: [--no-build-isolation]`` to prevent a ``pip install`` reaching out to
+pypi.  If you have additional ``build-system.requires`` outside of pip /
+setuptools / wheel you will want to list those in ``additional_dependencies``.
+
+.. code-block:: yaml
+
+    repos:
+    -   repo: https://github.com/mgedmin/check-manifest
+        rev: ...  # pick a valid tag / revision
+        hooks:
+        -   id: check-manifest
+            args: [--no-build-isolation]
+            additional_dependencies: [setuptools-scm]
+
 
 .. |buildstatus| image:: https://api.travis-ci.com/mgedmin/check-manifest.svg?branch=master
 .. _buildstatus: https://travis-ci.com/mgedmin/check-manifest

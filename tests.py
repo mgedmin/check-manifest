@@ -606,7 +606,7 @@ class Tests(unittest.TestCase):
         with cd(src_dir):
             self.assertTrue(should_use_pep_517())
 
-    def test_build_sdist(self):
+    def _test_build_sdist_pep517(self, build_isolation):
         from check_manifest import build_sdist, cd, get_one_file_in
         src_dir = self.make_temp_dir()
         filename = os.path.join(src_dir, 'pyproject.toml')
@@ -621,8 +621,14 @@ class Tests(unittest.TestCase):
         out_dir = self.make_temp_dir()
         python = os.path.abspath(sys.executable)
         with cd(src_dir):
-            build_sdist(out_dir, python=python)
+            build_sdist(out_dir, python=python, build_isolation=build_isolation)
         self.assertTrue(get_one_file_in(out_dir))
+
+    def test_build_sdist_pep517_isolated(self):
+        self._test_build_sdist_pep517(build_isolation=True)
+
+    def test_build_sdist_pep517_no_isolation(self):
+        self._test_build_sdist_pep517(build_isolation=False)
 
 
 class TestConfiguration(unittest.TestCase):
