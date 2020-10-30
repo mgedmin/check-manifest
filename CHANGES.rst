@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.45 (unreleased)
+0.45 (2020-10-31)
 -----------------
 
 - Add Python 3.9 support.
