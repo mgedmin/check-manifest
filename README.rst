@@ -155,8 +155,8 @@ setuptools / wheel you will want to list those in ``additional_dependencies``.
             additional_dependencies: [setuptools-scm]
 
 
-.. |buildstatus| image:: https://api.travis-ci.com/mgedmin/check-manifest.svg?branch=master
-.. _buildstatus: https://travis-ci.com/mgedmin/check-manifest
+.. |buildstatus| image:: https://github.com/mgedmin/check-manifest/workflows/build/badge.svg?branch=master
+.. _buildstatus: https://github.com/mgedmin/check-manifest/actions
 
 .. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/mgedmin/check-manifest?branch=master&svg=true
 .. _appveyor: https://ci.appveyor.com/project/mgedmin/check-manifest
