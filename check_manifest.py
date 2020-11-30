@@ -37,8 +37,9 @@ from xml.etree import ElementTree as ET
 import toml
 from setuptools.command.egg_info import translate_pattern
 
+
 # import distutils after setuptools to avoid a warning
-from distutils.text_file import TextFile
+from distutils.text_file import TextFile  # isort:skip
 
 
 __version__ = '0.46.dev0'

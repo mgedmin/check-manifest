@@ -101,6 +101,8 @@ jobs:
           - flake8
           - mypy
           - check-manifest
+          - check-python-versions
+          - isort
 
     steps:
       - name: Git clone

@@ -91,14 +91,14 @@ class Tests(unittest.TestCase):
         self.assertEqual(run(["true"]), "")
 
     def test_run_failure(self):
-        from check_manifest import run, CommandFailed
+        from check_manifest import CommandFailed, run
         with self.assertRaises(CommandFailed) as cm:
             run(["false"])
         self.assertEqual(str(cm.exception),
                          "['false'] failed (status 1):\n")
 
     def test_run_no_such_program(self):
-        from check_manifest import run, Failure
+        from check_manifest import Failure, run
         with self.assertRaises(Failure) as cm:
             run(["there-is-really-no-such-program"])
         # Linux says "[Errno 2] No such file or directory"
@@ -181,7 +181,7 @@ class Tests(unittest.TestCase):
                              os.path.normpath('/some/dir/a'))
 
     def test_get_one_file_in_empty_directory(self):
-        from check_manifest import get_one_file_in, Failure
+        from check_manifest import Failure, get_one_file_in
         with mock.patch('os.listdir', lambda dir: []):
             with self.assertRaises(Failure) as cm:
                 get_one_file_in('/some/dir')
@@ -189,7 +189,7 @@ class Tests(unittest.TestCase):
                              "No files found in /some/dir")
 
     def test_get_one_file_in_too_many(self):
-        from check_manifest import get_one_file_in, Failure
+        from check_manifest import Failure, get_one_file_in
         with mock.patch('os.listdir', lambda dir: ['b', 'a']):
             with self.assertRaises(Failure) as cm:
                 get_one_file_in('/some/dir')
@@ -205,7 +205,7 @@ class Tests(unittest.TestCase):
             nonascii)
 
     def test_get_archive_file_list_unrecognized_archive(self):
-        from check_manifest import get_archive_file_list, Failure
+        from check_manifest import Failure, get_archive_file_list
         with self.assertRaises(Failure) as cm:
             get_archive_file_list('/path/to/archive.rar')
         self.assertEqual(str(cm.exception),
@@ -264,11 +264,11 @@ class Tests(unittest.TestCase):
         self.assertEqual(strip_toplevel_name([]), [])
 
     def test_strip_toplevel_name_no_common_prefix(self):
-        from check_manifest import strip_toplevel_name, Failure
+        from check_manifest import Failure, strip_toplevel_name
         self.assertRaises(Failure, strip_toplevel_name, ["a/b", "c/d"])
 
     def test_detect_vcs_no_vcs(self):
-        from check_manifest import detect_vcs, Failure
+        from check_manifest import Failure, detect_vcs
         ui = MockUI()
         with mock.patch('check_manifest.VCS.detect', staticmethod(lambda *a: False)):
             with mock.patch('check_manifest.Git.detect', staticmethod(lambda *a: False)):
@@ -304,8 +304,11 @@ class Tests(unittest.TestCase):
                                      patterns))
 
     def test_strip_sdist_extras(self):
-        from check_manifest import strip_sdist_extras, IgnoreList
-        from check_manifest import canonical_file_list
+        from check_manifest import (
+            IgnoreList,
+            canonical_file_list,
+            strip_sdist_extras,
+        )
         filelist = canonical_file_list([
             '.github',
             '.github/ISSUE_TEMPLATE',
@@ -340,9 +343,12 @@ class Tests(unittest.TestCase):
         self.assertEqual(strip_sdist_extras(ignore, filelist), expected)
 
     def test_strip_sdist_extras_with_manifest(self):
-        from check_manifest import strip_sdist_extras, IgnoreList
-        from check_manifest import canonical_file_list
-        from check_manifest import _get_ignore_from_manifest_lines
+        from check_manifest import (
+            IgnoreList,
+            _get_ignore_from_manifest_lines,
+            canonical_file_list,
+            strip_sdist_extras,
+        )
         manifest_in = textwrap.dedent("""
             graft src
             exclude *.cfg
@@ -463,8 +469,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(e('dist/foo_bar-1.2.3.dev4+g12345.tar.gz'), '1.2.3.dev4+g12345')
 
     def test_get_ignore_from_manifest_lines(self):
-        from check_manifest import _get_ignore_from_manifest_lines
-        from check_manifest import IgnoreList
+        from check_manifest import IgnoreList, _get_ignore_from_manifest_lines
         parse = partial(_get_ignore_from_manifest_lines, ui=self.ui)
         self.assertEqual(parse([]),
                          IgnoreList())
@@ -519,7 +524,7 @@ class Tests(unittest.TestCase):
         )
 
     def test_get_ignore_from_manifest_lines_warns(self):
-        from check_manifest import _get_ignore_from_manifest_lines, IgnoreList
+        from check_manifest import IgnoreList, _get_ignore_from_manifest_lines
         parse = partial(_get_ignore_from_manifest_lines, ui=self.ui)
         text = textwrap.dedent("""
             graft a/
@@ -532,7 +537,7 @@ class Tests(unittest.TestCase):
         ])
 
     def test_get_ignore_from_manifest(self):
-        from check_manifest import _get_ignore_from_manifest, IgnoreList
+        from check_manifest import IgnoreList, _get_ignore_from_manifest
         filename = os.path.join(self.make_temp_dir(), 'MANIFEST.in')
         self.create_file(filename, textwrap.dedent('''
            exclude \\
@@ -548,7 +553,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(ui.warnings, [])
 
     def test_get_ignore_from_manifest_warnings(self):
-        from check_manifest import _get_ignore_from_manifest, IgnoreList
+        from check_manifest import IgnoreList, _get_ignore_from_manifest
         filename = os.path.join(self.make_temp_dir(), 'MANIFEST.in')
         self.create_file(filename, textwrap.dedent('''
            # this is bad: a file should not end with a backslash
@@ -562,13 +567,13 @@ class Tests(unittest.TestCase):
         ])
 
     def test_should_use_pep517_no_pyproject_toml(self):
-        from check_manifest import should_use_pep_517, cd
+        from check_manifest import cd, should_use_pep_517
         src_dir = self.make_temp_dir()
         with cd(src_dir):
             self.assertFalse(should_use_pep_517())
 
     def test_should_use_pep517_no_build_system(self):
-        from check_manifest import should_use_pep_517, cd
+        from check_manifest import cd, should_use_pep_517
         src_dir = self.make_temp_dir()
         filename = os.path.join(src_dir, 'pyproject.toml')
         self.create_file(filename, textwrap.dedent('''
@@ -578,7 +583,7 @@ class Tests(unittest.TestCase):
             self.assertFalse(should_use_pep_517())
 
     def test_should_use_pep517_no_build_backend(self):
-        from check_manifest import should_use_pep_517, cd
+        from check_manifest import cd, should_use_pep_517
         src_dir = self.make_temp_dir()
         filename = os.path.join(src_dir, 'pyproject.toml')
         self.create_file(filename, textwrap.dedent('''
@@ -592,7 +597,7 @@ class Tests(unittest.TestCase):
             self.assertFalse(should_use_pep_517())
 
     def test_should_use_pep517_yes_please(self):
-        from check_manifest import should_use_pep_517, cd
+        from check_manifest import cd, should_use_pep_517
         src_dir = self.make_temp_dir()
         filename = os.path.join(src_dir, 'pyproject.toml')
         self.create_file(filename, textwrap.dedent('''
@@ -780,7 +785,7 @@ class TestMain(unittest.TestCase):
         self._sys_exit.assert_called_with(1)
 
     def test_exit_code_2_on_failure(self):
-        from check_manifest import main, Failure
+        from check_manifest import Failure, main
         self._check_manifest.side_effect = Failure('msg')
         main()
         self.assertEqual(self.ui.errors, ['msg'])
@@ -893,7 +898,7 @@ class TestZestIntegration(unittest.TestCase):
     @mock.patch('check_manifest.check_manifest')
     def test_zest_releaser_check_failure_user_aborts(self, check_manifest,
                                                      sys_exit):
-        from check_manifest import zest_releaser_check, Failure
+        from check_manifest import Failure, zest_releaser_check
         self.ask.side_effect = [True, False]
         check_manifest.side_effect = Failure('msg')
         zest_releaser_check(dict(workingdir='.'))
@@ -905,7 +910,7 @@ class TestZestIntegration(unittest.TestCase):
     @mock.patch('check_manifest.check_manifest')
     def test_zest_releaser_check_failure_user_plods_on(self, check_manifest,
                                                        sys_exit):
-        from check_manifest import zest_releaser_check, Failure
+        from check_manifest import Failure, zest_releaser_check
         self.ask.side_effect = [True, True]
         check_manifest.side_effect = Failure('msg')
         zest_releaser_check(dict(workingdir='.'))
@@ -1074,7 +1079,7 @@ class TestGit(VCSMixin, unittest.TestCase):
         os.chdir(self.tmpdir)
 
     def test_detect_git_submodule(self):
-        from check_manifest import detect_vcs, Failure
+        from check_manifest import Failure, detect_vcs
         with self.assertRaises(Failure) as cm:
             detect_vcs(self.ui)
         self.assertEqual(str(cm.exception),
@@ -1593,7 +1598,7 @@ class TestCheckManifest(unittest.TestCase):
         self._vcs._add_to_vcs([filename])
 
     def test_not_python_project(self):
-        from check_manifest import check_manifest, Failure
+        from check_manifest import Failure, check_manifest
         with self.assertRaises(Failure) as cm:
             check_manifest()
         self.assertEqual(
@@ -1601,7 +1606,7 @@ class TestCheckManifest(unittest.TestCase):
             "This is not a Python project (no setup.py/pyproject.toml).")
 
     def test_forgot_to_git_add_anything(self):
-        from check_manifest import check_manifest, Failure
+        from check_manifest import Failure, check_manifest
         self._create_repo_with_code(add_to_vcs=False)
         with self.assertRaises(Failure) as cm:
             check_manifest()
@@ -1629,6 +1634,7 @@ class TestCheckManifest(unittest.TestCase):
     def test_python_from_path(self):
         # https://github.com/mgedmin/check-manifest/issues/57
         from check_manifest import check_manifest
+
         # We need a Python interpeter to be in PATH.
         python = 'python'
         if hasattr(shutil, 'which'):
@@ -1640,7 +1646,7 @@ class TestCheckManifest(unittest.TestCase):
                         sys.stderr.getvalue())
 
     def test_extra_ignore(self):
-        from check_manifest import check_manifest, IgnoreList
+        from check_manifest import IgnoreList, check_manifest
         self._create_repo_with_code()
         self._add_to_vcs('unrelated.txt')
         ignore = IgnoreList().global_exclude('*.txt')
@@ -1743,7 +1749,7 @@ class TestCheckManifest(unittest.TestCase):
                       sys.stderr.getvalue())
 
     def test_ignore_bad_ideas(self):
-        from check_manifest import check_manifest, IgnoreList
+        from check_manifest import IgnoreList, check_manifest
         self._create_repo_with_code()
         with open('setup.cfg', 'w') as f:
             f.write('[check-manifest]\n'
