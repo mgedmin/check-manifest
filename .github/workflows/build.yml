@@ -32,6 +32,12 @@ jobs:
           - svn
 
     steps:
+      - name: Install OS-level dependencies
+        run: sudo apt-get install -y bzr git mercurial subversion
+        # NB: at some point I'll want to switch from legacy Bazaar (apt package
+        # bzr) to Breezy (apt package brz).  They're both available in
+        # ubuntu-18.04 and ubuntu20.04.
+
       - name: Git clone
         uses: actions/checkout@v2
 
@@ -49,7 +55,7 @@ jobs:
             ${{ runner.os }}-pip-${{ matrix.python-version }}-
             ${{ runner.os }}-pip-
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           python -m pip install -U pip
           python -m pip install -U setuptools wheel
