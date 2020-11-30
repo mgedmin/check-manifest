@@ -29,6 +29,19 @@ distcheck: distcheck-self  # also release.mk will add other checks
 distcheck-self:
 	tox -e check-manifest
 
+.PHONY: releasechecklist
+releasechecklist: check-readme  # also release.mk will add other checks
+
+.PHONY: check-readme
+check-readme:
+	@rev_line='        rev: "'"`$(PYTHON) setup.py --version`"'"' && \
+	    grep -q "^$$rev_line$$" README.rst || { \
+	        echo "README.rst doesn't specify $$rev_line"; \
+	        echo "Please run make update-readme"; exit 1; }
+
+.PHONY: update-readme
+update-readme:
+	sed -i -e 's/rev: ".*"/rev: "$(shell $(PYTHON) setup.py --version)"/' README.rst
 
 FILE_WITH_VERSION = check_manifest.py
 include release.mk
