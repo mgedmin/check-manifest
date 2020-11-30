@@ -89,7 +89,7 @@ jobs:
 
     strategy:
       matrix:
-        toxenv-version:
+        toxenv:
           - flake8
           - mypy
           - check-manifest
