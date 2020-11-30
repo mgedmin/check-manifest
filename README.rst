@@ -135,7 +135,7 @@ git-workflow. Add the following to your ``.pre-commit-config.yaml``.
 
     repos:
     -   repo: https://github.com/mgedmin/check-manifest
-        rev: "0.39"
+        rev: "0.45"
         hooks:
         -   id: check-manifest
 
