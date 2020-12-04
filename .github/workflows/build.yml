@@ -100,9 +100,9 @@ jobs:
         toxenv:
           - flake8
           - mypy
+          - isort
           - check-manifest
           - check-python-versions
-          - isort
 
     steps:
       - name: Git clone
