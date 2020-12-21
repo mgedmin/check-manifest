@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import codecs
-import doctest
 import locale
 import os
 import posixpath
@@ -1787,10 +1786,3 @@ class TestCheckManifest(unittest.TestCase):
                 "some files listed as being under source control are missing:\n"
                 "  missing.py",
                 sys.stderr.getvalue())
-
-
-def test_suite():
-    return unittest.TestSuite([
-        unittest.defaultTestLoader.loadTestsFromName(__name__),
-        doctest.DocTestSuite('check_manifest'),
-    ])
