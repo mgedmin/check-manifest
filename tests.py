@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import codecs
 import locale
 import os
@@ -35,7 +33,7 @@ else:
     HAS_OEM_CODEC = True
 
 
-class MockUI(object):
+class MockUI:
 
     def __init__(self, verbosity=1):
         self.verbosity = verbosity
@@ -162,7 +160,7 @@ class Tests(unittest.TestCase):
                 with mock.patch('os.mkdir',
                                 lambda d: actions.append('mkdir %s' % d)):
                     with mock.patch('shutil.copy2',
-                                    lambda s, d: actions.append('cp %s %s' % (s, d))):
+                                    lambda s, d: actions.append(f'cp {s} {d}')):
                         copy_files(['a', 'b', n('c/d/e')], n('/dest/dir'))
         self.assertEqual(
             actions,
@@ -252,7 +250,7 @@ class Tests(unittest.TestCase):
             format_missing(set(), set(), "1st", "2nd"),
             "")
         self.assertEqual(
-            format_missing(set(["c"]), set(["a"]), "1st", "2nd"),
+            format_missing({"c"}, {"a"}, "1st", "2nd"),
             "missing from 1st:\n"
             "  c\n"
             "missing from 2nd:\n"
@@ -917,7 +915,7 @@ class TestZestIntegration(unittest.TestCase):
         sys_exit.assert_not_called()
 
 
-class VCSHelper(object):
+class VCSHelper:
 
     # override in subclasses
     command = None  # type: Optional[str]
@@ -951,7 +949,7 @@ class VCSHelper(object):
             raise subprocess.CalledProcessError(rc, command[0], output=stdout)
 
 
-class VCSMixin(object):
+class VCSMixin:
 
     def setUp(self):
         if not self.vcs.is_installed() and CAN_SKIP_TESTS:
