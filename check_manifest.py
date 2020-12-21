@@ -30,7 +30,7 @@ import tarfile
 import tempfile
 import unicodedata
 import zipfile
-from contextlib import closing, contextmanager
+from contextlib import contextmanager
 from typing import List, Optional, Union
 from xml.etree import ElementTree as ET
 
@@ -315,10 +315,10 @@ def get_archive_file_list(archive_filename):
     Supports .tar.gz and .zip.
     """
     if archive_filename.endswith('.zip'):
-        with closing(zipfile.ZipFile(archive_filename)) as zf:
+        with zipfile.ZipFile(archive_filename) as zf:
             filelist = zf.namelist()
     elif archive_filename.endswith(('.tar.gz', '.tar.bz2', '.tar')):
-        with closing(tarfile.open(archive_filename)) as tf:
+        with tarfile.open(archive_filename) as tf:
             # XXX: is unicodify() necessary now that Py2 is no longer supported?
             filelist = map(unicodify, tf.getnames())
     else:
