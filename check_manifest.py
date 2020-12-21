@@ -156,7 +156,7 @@ def run(
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, cwd=cwd)
     except OSError as e:
-        raise Failure("could not run %s: %s" % (command, e))
+        raise Failure(f"could not run {command}: {e}")
     output, stderr = pipe.communicate()
     status = pipe.wait()
     if status != 0:
