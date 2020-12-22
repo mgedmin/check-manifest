@@ -5,7 +5,7 @@ Changelog
 0.46 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- The `pre-commit <https://pre-commit.com>`__ hook now always uses Python 3.
 
 
 0.45 (2020-10-31)
