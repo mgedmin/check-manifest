@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.46 (unreleased)
+0.46 (2021-01-04)
 -----------------
 
 - The `pre-commit <https://pre-commit.com>`__ hook now always uses Python 3.
