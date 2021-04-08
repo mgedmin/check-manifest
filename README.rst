@@ -141,7 +141,7 @@ git-workflow. Add the following to your ``.pre-commit-config.yaml``.
 
 If you are running pre-commit without a network, you can utilize
 ``args: [--no-build-isolation]`` to prevent a ``pip install`` reaching out to
-pypi.  If you have additional ``build-system.requires`` outside of pip /
+PyPI.  If you have additional ``build-system.requires`` outside of pip /
 setuptools / wheel you will want to list those in ``additional_dependencies``.
 
 .. code-block:: yaml
