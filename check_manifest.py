@@ -879,7 +879,7 @@ def extract_version_from_filename(filename):
     filename = os.path.splitext(os.path.basename(filename))[0]
     if filename.endswith('.tar'):
         filename = os.path.splitext(filename)[0]
-    return filename.partition('-')[2]
+    return filename.split('-')[-1]
 
 
 def should_use_pep_517():

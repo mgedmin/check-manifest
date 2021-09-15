@@ -464,6 +464,7 @@ class Tests(unittest.TestCase):
         from check_manifest import extract_version_from_filename as e
         self.assertEqual(e('dist/foo_bar-1.2.3.dev4+g12345.zip'), '1.2.3.dev4+g12345')
         self.assertEqual(e('dist/foo_bar-1.2.3.dev4+g12345.tar.gz'), '1.2.3.dev4+g12345')
+        self.assertEqual(e('dist/foo-bar-1.2.3.dev4+g12345.tar.gz'), '1.2.3.dev4+g12345')
 
     def test_get_ignore_from_manifest_lines(self):
         from check_manifest import IgnoreList, _get_ignore_from_manifest_lines
