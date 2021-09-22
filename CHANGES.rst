@@ -5,7 +5,8 @@ Changelog
 0.47 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Fix ``setuptools_scm`` workaround for packages with dashes in the name
+  (`#145 <https://github.com/mgedmin/check-manifest/issues/145>`_).
 
 
 0.46 (2021-01-04)
