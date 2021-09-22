@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.47 (unreleased)
+0.47 (2021-09-22)
 -----------------
 
 - Fix ``setuptools_scm`` workaround for packages with dashes in the name
