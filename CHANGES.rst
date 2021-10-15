@@ -5,7 +5,7 @@ Changelog
 0.48 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Add Python 3.10 support.
 
 
 0.47 (2021-09-22)
