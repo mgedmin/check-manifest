@@ -61,7 +61,7 @@ setup(
     install_requires=[
         'build>=0.1',
         'setuptools',
-        'toml',
+        'tomli',
     ],
     extras_require={
         'test': [
