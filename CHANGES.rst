@@ -7,6 +7,10 @@ Changelog
 
 - Add Python 3.10 support.
 
+- Switch to tomli instead of toml, after hearing about PEP-680.  tomli will be
+  included in the Python 3.11 standard library as tomllib, while toml is
+  apparently unmaintained.
+
 
 0.47 (2021-09-22)
 -----------------
