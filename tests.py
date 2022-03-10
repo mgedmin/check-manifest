@@ -16,10 +16,13 @@ from io import BytesIO, StringIO
 from typing import Optional
 from xml.etree import ElementTree as ET
 
-import unittest.mock as mock
-
 from check_manifest import rmtree
 
+
+try:
+    import mock
+except ImportError:
+    from unittest import mock
 
 CAN_SKIP_TESTS = os.getenv('SKIP_NO_TESTS', '') == ''
 
