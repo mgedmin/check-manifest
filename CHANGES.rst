@@ -11,6 +11,12 @@ Changelog
   included in the Python 3.11 standard library as tomllib, while toml is
   apparently unmaintained.
 
+- Fix submodule support when ``.gitmodules`` exists in a subdirectory
+  (`#153 <https://github.com/mgedmin/check-manifest/issues/153>`_).
+  Note that this reverts a fix for `#124
+  <https://github.com/mgedmin/check-manifest/issues/124>`_: git versions before
+  2.11 are no longer supported.
+
 
 0.47 (2021-09-22)
 -----------------
