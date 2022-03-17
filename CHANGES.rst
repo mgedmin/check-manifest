@@ -5,7 +5,7 @@ Changelog
 0.49 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Drop Python 3.6 support.
 
 
 0.48 (2022-03-13)
