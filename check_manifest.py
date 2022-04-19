@@ -573,6 +573,8 @@ class IgnoreList:
             # GitHub template files
             .prune('.github')
             # we can do without these in sdists
+            .global_exclude('.circleci/config.yml')
+            .global_exclude('.gitpod.yml')
             .global_exclude('.travis.yml')
             .global_exclude('Jenkinsfile')
             # It's convenient to ship compiled .mo files in sdists, but they
