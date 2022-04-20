@@ -307,10 +307,12 @@ class Tests(unittest.TestCase):
             strip_sdist_extras,
         )
         filelist = canonical_file_list([
+            '.circleci/config.yml',
             '.github',
             '.github/ISSUE_TEMPLATE',
             '.github/ISSUE_TEMPLATE/bug_report.md',
             '.gitignore',
+            '.gitpod.yml',
             '.travis.yml',
             'setup.py',
             'setup.cfg',

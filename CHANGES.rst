@@ -6,6 +6,7 @@ Changelog
 -----------------
 
 - Drop Python 3.6 support.
+- Exclude more common dev/test files
 
 
 0.48 (2022-03-13)
