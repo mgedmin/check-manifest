@@ -34,7 +34,12 @@ from contextlib import contextmanager
 from typing import List, Optional, Union
 from xml.etree import ElementTree as ET
 
-import tomli
+try:
+    # Python 3.11+
+    import tomllib
+except ImportError:
+    import tomli as tomllib
+
 from setuptools.command.egg_info import translate_pattern
 
 
@@ -698,7 +703,7 @@ def _load_config():
     """
     if os.path.exists("pyproject.toml"):
         with open('pyproject.toml', 'rb') as f:
-            config = tomli.load(f)
+            config = tomllib.load(f)
         if CFG_SECTION_CHECK_MANIFEST in config.get("tool", {}):
             return config["tool"][CFG_SECTION_CHECK_MANIFEST]
 
@@ -890,7 +895,7 @@ def should_use_pep_517():
     if not os.path.exists('pyproject.toml'):
         return False
     with open('pyproject.toml', 'rb') as f:
-        config = tomli.load(f)
+        config = tomllib.load(f)
     if "build-system" not in config:
         return False
     if "build-backend" not in config["build-system"]:
