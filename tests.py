@@ -16,7 +16,7 @@ from io import BytesIO, StringIO
 from typing import Optional
 from xml.etree import ElementTree as ET
 
-import mock
+from unittest import mock
 
 from check_manifest import rmtree
 
