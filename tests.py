@@ -16,6 +16,7 @@ from io import BytesIO, StringIO
 from typing import Optional
 from xml.etree import ElementTree as ET
 
+
 if sys.version_info >= (3, 8):
     from unittest import mock
 else:
