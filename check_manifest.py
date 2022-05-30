@@ -36,9 +36,9 @@ from xml.etree import ElementTree as ET
 
 
 if sys.version_info >= (3, 11):
-    import tomllib
+    import tomllib  # pragma: nocover
 else:
-    import tomli as tomllib
+    import tomli as tomllib  # pragma: nocover
 
 from setuptools.command.egg_info import translate_pattern
 
