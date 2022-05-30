@@ -35,10 +35,9 @@ from typing import List, Optional, Union
 from xml.etree import ElementTree as ET
 
 
-try:
-    # Python 3.11+
+if sys.version_info >= (3, 11):
     import tomllib
-except ImportError:
+else:
     import tomli as tomllib
 
 from setuptools.command.egg_info import translate_pattern
