@@ -1053,7 +1053,7 @@ class GitHelper(VCSHelper):
     command = 'git'
 
     def _init_vcs(self):
-        self._run('git', 'init')
+        self._run('git', 'init', '-b', 'main')
         self._run('git', 'config', 'user.name', 'Unit Test')
         self._run('git', 'config', 'user.email', 'test@example.com')
 
