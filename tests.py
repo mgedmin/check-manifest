@@ -929,6 +929,7 @@ class VCSHelper:
 
     # override in subclasses
     command = None  # type: Optional[str]
+    extra_env = {}
 
     @property
     def version(self):
@@ -959,7 +960,8 @@ class VCSHelper:
             command = [s.encode(locale.getpreferredencoding()) for s in command]
         print('$', ' '.join(command))
         p = subprocess.Popen(command, stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)
+                             stderr=subprocess.STDOUT,
+                             env={**os.environ, **self.extra_env})
         stdout, stderr = p.communicate()
         rc = p.wait()
         if stdout:
@@ -1061,6 +1063,9 @@ class VCSMixin:
 class GitHelper(VCSHelper):
 
     command = 'git'
+    extra_env = dict(
+        GIT_ALLOW_PROTOCOL='file',
+    )
 
     def _init_vcs(self):
         if self.version_tuple >= (2, 28):
@@ -1093,8 +1098,7 @@ class TestGit(VCSMixin, unittest.TestCase):
 
     def _add_submodule(self, repo, subdir, subrepo):
         os.chdir(repo)
-        self.vcs._run('git', '-c', 'protocol.file.allow=always',
-                      'submodule', 'add', subrepo, subdir)
+        self.vcs._run('git', 'submodule', 'add', subrepo, subdir)
         self._commit()
         os.chdir(self.tmpdir)
 
