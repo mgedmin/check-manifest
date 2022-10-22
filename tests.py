@@ -2,6 +2,7 @@ import codecs
 import locale
 import os
 import posixpath
+import re
 import shutil
 import subprocess
 import sys
@@ -929,11 +930,23 @@ class VCSHelper:
     # override in subclasses
     command = None  # type: Optional[str]
 
+    @property
+    def version(self):
+        if not hasattr(self, '_version'):
+            if not self.is_installed():
+                self._version = None
+        return self._version
+
+    @property
+    def version_tuple(self):
+        return tuple(map(int, re.findall(r'\d+', self.version)))
+
     def is_installed(self):
         try:
             p = subprocess.Popen([self.command, '--version'],
                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             stdout, stderr = p.communicate()
+            self._version = stdout.decode('ascii', 'backslashreplace').strip()
             rc = p.wait()
             return (rc == 0)
         except OSError:
@@ -950,10 +963,7 @@ class VCSHelper:
         stdout, stderr = p.communicate()
         rc = p.wait()
         if stdout:
-            print(
-                stdout if isinstance(stdout, str) else
-                stdout.decode('ascii', 'backslashreplace')
-            )
+            print(stdout.decode('ascii', 'backslashreplace'))
         if rc:
             raise subprocess.CalledProcessError(rc, command[0], output=stdout)
 
@@ -1053,7 +1063,10 @@ class GitHelper(VCSHelper):
     command = 'git'
 
     def _init_vcs(self):
-        self._run('git', 'init', '-b', 'main')
+        if self.version_tuple >= (2, 28):
+            self._run('git', 'init', '-b', 'main')
+        else:
+            self._run('git', 'init')
         self._run('git', 'config', 'user.name', 'Unit Test')
         self._run('git', 'config', 'user.email', 'test@example.com')
 
