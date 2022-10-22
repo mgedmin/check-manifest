@@ -1069,7 +1069,6 @@ class GitHelper(VCSHelper):
             self._run('git', 'init')
         self._run('git', 'config', 'user.name', 'Unit Test')
         self._run('git', 'config', 'user.email', 'test@example.com')
-        self._run('git', 'config', 'protocol.file.allow', 'always')
 
     def _add_to_vcs(self, filenames):
         # Note that we use --force to prevent errors when we want to
@@ -1094,7 +1093,8 @@ class TestGit(VCSMixin, unittest.TestCase):
 
     def _add_submodule(self, repo, subdir, subrepo):
         os.chdir(repo)
-        self.vcs._run('git', 'submodule', 'add', subrepo, subdir)
+        self.vcs._run('git', '-c', 'protocol.file.allow=always',
+                      'submodule', 'add', subrepo, subdir)
         self._commit()
         os.chdir(self.tmpdir)
 
