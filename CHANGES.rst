@@ -5,7 +5,10 @@ Changelog
 0.49 (unreleased)
 -----------------
 
+- Add Python 3.11 support.
+
 - Drop Python 3.6 support.
+
 - Exclude more common dev/test files
 
 
