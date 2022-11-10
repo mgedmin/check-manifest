@@ -1098,7 +1098,8 @@ class TestGit(VCSMixin, unittest.TestCase):
 
     def _add_submodule(self, repo, subdir, subrepo):
         os.chdir(repo)
-        self.vcs._run('git', 'submodule', 'add', subrepo, subdir)
+        self.vcs._run('git', '-c', 'protocol.file.allow=always', 'submodule',
+                      'add', subrepo, subdir)
         self._commit()
         os.chdir(self.tmpdir)
 
@@ -1123,7 +1124,8 @@ class TestGit(VCSMixin, unittest.TestCase):
         self._add_submodule('main', 'sub1', '../repo1')
         self._add_submodule('main', 'subdir/sub2', '../repo2')
         os.chdir('main')
-        self.vcs._run('git', 'submodule', 'update', '--init', '--recursive')
+        self.vcs._run('git', '-c', 'protocol.file.allow=always', 'submodule',
+                      'update', '--init', '--recursive')
         self.assertEqual(
             get_vcs_files(self.ui),
             [
