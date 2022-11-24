@@ -96,10 +96,13 @@ class Tests(unittest.TestCase):
 
     def test_run_failure(self):
         from check_manifest import CommandFailed, run
+        # /bin/false can return any non-zero status code, e.g. it returns 255
+        # on OpenIndiana: https://github.com/mgedmin/check-manifest/issues/162
+        command = [sys.executable, '-c', 'import sys; sys.exit(1)']
         with self.assertRaises(CommandFailed) as cm:
-            run(["false"])
+            run(command)
         self.assertEqual(str(cm.exception),
-                         "['false'] failed (status 1):\n")
+                         f"{command!r} failed (status 1):\n")
 
     def test_run_no_such_program(self):
         from check_manifest import Failure, run
