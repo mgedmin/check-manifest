@@ -14,7 +14,7 @@ import zipfile
 from contextlib import closing
 from functools import partial
 from io import BytesIO, StringIO
-from typing import Optional
+from typing import Dict, Optional
 from xml.etree import ElementTree as ET
 
 
@@ -932,8 +932,8 @@ class TestZestIntegration(unittest.TestCase):
 class VCSHelper:
 
     # override in subclasses
-    command = None  # type: Optional[str]
-    extra_env = {}
+    command: Optional[str] = None
+    extra_env: Dict[str, str] = {}
 
     @property
     def version(self):
