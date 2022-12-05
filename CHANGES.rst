@@ -2,14 +2,14 @@ Changelog
 =========
 
 
-0.49 (unreleased)
+0.49 (2022-12-05)
 -----------------
 
 - Add Python 3.11 support.
 
 - Drop Python 3.6 support.
 
-- Exclude more common dev/test files
+- Exclude more common dev/test files.
 
 
 0.48 (2022-03-13)
