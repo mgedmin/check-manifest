@@ -47,7 +47,7 @@ from setuptools.command.egg_info import translate_pattern
 from distutils.text_file import TextFile  # isort:skip
 
 
-__version__ = '0.49'
+__version__ = '0.50.dev0'
 __author__ = 'Marius Gedminas <marius@gedmin.as>'
 __licence__ = 'MIT'
 __url__ = 'https://github.com/mgedmin/check-manifest'
