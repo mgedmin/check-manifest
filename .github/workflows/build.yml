@@ -78,6 +78,7 @@ jobs:
 
       - name: Report to coveralls
         run: coveralls
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_SERVICE_NAME: github
