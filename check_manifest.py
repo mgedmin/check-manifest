@@ -961,10 +961,15 @@ def check_manifest(source_tree='.', create=False, update=False,
             ui.info_continue(": %d files and directories" % len(sdist_files))
             version = extract_version_from_filename(sdist_filename)
         existing_source_files = list(filter(os.path.exists, all_source_files))
-        missing_source_files = sorted(set(all_source_files) - set(existing_source_files))
+        existing_source_files_with_broken_symlinks = list(filter(os.path.lexists, all_source_files))
+        missing_source_files = sorted(set(all_source_files) - set(existing_source_files_with_broken_symlinks))
         if missing_source_files:
             ui.warning("some files listed as being under source control are missing:\n%s"
                        % format_list(missing_source_files))
+        broken_symlinks = set(existing_source_files_with_broken_symlinks) - set(existing_source_files)
+        if broken_symlinks:
+            ui.warning("some symbolic links listed as being under source control are pointing to missing files:\n%s"
+                       % format_list(["%s -> %s (missing)" % (x, os.readlink(x)) for x in broken_symlinks]))
         ui.info_begin("copying source files to a temporary directory")
         with mkdtemp('-sources') as tempsourcedir:
             copy_files(existing_source_files, tempsourcedir)
