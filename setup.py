@@ -66,6 +66,7 @@ setup(
         'test': [
             'mock >= 3.0.0; python_version == "3.7"',
             'pytest',
+            'wheel',
         ],
     },
     entry_points={
