@@ -9,6 +9,7 @@ environment:
     - PYTHON: "C:\\Python39"
     - PYTHON: "C:\\Python310"
     - PYTHON: "C:\\Python311"
+    - PYTHON: "C:\\Python312"
 
 init:
   - "echo %PYTHON%"
@@ -23,7 +24,7 @@ install:
   - "set PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   - python --version
   - pip install -U virtualenv  # upgrade pip in tox's virtualenvs
-  - pip install tox
+  - pip install tox setuptools
   - choco install bzr
   - "set PATH=C:\\Program Files (x86)\\Bazaar;%PATH%"
   - bzr --version
