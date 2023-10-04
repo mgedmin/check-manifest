@@ -26,6 +26,7 @@ jobs:
           - "3.9"
           - "3.10"
           - "3.11"
+          - "3.12"
           - "pypy-3.7"
         vcs:
           - bzr
@@ -41,10 +42,10 @@ jobs:
         # ubuntu-18.04 and ubuntu20.04.
 
       - name: Git clone
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "${{ matrix.python-version }}"
 
@@ -61,7 +62,7 @@ jobs:
         run: |
           python -m pip install -U pip
           python -m pip install -U setuptools wheel
-          python -m pip install -U coverage coveralls pytest flake8
+          python -m pip install -U coverage pytest flake8
           python -m pip install -e .[test]
 
       - name: Run tests
@@ -71,17 +72,17 @@ jobs:
           FORCE_TEST_VCS: ${{ matrix.vcs }}
 
       - name: Check test coverage
-        run: coverage report -m --fail-under=${{ matrix.vcs == 'bzr' && 99 || 100 }}
+        run: |
+          coverage report -m --fail-under=${{ matrix.vcs == 'bzr' && 99 || 100 }}
+          coverage xml
 
       - name: Run check-manifest on itself
         run: python check_manifest.py
 
       - name: Report to coveralls
-        run: coveralls
-        continue-on-error: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COVERALLS_SERVICE_NAME: github
+        uses: coverallsapp/github-action@v2
+        with:
+          file: coverage.xml
 
   lint:
     name: ${{ matrix.toxenv }}
@@ -98,10 +99,10 @@ jobs:
 
     steps:
       - name: Git clone
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python ${{ env.default_python || '3.9' }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "${{ env.default_python || '3.9' }}"
 
