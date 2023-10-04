@@ -24,7 +24,7 @@ install:
   - "set PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   - python --version
   - pip install -U virtualenv  # upgrade pip in tox's virtualenvs
-  - pip install tox
+  - pip install tox setuptools
   - choco install bzr
   - "set PATH=C:\\Program Files (x86)\\Bazaar;%PATH%"
   - bzr --version
