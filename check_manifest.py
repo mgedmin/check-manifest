@@ -1038,34 +1038,51 @@ def check_manifest(source_tree='.', create=False, update=False,
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Check a Python MANIFEST.in file for completeness",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('source_tree', default='.', nargs='?',
-        help='location for the source tree')
-    parser.add_argument('--version', action='version',
-                        version='%(prog)s version ' + __version__)
-    parser.add_argument('-q', '--quiet', action='store_const', dest='quiet',
-                        const=0, default=1, help='reduced output verbosity')
-    parser.add_argument('-v', '--verbose', action='store_const', dest='verbose',
-                        const=1, default=0, help='more verbose output')
-    parser.add_argument('-c', '--create', action='store_true',
-        help='create a MANIFEST.in if missing')
-    parser.add_argument('-u', '--update', action='store_true',
+        description="Check a Python MANIFEST.in file for completeness")
+    parser.add_argument(
+        'source_tree', default='.', nargs='?',
+        help='location for the source tree (default: .)')
+    parser.add_argument(
+        '--version', action='version',
+        version='%(prog)s version ' + __version__)
+    parser.add_argument(
+        '-q', '--quiet', action='store_const', dest='quiet',
+        const=0, default=1, help='reduced output verbosity')
+    parser.add_argument(
+        '-v', '--verbose', action='store_const', dest='verbose',
+        const=1, default=0, help='more verbose output')
+    parser.add_argument(
+        '-c', '--create', action='store_true',
+        help='create a MANIFEST.in if missing (default: exit with an error)')
+    parser.add_argument(
+        '-u', '--update', action='store_true',
         help='append suggestions to MANIFEST.in (implies --create)')
-    parser.add_argument('-p', '--python', default=sys.executable,
-        help='use this Python interpreter for running setup.py sdist')
-    parser.add_argument('--ignore', metavar='patterns', default=None,
-                        help='ignore files/directories matching these'
-                             ' comma-separated patterns')
-    parser.add_argument('--ignore-bad-ideas', metavar='patterns',
-                        default=[], help='ignore bad idea files/directories '
-                        'matching these comma-separated patterns')
+    parser.add_argument(
+        '-p', '--python', default=sys.executable,
+        help=(
+            'use this Python interpreter for running setup.py sdist'
+            ' (default: %(default)s)'
+        ))
+    parser.add_argument(
+        '--ignore', metavar='patterns', default=None,
+        help=(
+            'ignore files/directories matching these comma-separated'
+            ' glob patterns'
+        ))
+    parser.add_argument(
+        '--ignore-bad-ideas', metavar='patterns', default=[],
+        help=(
+            'ignore bad idea files/directories matching these'
+            ' comma-separated glob patterns'
+        ))
     parser.add_argument(
         '--no-build-isolation', dest='build_isolation', action='store_false',
-        help='Disable isolation when building a modern source distribution. '
-        'Build dependencies specified by PEP 518 must be already installed if '
-        'this option is used.',
-    )
+        help=(
+            'disable isolation when building a modern source distribution'
+            ' (default: use build isolation).'
+            ' Build dependencies specified by pyproject.toml must be already'
+            ' installed if this option is used.'
+        ))
     args = parser.parse_args()
 
     ignore = IgnoreList()

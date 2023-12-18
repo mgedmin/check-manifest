@@ -141,18 +141,18 @@ git-workflow. Add the following to your ``.pre-commit-config.yaml``.
 
 If you are running pre-commit without a network, you can utilize
 ``args: [--no-build-isolation]`` to prevent a ``pip install`` reaching out to
-PyPI.  If you have additional ``build-system.requires`` outside of pip /
-setuptools / wheel you will want to list those in ``additional_dependencies``.
+PyPI.  This makes ``python -m build`` ignore your ``build-system.requires``,
+so you'll want to list them all in ``additional_dependencies``.
 
 .. code-block:: yaml
 
     repos:
     -   repo: https://github.com/mgedmin/check-manifest
-        rev: ...  # pick a valid tag / revision
+        rev: "0.49"
         hooks:
         -   id: check-manifest
             args: [--no-build-isolation]
-            additional_dependencies: [setuptools-scm]
+            additional_dependencies: [setuptools, wheel, setuptools-scm]
 
 
 .. |buildstatus| image:: https://github.com/mgedmin/check-manifest/workflows/build/badge.svg?branch=master

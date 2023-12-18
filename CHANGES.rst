@@ -60,8 +60,7 @@ Changelog
 - Add ``--no-build-isolation`` option so check-manifest can succeed building
   pep517-based distributions without an internet connection.  With
   ``--no-build-isolation``, you must preinstall the ``build-system.requires``
-  beforehand. (
-  `#128 <https://github.com/mgedmin/check-manifest/pull/128>`__).
+  beforehand. (`#128 <https://github.com/mgedmin/check-manifest/pull/128>`__).
 
 
 0.44 (2020-10-03)
