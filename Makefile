@@ -35,7 +35,7 @@ releasechecklist: check-readme  # also release.mk will add other checks
 .PHONY: check-readme
 check-readme:
 	@rev_line='        rev: "'"`$(PYTHON) setup.py --version`"'"' && \
-	    grep -q "^$$rev_line$$" README.rst || { \
+	    ! grep "rev: " README.rst | grep -qv "^$$rev_line$$" || { \
 	        echo "README.rst doesn't specify $$rev_line"; \
 	        echo "Please run make update-readme"; exit 1; }
 
