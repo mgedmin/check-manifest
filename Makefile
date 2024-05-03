@@ -1,6 +1,8 @@
 .PHONY: all
 all:
-	@echo "Nothing to build.  Try 'make test' perhaps?"
+	@echo "Nothing to build.  Try 'make help' perhaps?"
+
+##: Testing
 
 .PHONY: test
 test:                           ##: run tests
@@ -21,6 +23,26 @@ coverage:                       ##: measure test coverage
 diff-cover: coverage            ##: show untested code in this branch
 	coverage xml
 	diff-cover coverage.xml
+
+##: Linting
+
+.PHONY: lint
+lint:                           ##: run all linters
+	tox -p auto -e flake8,mypy,isort,check-manifest,check-python-versions
+
+.PHONY: flake8
+flake8:                         ##: check for style problems
+	tox -e flake8
+
+.PHONY: isort
+isort:                          ##: check for incorrect import ordering
+	tox -e isort
+
+.PHONY: mypy
+mypy:                           ##: check for type errors
+	tox -e mypy
+
+##: Releasing
 
 .PHONY: distcheck
 distcheck: distcheck-self  # also release.mk will add other checks
@@ -45,3 +67,4 @@ update-readme:
 
 FILE_WITH_VERSION = check_manifest.py
 include release.mk
+HELP_INDENT = "  "
