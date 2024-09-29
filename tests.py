@@ -1,4 +1,3 @@
-import codecs
 import locale
 import os
 import posixpath
@@ -19,12 +18,6 @@ from xml.etree import ElementTree as ET
 
 
 from unittest import mock
-except LookupError:
-    HAS_OEM_CODEC = False
-else:
-    # Python >= 3.6 on Windows
-    HAS_OEM_CODEC = True
-
 
 class MockUI:
 
@@ -1151,8 +1144,6 @@ class TestBzr(VCSMixin, unittest.TestCase):
     vcs = BzrHelper()
 
 
-@unittest.skipIf(HAS_OEM_CODEC,
-                 "Python 3.6 lets us use 'oem' codec instead of guessing")
 class TestBzrTerminalCharsetDetectionOnOldPythons(unittest.TestCase):
 
     @mock.patch('sys.stdin')
@@ -1184,8 +1175,6 @@ class TestBzrTerminalCharsetDetectionOnOldPythons(unittest.TestCase):
         self.assertEqual(Bazaar._get_terminal_encoding(), None)
 
 
-@unittest.skipIf(not HAS_OEM_CODEC,
-                 "'oem' codec not available on Python before 3.6")
 class TestBzrTerminalCharsetDetectionOnNewPythons(unittest.TestCase):
 
     def test_terminal_encoding_cp0(self):
