@@ -18,21 +18,7 @@ from typing import Dict, Optional
 from xml.etree import ElementTree as ET
 
 
-if sys.version_info >= (3, 8):
-    from unittest import mock
-else:
-    # unittest.mock in 3.7 is too old to support
-    # all the features used in the test suite
-    import mock
-
-from check_manifest import rmtree
-
-
-CAN_SKIP_TESTS = os.getenv('SKIP_NO_TESTS', '') == ''
-
-
-try:
-    codecs.lookup('oem')
+from unittest import mock
 except LookupError:
     HAS_OEM_CODEC = False
 else:
@@ -115,7 +101,7 @@ class Tests(unittest.TestCase):
         should_start_with = "could not run ['there-is-really-no-such-program']:"
         self.assertTrue(
             str(cm.exception).startswith(should_start_with),
-            '\n%r does not start with\n%r' % (str(cm.exception),
+            '\n{!r} does not start with\n{!r}'.format(str(cm.exception),
                                               should_start_with))
 
     def test_mkdtemp_readonly_files(self):
@@ -179,7 +165,7 @@ class Tests(unittest.TestCase):
                 'cp a %s' % n('/dest/dir/a'),
                 'mkdir %s' % n('/dest/dir/b'),
                 'makedirs %s' % n('/dest/dir/c/d'),
-                'cp %s %s' % (n('c/d/e'), n('/dest/dir/c/d/e')),
+                'cp {} {}'.format(n('c/d/e'), n('/dest/dir/c/d/e')),
             ])
 
     def test_get_one_file_in(self):
