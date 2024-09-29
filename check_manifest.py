@@ -137,7 +137,7 @@ def format_missing(missing_from_a, missing_from_b, name_a, name_b):
 
 class CommandFailed(Failure):
     def __init__(self, command: List[str], status: int, output: str) -> None:
-        super().__init__("%s failed (status %s):\n%s" % (
+        super().__init__("{} failed (status {}):\n{}".format(
                                command, status, output))
 
 

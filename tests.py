@@ -1,4 +1,3 @@
-import codecs
 import locale
 import os
 import posixpath
@@ -18,27 +17,7 @@ from typing import Dict, Optional
 from xml.etree import ElementTree as ET
 
 
-if sys.version_info >= (3, 8):
-    from unittest import mock
-else:
-    # unittest.mock in 3.7 is too old to support
-    # all the features used in the test suite
-    import mock
-
-from check_manifest import rmtree
-
-
-CAN_SKIP_TESTS = os.getenv('SKIP_NO_TESTS', '') == ''
-
-
-try:
-    codecs.lookup('oem')
-except LookupError:
-    HAS_OEM_CODEC = False
-else:
-    # Python >= 3.6 on Windows
-    HAS_OEM_CODEC = True
-
+from unittest import mock
 
 class MockUI:
 
@@ -115,7 +94,7 @@ class Tests(unittest.TestCase):
         should_start_with = "could not run ['there-is-really-no-such-program']:"
         self.assertTrue(
             str(cm.exception).startswith(should_start_with),
-            '\n%r does not start with\n%r' % (str(cm.exception),
+            '\n{!r} does not start with\n{!r}'.format(str(cm.exception),
                                               should_start_with))
 
     def test_mkdtemp_readonly_files(self):
@@ -179,7 +158,7 @@ class Tests(unittest.TestCase):
                 'cp a %s' % n('/dest/dir/a'),
                 'mkdir %s' % n('/dest/dir/b'),
                 'makedirs %s' % n('/dest/dir/c/d'),
-                'cp %s %s' % (n('c/d/e'), n('/dest/dir/c/d/e')),
+                'cp {} {}'.format(n('c/d/e'), n('/dest/dir/c/d/e')),
             ])
 
     def test_get_one_file_in(self):
@@ -1165,8 +1144,6 @@ class TestBzr(VCSMixin, unittest.TestCase):
     vcs = BzrHelper()
 
 
-@unittest.skipIf(HAS_OEM_CODEC,
-                 "Python 3.6 lets us use 'oem' codec instead of guessing")
 class TestBzrTerminalCharsetDetectionOnOldPythons(unittest.TestCase):
 
     @mock.patch('sys.stdin')
@@ -1198,8 +1175,6 @@ class TestBzrTerminalCharsetDetectionOnOldPythons(unittest.TestCase):
         self.assertEqual(Bazaar._get_terminal_encoding(), None)
 
 
-@unittest.skipIf(not HAS_OEM_CODEC,
-                 "'oem' codec not available on Python before 3.6")
 class TestBzrTerminalCharsetDetectionOnNewPythons(unittest.TestCase):
 
     def test_terminal_encoding_cp0(self):
