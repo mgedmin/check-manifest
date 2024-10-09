@@ -5,7 +5,7 @@ Changelog
 0.50 (unreleased)
 -----------------
 
-- Add Python 3.12 support.
+- Add Python 3.12 and 3.13 support.
 
 
 0.49 (2022-12-05)
