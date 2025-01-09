@@ -155,7 +155,7 @@ so you'll want to list them all in ``additional_dependencies``.
             additional_dependencies: [setuptools, wheel, setuptools-scm]
 
 
-.. |buildstatus| image:: https://github.com/mgedmin/check-manifest/workflows/build/badge.svg?branch=master
+.. |buildstatus| image:: https://github.com/mgedmin/check-manifest/actions/workflows/build.yml/badge.svg?branch=master
 .. _buildstatus: https://github.com/mgedmin/check-manifest/actions
 
 .. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/mgedmin/check-manifest?branch=master&svg=true
