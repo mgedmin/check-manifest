@@ -5,7 +5,7 @@ Changelog
 0.51 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Drop Python 3.7 support.
 
 
 0.50 (2024-10-09)
