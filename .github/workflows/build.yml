@@ -14,8 +14,8 @@ on:
 
 jobs:
   build:
-    name: Python ${{ matrix.python-version }}, ${{ matrix.vcs }}
-    runs-on: ubuntu-22.04  # ubuntu-latest aka ubuntu-24.04 has busted bzr
+    name: Python ${{ matrix.python-version }} on ${{ matrix.os }}, ${{ matrix.vcs }}
+    runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: true
@@ -29,6 +29,9 @@ jobs:
           - "3.13"
           - "3.14"
           - "pypy3.10"
+        os:
+          - ubuntu-22.04  # ubuntu-latest aka ubuntu-24.04 has busted bzr
+          - windows-latest
         vcs:
           - bzr
           - git
@@ -37,10 +40,29 @@ jobs:
 
     steps:
       - name: Install OS-level dependencies
-        run: sudo apt-get install -y bzr git mercurial subversion
+        shell: bash
         # NB: at some point I'll want to switch from legacy Bazaar (apt package
         # bzr) to Breezy (apt package brz).  They're both available in
         # ubuntu-18.04 and ubuntu-20.04.
+        run: |
+          case "$RUNNER_OS" in
+            Linux)
+              sudo apt-get install -y bzr git mercurial subversion
+              ;;
+            Windows)
+              git --version
+              choco install hg
+              hg --version
+              choco install svn
+              svn --version
+              choco install bzr
+              bzr --version
+              ;;
+            *)
+              echo "$RUNNER_OS not supported"
+              exit 1
+              ;;
+          esac
 
       - name: Git clone
         uses: actions/checkout@v4
@@ -49,15 +71,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "${{ matrix.python-version }}"
-
-      - name: Pip cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('setup.py') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
-            ${{ runner.os }}-pip-
+          cache: pip
+          cache-dependency-path: |
+            setup.py
 
       - name: Install Python dependencies
         run: |
