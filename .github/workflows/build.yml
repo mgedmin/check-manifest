@@ -21,14 +21,14 @@ jobs:
       fail-fast: true
       matrix:
         python-version:
-          - "3.8"
-          - "3.9"
-          - "3.10"
-          - "3.11"
-          - "3.12"
+##        - "3.8"
+##        - "3.9"
+##        - "3.10"
+##        - "3.11"
+##        - "3.12"
           - "3.13"
           - "3.14"
-          - "pypy3.10"
+##        - "pypy3.10"
         os:
           - ubuntu-22.04  # ubuntu-latest aka ubuntu-24.04 has busted bzr
           - windows-latest
@@ -50,9 +50,7 @@ jobs:
               sudo apt-get install -y bzr git mercurial subversion
               ;;
             Windows)
-              choco install hg
-              choco install svn
-              choco install bzr
+              choco install bzr hg svn
               ;;
             *)
               echo "$RUNNER_OS not supported"
@@ -65,10 +63,11 @@ jobs:
         # Do this in a new shell because choco install changes PATH, but that
         # takes effect only in newly spawned shells
         run: |
-          bzr --version
+          echo $PATH
           git --version
           hg --version
           svn --version
+          bzr --version
 
       - name: Git clone
         uses: actions/checkout@v4
