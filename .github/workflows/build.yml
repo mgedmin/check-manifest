@@ -62,7 +62,7 @@ jobs:
         # Do this in a new shell because choco install changes PATH, but that
         # takes effect only in newly spawned shells -- or it's _supposed_ to!
         run: |
-          ${{ matrix.runner-name == 'windows-latest' && 'refreshenv' || '' }}
+          ${{ matrix.os == 'windows-latest' && 'refreshenv' || '' }}
           git --version
           hg --version
           svn --version
