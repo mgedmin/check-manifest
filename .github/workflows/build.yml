@@ -39,6 +39,24 @@ jobs:
 ##        - bzr
 
     steps:
+      - name: Git clone
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: "${{ matrix.python-version }}"
+          cache: pip
+          cache-dependency-path: |
+            setup.py
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install -U pip
+          python -m pip install -U setuptools wheel
+          python -m pip install -U coverage pytest flake8
+          python -m pip install -e .[test]
+
       - name: Install OS-level dependencies (Linux)
         # NB: at some point I'll want to switch from legacy Bazaar (apt package
         # bzr) to Breezy (apt package brz).  They're both available in
@@ -59,23 +77,6 @@ jobs:
           svn --version
           bzr --version
 
-      - name: Git clone
-        uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: "${{ matrix.python-version }}"
-          cache: pip
-          cache-dependency-path: |
-            setup.py
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install -U pip
-          python -m pip install -U setuptools wheel
-          python -m pip install -U coverage pytest flake8
-          python -m pip install -e .[test]
 
       - name: Run tests
         run: coverage run -m pytest
