@@ -5,6 +5,7 @@ Changelog
 0.51 (unreleased)
 -----------------
 
+- Add Python 3.14 support.
 - Drop Python 3.7 support.
 
 
