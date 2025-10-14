@@ -39,30 +39,21 @@ jobs:
 ##        - bzr
 
     steps:
-      - name: Install OS-level dependencies
-        shell: bash
+      - name: Install OS-level dependencies (Linux)
         # NB: at some point I'll want to switch from legacy Bazaar (apt package
         # bzr) to Breezy (apt package brz).  They're both available in
         # ubuntu-18.04 and ubuntu-20.04.
+        if: runner.os == "Linux"
         run: |
-          case "$RUNNER_OS" in
-            Linux)
-              sudo apt-get install -y bzr git mercurial subversion
-              ;;
-            Windows)
-              choco install --no-progress bzr hg svn
-              ;;
-            *)
-              echo "$RUNNER_OS not supported"
-              exit 1
-              ;;
-          esac
+          sudo apt-get install -y bzr git mercurial subversion
+
+      - name: Install OS-level dependencies (Windows)
+        if: runner.os == "Windows"
+        run: |
+          choco install --no-progress bzr hg svn
 
       - name: Check OS-level dependencies
-        # Do this in a new shell because choco install changes PATH, but that
-        # takes effect only in newly spawned shells -- or it's _supposed_ to!
         run: |
-          ${{ matrix.os == 'windows-latest' && 'refreshenv' || '' }}
           git --version
           hg --version
           svn --version
