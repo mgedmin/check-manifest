@@ -50,19 +50,25 @@ jobs:
               sudo apt-get install -y bzr git mercurial subversion
               ;;
             Windows)
-              git --version
               choco install hg
-              hg --version
               choco install svn
-              svn --version
               choco install bzr
-              bzr --version
               ;;
             *)
               echo "$RUNNER_OS not supported"
               exit 1
               ;;
           esac
+
+      - name: Check OS-level dependencies
+        shell: bash
+        # Do this in a new shell because choco install changes PATH, but that
+        # takes effect only in newly spawned shells
+        run: |
+          bzr --version
+          git --version
+          hg --version
+          svn --version
 
       - name: Git clone
         uses: actions/checkout@v4
