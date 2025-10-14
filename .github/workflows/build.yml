@@ -58,6 +58,16 @@ jobs:
               ;;
           esac
 
+      - name: Check OS-level dependencies
+        # Do this in a new shell because choco install changes PATH, but that
+        # takes effect only in newly spawned shells -- or it's _supposed_ to!
+        run: |
+          ${{ matrix.runner-name == 'windows-latest' && 'refreshenv' || '' }}
+          git --version
+          hg --version
+          svn --version
+          bzr --version
+
       - name: Git clone
         uses: actions/checkout@v4
 
