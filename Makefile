@@ -47,48 +47,7 @@ mypy:                           ##: check for type errors
 .PHONY: update-github-branch-protection-rules
 
 update-github-branch-protection-rules:  ##: update GitHub branch protection rules
-	gh api -X PUT -H "Accept: application/vnd.github+json" \
-		-H "X-GitHub-Api-Version: 2022-11-28" \
-		/repos/mgedmin/check-manifest/branches/master/protection/required_status_checks/contexts \
-		-f "contexts[]=check-manifest"                         \
-		-f "contexts[]=check-python-versions"                  \
-		-f "contexts[]=flake8"                                 \
-		-f "contexts[]=isort"                                  \
-		-f "contexts[]=mypy"                                   \
-		-f "contexts[]=Python 3.7, bzr"                        \
-		-f "contexts[]=Python 3.7, git"                        \
-		-f "contexts[]=Python 3.7, hg"                         \
-		-f "contexts[]=Python 3.7, svn"                        \
-		-f "contexts[]=Python 3.8, bzr"                        \
-		-f "contexts[]=Python 3.8, git"                        \
-		-f "contexts[]=Python 3.8, hg"                         \
-		-f "contexts[]=Python 3.8, svn"                        \
-		-f "contexts[]=Python 3.9, bzr"                        \
-		-f "contexts[]=Python 3.9, git"                        \
-		-f "contexts[]=Python 3.9, hg"                         \
-		-f "contexts[]=Python 3.9, svn"                        \
-		-f "contexts[]=Python 3.10, bzr"                       \
-		-f "contexts[]=Python 3.10, git"                       \
-		-f "contexts[]=Python 3.10, hg"                        \
-		-f "contexts[]=Python 3.10, svn"                       \
-		-f "contexts[]=Python 3.11, bzr"                       \
-		-f "contexts[]=Python 3.11, git"                       \
-		-f "contexts[]=Python 3.11, hg"                        \
-		-f "contexts[]=Python 3.11, svn"                       \
-		-f "contexts[]=Python 3.12, bzr"                       \
-		-f "contexts[]=Python 3.12, git"                       \
-		-f "contexts[]=Python 3.12, hg"                        \
-		-f "contexts[]=Python 3.12, svn"                       \
-		-f "contexts[]=Python 3.13, bzr"                       \
-		-f "contexts[]=Python 3.13, git"                       \
-		-f "contexts[]=Python 3.13, hg"                        \
-		-f "contexts[]=Python 3.13, svn"                       \
-		-f "contexts[]=Python pypy3.10, bzr"                   \
-		-f "contexts[]=Python pypy3.10, git"                   \
-		-f "contexts[]=Python pypy3.10, hg"                    \
-		-f "contexts[]=Python pypy3.10, svn"                   \
-		-f "contexts[]=continuous-integration/appveyor/branch" \
-		-f "contexts[]=continuous-integration/appveyor/pr"
+	uv run --script .github/update_branch_protection_rules.py
 
 ##: Releasing
 

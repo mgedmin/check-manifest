@@ -14,8 +14,8 @@ on:
 
 jobs:
   build:
-    name: Python ${{ matrix.python-version }}, ${{ matrix.vcs }}
-    runs-on: ubuntu-22.04  # ubuntu-latest aka ubuntu-24.04 has busted bzr
+    name: Python ${{ matrix.python-version }} on ${{ matrix.os }}, ${{ matrix.vcs }}
+    runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: true
@@ -27,7 +27,11 @@ jobs:
           - "3.11"
           - "3.12"
           - "3.13"
+          - "3.14"
           - "pypy3.10"
+        os:
+          - ubuntu-22.04  # ubuntu-latest aka ubuntu-24.04 has busted bzr
+          - windows-latest
         vcs:
           - bzr
           - git
@@ -35,11 +39,18 @@ jobs:
           - svn
 
     steps:
-      - name: Install OS-level dependencies
-        run: sudo apt-get install -y bzr git mercurial subversion
+      - name: Install OS-level dependencies (Linux)
         # NB: at some point I'll want to switch from legacy Bazaar (apt package
         # bzr) to Breezy (apt package brz).  They're both available in
         # ubuntu-18.04 and ubuntu-20.04.
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y bzr git mercurial subversion
+
+      - name: Install OS-level dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install --no-progress bzr hg svn
 
       - name: Git clone
         uses: actions/checkout@v4
@@ -48,15 +59,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "${{ matrix.python-version }}"
-
-      - name: Pip cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('setup.py') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
-            ${{ runner.os }}-pip-
+          cache: pip
+          cache-dependency-path: |
+            setup.py
 
       - name: Install Python dependencies
         run: |
@@ -66,7 +71,25 @@ jobs:
           python -m pip install -e .[test]
 
       - name: Run tests
-        run: coverage run -m pytest
+        shell: bash
+        run: |
+          # It is utter nonsense that I have to do this
+          case "$RUNNER_OS" in
+            Windows)
+              PATH=$PATH:"/c/Program Files (x86)/Bazaar"
+              PATH=$PATH:"/c/Program Files (x86)/Subversion/bin"
+              PATH=$PATH:"/c/Program Files/Mercurial"
+              ;;
+          esac
+
+          set -x
+
+          git --version
+          hg --version
+          svn --version
+          bzr --version
+
+          coverage run -m pytest
         env:
           SKIP_NO_TESTS: "1"
           FORCE_TEST_VCS: ${{ matrix.vcs }}

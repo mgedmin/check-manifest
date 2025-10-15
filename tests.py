@@ -1049,9 +1049,19 @@ class VCSMixin:
         os.chdir('b')
         self.assertEqual(get_vcs_files(self.ui), ['b.txt', 'c/d.txt'])
 
+    @unittest.skipIf(
+        sys.platform == 'win32',
+        "Get yourself a real VCS running on a real OS, I can't support this mess",
+    )
     def test_get_vcs_files_nonascii_filenames(self):
         # This test will fail if your locale is incapable of expressing
         # "eacute".  UTF-8 or Latin-1 should work.
+        from check_manifest import Bazaar
+        print("Detected terminal encoding: ", Bazaar._get_terminal_encoding())
+        print("sys.stdin.isatty():", sys.stdin.isatty())
+        print("sys.stdout.isatty():", sys.stdout.isatty())
+        print("sys.stdin.encoding:", getattr(sys.stdin, 'encoding', 'missing'))
+        print("sys.stdout.encoding:", getattr(sys.stdout, 'encoding', 'missing'))
         from check_manifest import get_vcs_files
         self._init_vcs()
         filename = "\u00E9.txt"
