@@ -70,20 +70,26 @@ jobs:
         run: |
           choco install --no-progress bzr hg svn
 
-      - name: Check OS-level dependencies
-        shell: bash
-        run: |
-          PATH=$PATH:"/c/Program Files (x86)/Subversion/bin"
-          PATH=$PATH:"/c/Program Files/Mercurial"
-          PATH=$PATH:"/c/Program Files (x86)/Bazaar"
-          echo $PATH
-          git --version
-          hg --version || true
-          svn --version || true
-          bzr --version || true
-
       - name: Run tests
-        run: coverage run -m pytest
+        shell: bash
+        run:
+          # It is utter nonsense that I have to do this
+          case "$RUNNER_OS" in
+            Windows)
+              PATH=$PATH:"/c/Program Files (x86)/Bazaar"
+              PATH=$PATH:"/c/Program Files (x86)/Subversion/bin"
+              PATH=$PATH:"/c/Program Files/Mercurial"
+              ;;
+          esac
+
+          set -x
+
+          git --version
+          hg --version
+          svn --version
+          bzr --version
+
+          coverage run -m pytest
         env:
           SKIP_NO_TESTS: "1"
           FORCE_TEST_VCS: ${{ matrix.vcs }}
