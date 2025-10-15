@@ -33,10 +33,10 @@ jobs:
           - ubuntu-22.04  # ubuntu-latest aka ubuntu-24.04 has busted bzr
           - windows-latest
         vcs:
-          - git
-          - svn
-          - hg
           - bzr
+          - git
+          - hg
+          - svn
 
     steps:
       - name: Git clone
