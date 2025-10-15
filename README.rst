@@ -135,7 +135,7 @@ git-workflow. Add the following to your ``.pre-commit-config.yaml``.
 
     repos:
     -   repo: https://github.com/mgedmin/check-manifest
-        rev: "0.50"
+        rev: "0.51"
         hooks:
         -   id: check-manifest
 
@@ -148,7 +148,7 @@ so you'll want to list them all in ``additional_dependencies``.
 
     repos:
     -   repo: https://github.com/mgedmin/check-manifest
-        rev: "0.50"
+        rev: "0.51"
         hooks:
         -   id: check-manifest
             args: [--no-build-isolation]
