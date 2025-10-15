@@ -1054,6 +1054,10 @@ class VCSMixin:
         # "eacute".  UTF-8 or Latin-1 should work.
         from check_manifest import get_vcs_files
         self._init_vcs()
+        from check_manifest import Bazaar
+        print("Detected terminal encoding: ", Bazaar._get_terminal_encoding())
+        print("sys.stdin.encoding: ", getattr(sys.stdin, 'encoding', 'missing'))
+        print("sys.stdout.encoding: ", getattr(sys.stdout, 'encoding', 'missing'))
         filename = "\u00E9.txt"
         self._create_and_add_to_vcs([filename])
         self.assertEqual(get_vcs_files(self.ui), [filename])
