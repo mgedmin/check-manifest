@@ -71,12 +71,15 @@ jobs:
           choco install --no-progress bzr hg svn
 
       - name: Check OS-level dependencies
+        shell: bash
         run: |
+          PATH=$PATH:"$C:\\Program Files (x86)\\Subversion\\bin"
+          PATH=$PATH:"$C:\\Program Files (x86)\\Mercurial"
+          PATH=$PATH:"$C:\\Program Files (x86)\\Bazaar"
           git --version
           hg --version
           svn --version
           bzr --version
-
 
       - name: Run tests
         run: coverage run -m pytest
