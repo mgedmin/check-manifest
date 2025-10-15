@@ -74,7 +74,7 @@ jobs:
         shell: bash
         run: |
           PATH=$PATH:"/c/Program Files (x86)/Subversion/bin"
-          PATH=$PATH:"/c/Program Files (x86)/Mercurial"
+          PATH=$PATH:"/c/Program Files/Mercurial"
           PATH=$PATH:"/c/Program Files (x86)/Bazaar"
           echo $PATH
           git --version
