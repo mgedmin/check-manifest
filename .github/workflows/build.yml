@@ -76,6 +76,7 @@ jobs:
           PATH=$PATH:"$C:\\Program Files (x86)\\Subversion\\bin"
           PATH=$PATH:"$C:\\Program Files (x86)\\Mercurial"
           PATH=$PATH:"$C:\\Program Files (x86)\\Bazaar"
+          echo $PATH
           git --version
           hg --version
           svn --version
