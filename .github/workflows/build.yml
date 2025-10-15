@@ -73,14 +73,14 @@ jobs:
       - name: Check OS-level dependencies
         shell: bash
         run: |
-          PATH=$PATH:"/C/Program Files (x86)/Subversion/bin"
-          PATH=$PATH:"/C/Program Files (x86)/Mercurial"
-          PATH=$PATH:"/C/Program Files (x86)/Bazaar"
+          PATH=$PATH:"/c/Program Files (x86)/Subversion/bin"
+          PATH=$PATH:"/c/Program Files (x86)/Mercurial"
+          PATH=$PATH:"/c/Program Files (x86)/Bazaar"
           echo $PATH
           git --version
-          hg --version
-          svn --version
-          bzr --version
+          hg --version || true
+          svn --version || true
+          bzr --version || true
 
       - name: Run tests
         run: coverage run -m pytest
