@@ -30,7 +30,7 @@ jobs:
           - "3.14"
           - "pypy3.10"
         os:
-          - ubuntu-22.04  # ubuntu-latest aka ubuntu-24.04 has busted bzr
+          - ubuntu-latest  # ubuntu-latest aka ubuntu-24.04 has busted bzr
           - windows-latest
         vcs:
           - bzr
@@ -40,12 +40,9 @@ jobs:
 
     steps:
       - name: Install OS-level dependencies (Linux)
-        # NB: at some point I'll want to switch from legacy Bazaar (apt package
-        # bzr) to Breezy (apt package brz).  They're both available in
-        # ubuntu-18.04 and ubuntu-20.04.
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get install -y bzr git mercurial subversion
+          sudo apt-get install -y brz git mercurial subversion
 
       - name: Install OS-level dependencies (Windows)
         if: runner.os == 'Windows'
