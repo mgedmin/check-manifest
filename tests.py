@@ -1825,3 +1825,21 @@ class TestCheckManifest(unittest.TestCase):
                 "some files listed as being under source control are missing:\n"
                 "  missing.py",
                 sys.stderr.getvalue())
+
+    def test_broken_symbolic_link(self):
+        from check_manifest import check_manifest
+        self._create_repo_with_code()
+        os.symlink(os.path.join(self.tmpdir, "some-file"),
+                   os.path.join(self.tmpdir, "some-symbolic-link"))
+        self._add_to_vcs('some-file')
+        self._add_to_vcs('some-symbolic-link')
+        self._add_to_vcs('MANIFEST.in')
+        with open(os.path.join(self.tmpdir, "MANIFEST.in"), "w") as f:
+            f.write("include some-symbolic-link\ninclude some-file\n")
+        self.assertTrue(check_manifest())
+        self._vcs._commit()
+        os.unlink('some-file')
+        check_manifest()
+        self.assertIn("some symbolic links listed as being under source control are pointing to missing files:\n"
+                      f"  some-symbolic-link -> {os.path.join(self.tmpdir, 'some-file')} (missing)",
+                      sys.stderr.getvalue())
