@@ -61,7 +61,6 @@ setup(
     python_requires=">=3.8",
     install_requires=[
         'build>=0.1',
-        'setuptools',
         'tomli;python_version < "3.11"',
     ],
     extras_require={
