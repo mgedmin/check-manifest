@@ -66,7 +66,6 @@ setup(
     ],
     extras_require={
         'test': [
-            'mock >= 3.0.0; python_version == "3.7"',
             'pytest',
             'wheel',
         ],
