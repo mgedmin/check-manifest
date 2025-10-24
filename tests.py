@@ -15,15 +15,8 @@ from contextlib import closing
 from functools import partial
 from io import BytesIO, StringIO
 from typing import Dict, Optional
+from unittest import mock
 from xml.etree import ElementTree as ET
-
-
-if sys.version_info >= (3, 8):
-    from unittest import mock
-else:
-    # unittest.mock in 3.7 is too old to support
-    # all the features used in the test suite
-    import mock
 
 from check_manifest import rmtree
 
