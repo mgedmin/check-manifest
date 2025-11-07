@@ -5,7 +5,7 @@ Changelog
 0.52 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Drop Python 3.8 and 3.9 support.
 
 
 0.51 (2025-10-15)
