@@ -816,7 +816,7 @@ def _get_ignore_from_manifest(filename: str, ui: UI) -> IgnoreList:
     Returns an IgnoreList instance.
     """
 
-    class MyTextFile(TextFile):
+    class MyTextFile(TextFile):  # type: ignore
         def error(self, msg: str, line: LineNumber = None) -> None:  # pragma: nocover
             # (this is never called by TextFile in current versions of CPython)
             raise Failure(self.gen_error(msg, line))
