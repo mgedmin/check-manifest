@@ -31,7 +31,7 @@ import tempfile
 import unicodedata
 import zipfile
 from contextlib import contextmanager
-from typing import List, Optional, Union
+from typing import Literal, overload
 from xml.etree import ElementTree as ET
 
 
@@ -136,18 +136,40 @@ def format_missing(missing_from_a, missing_from_b, name_a, name_b):
 #
 
 class CommandFailed(Failure):
-    def __init__(self, command: List[str], status: int, output: str) -> None:
+    def __init__(self, command: list[str], status: int, output: str) -> None:
         super().__init__("%s failed (status %s):\n%s" % (
                                command, status, output))
 
 
+@overload
 def run(
-    command: List[str],
+    command: list[str],
     *,
-    encoding: Optional[str] = None,
+    encoding: str | None = None,
+    decode: Literal[True] = True,
+    cwd: str | None = None,
+) -> str:
+    ...
+
+
+@overload
+def run(
+    command: list[str],
+    *,
+    encoding: str | None = None,
+    decode: Literal[False],
+    cwd: str | None = None,
+) -> bytes:
+    ...
+
+
+def run(
+    command: list[str],
+    *,
+    encoding: str | None = None,
     decode: bool = True,
-    cwd: Optional[str] = None  # Python 3.5 forbids trailing comma here!
-) -> Union[str, bytes]:
+    cwd: str | None = None,
+) -> str | bytes:
     """Run a command [cmd, arg1, arg2, ...].
 
     Returns the output (stdout only).
