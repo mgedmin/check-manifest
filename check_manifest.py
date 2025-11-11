@@ -14,6 +14,8 @@ with stale egg-info/SOURCES.txt files that may cause files not mentioned in
 MANIFEST.in to be included nevertheless.
 """
 
+from __future__ import annotations
+
 import argparse
 import codecs
 import configparser
@@ -31,7 +33,17 @@ import tempfile
 import unicodedata
 import zipfile
 from contextlib import contextmanager
-from typing import Literal, overload
+from types import TracebackType
+from typing import (
+    Any,
+    Callable,
+    Collection,
+    Generator,
+    Iterable,
+    Literal,
+    TypedDict,
+    overload,
+)
 from xml.etree import ElementTree as ET
 
 
@@ -63,64 +75,69 @@ class Failure(Exception):
 
 class UI:
 
-    def __init__(self, verbosity=1):
+    def __init__(self, verbosity: int = 1) -> None:
         self.verbosity = verbosity
         self._to_be_continued = False
         self.stdout = sys.stdout
         self.stderr = sys.stderr
 
     @property
-    def quiet(self):
+    def quiet(self) -> bool:
         return self.verbosity < 1
 
     @property
-    def verbose(self):
+    def verbose(self) -> bool:
         return self.verbosity >= 2
 
-    def _check_tbc(self):
+    def _check_tbc(self) -> None:
         if self._to_be_continued:
             print(file=self.stdout)
             self._to_be_continued = False
 
-    def info(self, message):
+    def info(self, message: str) -> None:
         if self.quiet:
             return
         self._check_tbc()
         print(message, file=self.stdout)
 
-    def info_begin(self, message):
+    def info_begin(self, message: str) -> None:
         if not self.verbose:
             return
         self._check_tbc()
         print(message, end="", file=self.stdout)
         self._to_be_continued = True
 
-    def info_continue(self, message):
+    def info_continue(self, message: str) -> None:
         if not self.verbose:
             return
         print(message, end="", file=self.stdout)
         self._to_be_continued = True
 
-    def info_end(self, message):
+    def info_end(self, message: str) -> None:
         if not self.verbose:
             return
         print(message, file=self.stdout)
         self._to_be_continued = False
 
-    def error(self, message):
+    def error(self, message: str) -> None:
         self._check_tbc()
         print(message, file=self.stderr)
 
-    def warning(self, message):
+    def warning(self, message: str) -> None:
         self._check_tbc()
         print(message, file=self.stderr)
 
 
-def format_list(list_of_strings):
+def format_list(list_of_strings: list[str]) -> str:
     return "\n".join("  " + s for s in list_of_strings)
 
 
-def format_missing(missing_from_a, missing_from_b, name_a, name_b):
+def format_missing(
+    missing_from_a: Collection[str],
+    missing_from_b: Collection[str],
+    name_a: str,
+    name_b: str,
+) -> str:
     res = []
     if missing_from_a:
         res.append("missing from %s:\n%s"
@@ -195,7 +212,7 @@ def run(
 
 
 @contextmanager
-def cd(directory):
+def cd(directory: str) -> Generator[None, None, None]:
     """Change the current working directory, temporarily.
 
     Use as a context manager: with cd(d): ...
@@ -209,7 +226,7 @@ def cd(directory):
 
 
 @contextmanager
-def mkdtemp(hint=''):
+def mkdtemp(hint: str = '') -> Generator[str, None, None]:
     """Create a temporary directory, then clean it up.
 
     Use as a context manager: with mkdtemp('-purpose'): ...
@@ -221,7 +238,7 @@ def mkdtemp(hint=''):
         rmtree(dirname)
 
 
-def chmod_plus(path, add_bits):
+def chmod_plus(path: str, add_bits: int) -> None:
     """Change a file's mode by adding a few bits.
 
     Like chmod +<bits> <path> in a Unix shell.
@@ -232,14 +249,17 @@ def chmod_plus(path, add_bits):
         pass  # well, we tried
 
 
-def rmtree(path):
+ExcInfo = tuple[type[BaseException], BaseException, TracebackType]
+
+
+def rmtree(path: str) -> None:
     """A version of rmtree that can deal with read-only files and directories.
 
     Needed because the stock shutil.rmtree() fails with an access error
     when there are read-only files in the directory on Windows, or when the
     directory itself is read-only on Unix.
     """
-    def onerror(func, path, exc_info):
+    def onerror(func: Callable[..., Any], path: str, exc_info: ExcInfo) -> None:
         # Did you know what on Python 3.3 on Windows os.remove() and
         # os.unlink() are distinct functions?
         if func is os.remove or func is os.unlink or func is os.rmdir:
@@ -252,7 +272,7 @@ def rmtree(path):
     shutil.rmtree(path, onerror=onerror)
 
 
-def copy_files(filelist, destdir):
+def copy_files(filelist: list[str], destdir: str) -> None:
     """Copy a list of files to destdir, preserving directory structure.
 
     File names should be relative to the current working directory.
@@ -270,7 +290,7 @@ def copy_files(filelist, destdir):
             shutil.copy2(filename, destfile)
 
 
-def get_one_file_in(dirname):
+def get_one_file_in(dirname: str) -> str:
     """Return the pathname of the one file in a directory.
 
     Raises if the directory has no files or more than one file.
@@ -299,7 +319,7 @@ def get_one_file_in(dirname):
 #
 
 
-def canonical_file_list(filelist):
+def canonical_file_list(filelist: Iterable[str]) -> list[str]:
     """Return the file list convered to a canonical form.
 
     This means:
@@ -323,7 +343,7 @@ def canonical_file_list(filelist):
     return sorted(names)
 
 
-def get_sdist_file_list(sdist_filename, ignore):
+def get_sdist_file_list(sdist_filename: str, ignore: IgnoreList) -> list[str]:
     """Return the list of interesting files in a source distribution.
 
     Removes extra generated files like PKG-INFO and *.egg-info that are usually
@@ -336,11 +356,12 @@ def get_sdist_file_list(sdist_filename, ignore):
         strip_toplevel_name(get_archive_file_list(sdist_filename)))
 
 
-def get_archive_file_list(archive_filename):
+def get_archive_file_list(archive_filename: str) -> list[str]:
     """Return the list of files in an archive.
 
     Supports .tar.gz and .zip.
     """
+    filelist: Iterable[str]
     if archive_filename.endswith('.zip'):
         with zipfile.ZipFile(archive_filename) as zf:
             filelist = zf.namelist()
@@ -354,7 +375,7 @@ def get_archive_file_list(archive_filename):
     return canonical_file_list(filelist)
 
 
-def unicodify(filename):
+def unicodify(filename: str | bytes) -> str:
     """Make sure filename is Unicode.
 
     Because the tarfile module on Python 2 doesn't return Unicode.
@@ -367,7 +388,7 @@ def unicodify(filename):
         return filename
 
 
-def strip_toplevel_name(filelist):
+def strip_toplevel_name(filelist: list[str]) -> list[str]:
     """Strip toplevel name from a file list.
 
         >>> strip_toplevel_name(['a', 'a/b', 'a/c', 'a/c/d'])
@@ -399,14 +420,16 @@ def strip_toplevel_name(filelist):
 
 class VCS:
 
-    def __init__(self, ui):
+    metadata_name: str
+
+    def __init__(self, ui: UI) -> None:
         self.ui = ui
 
     @classmethod
-    def detect(cls, location):
+    def detect(cls, location: str) -> bool:
         return os.path.isdir(os.path.join(location, cls.metadata_name))
 
-    def get_versioned_files(self):
+    def get_versioned_files(self) -> list[str]:
         raise NotImplementedError('this is an abstract method')
 
 
@@ -418,11 +441,11 @@ class Git(VCS):
     _encoding = 'UTF-8' if sys.platform == 'win32' else None
 
     @classmethod
-    def detect(cls, location):
+    def detect(cls, location: str) -> bool:
         # .git can be a file for submodules
         return os.path.exists(os.path.join(location, cls.metadata_name))
 
-    def get_versioned_files(self):
+    def get_versioned_files(self) -> list[str]:
         """List all files versioned by git in the current directory."""
         output = run(
             ["git", "ls-files", "-z", "--recurse-submodules"],
@@ -437,7 +460,7 @@ class Git(VCS):
 class Mercurial(VCS):
     metadata_name = '.hg'
 
-    def get_versioned_files(self):
+    def get_versioned_files(self) -> list[str]:
         """List all files under Mercurial control in the current directory."""
         output = run(['hg', 'status', '-ncamd', '.'])
         return output.splitlines()
@@ -447,7 +470,7 @@ class Bazaar(VCS):
     metadata_name = '.bzr'
 
     @classmethod
-    def _get_terminal_encoding(self):
+    def _get_terminal_encoding(self) -> str | None:
         # Python 3.6 lets us name the OEM codepage directly, which is lucky
         # because it also breaks our old method of OEM codepage detection
         # (PEP-528 changed sys.stdout.encoding to UTF-8).
@@ -471,7 +494,7 @@ class Bazaar(VCS):
         # first, since I don't have a Mac OS X machine and cannot test.
         return encoding
 
-    def get_versioned_files(self):
+    def get_versioned_files(self) -> list[str]:
         """List all files versioned in Bazaar in the current directory."""
         encoding = self._get_terminal_encoding()
         output = run(['bzr', 'ls', '-VR'], encoding=encoding)
@@ -481,14 +504,14 @@ class Bazaar(VCS):
 class Subversion(VCS):
     metadata_name = '.svn'
 
-    def get_versioned_files(self):
+    def get_versioned_files(self) -> list[str]:
         """List all files under SVN control in the current directory."""
         output = run(['svn', 'st', '-vq', '--xml'], decode=False)
         tree = ET.XML(output)
-        return sorted(entry.get('path') for entry in tree.findall('.//entry')
+        return sorted(entry.get('path') for entry in tree.findall('.//entry')  # type: ignore
                       if self.is_interesting(entry))
 
-    def is_interesting(self, entry):
+    def is_interesting(self, entry: ET.Element) -> bool:
         """Is this entry interesting?
 
         ``entry`` is an XML node representing one entry of the svn status
@@ -532,7 +555,7 @@ class Subversion(VCS):
         return True
 
 
-def detect_vcs(ui):
+def detect_vcs(ui: UI) -> VCS:
     """Detect the version control system used for the current directory."""
     location = os.path.abspath('.')
     while True:
@@ -546,18 +569,18 @@ def detect_vcs(ui):
         location = parent
 
 
-def get_vcs_files(ui):
+def get_vcs_files(ui: UI) -> list[str]:
     """List all files under version control in the current directory."""
     vcs = detect_vcs(ui)
     return canonical_file_list(vcs.get_versioned_files())
 
 
-def normalize_names(names):
+def normalize_names(names: Iterable[str]) -> list[str]:
     """Normalize file names."""
     return [normalize_name(name) for name in names]
 
 
-def normalize_name(name):
+def normalize_name(name: str) -> str:
     """Some VCS print directory names with trailing slashes.  Strip them.
 
     Easiest is to normalize the path.
@@ -580,11 +603,11 @@ def normalize_name(name):
 
 class IgnoreList:
 
-    def __init__(self):
-        self._regexps = []
+    def __init__(self) -> None:
+        self._regexps: list[re.Pattern[str]] = []
 
     @classmethod
-    def default(cls):
+    def default(cls) -> IgnoreList:
         return (
             cls()
             # these are always generated
@@ -610,48 +633,48 @@ class IgnoreList:
             .global_exclude('*.mo')
         )
 
-    def clear(self):
+    def clear(self) -> None:
         self._regexps = []
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return 'IgnoreList(%r)' % (self._regexps)
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         return isinstance(other, IgnoreList) and self._regexps == other._regexps
 
-    def __iadd__(self, other):
+    def __iadd__(self, other: IgnoreList) -> IgnoreList:
         assert isinstance(other, IgnoreList)
         self._regexps += other._regexps
         return self
 
-    def _path(self, path):
+    def _path(self, path: str) -> str:
         return path.replace('/', os.path.sep)
 
-    def exclude(self, *patterns):
+    def exclude(self, *patterns: str) -> IgnoreList:
         for pat in patterns:
             pat = self._path(pat)
             self._regexps.append(translate_pattern(pat))
         return self
 
-    def global_exclude(self, *patterns):
+    def global_exclude(self, *patterns: str) -> IgnoreList:
         for pat in patterns:
             pat = os.path.join('**', self._path(pat))
             self._regexps.append(translate_pattern(pat))
         return self
 
-    def recursive_exclude(self, dirname, *patterns):
+    def recursive_exclude(self, dirname: str, *patterns: str) -> IgnoreList:
         dirname = self._path(dirname)
         for pat in patterns:
             pat = os.path.join(dirname, '**', self._path(pat))
             self._regexps.append(translate_pattern(pat))
         return self
 
-    def prune(self, subdir):
+    def prune(self, subdir: str) -> IgnoreList:
         pat = os.path.join(self._path(subdir), '**')
         self._regexps.append(translate_pattern(pat))
         return self
 
-    def filter(self, filelist):
+    def filter(self, filelist: list[str]) -> list[str]:
         return [name for name in filelist
                 if not any(rx.match(self._path(name)) for rx in self._regexps)]
 
@@ -696,25 +719,40 @@ CFG_IGNORE = (CFG_SECTION_CHECK_MANIFEST, 'ignore')
 CFG_IGNORE_BAD_IDEAS = (CFG_SECTION_CHECK_MANIFEST, 'ignore-bad-ideas')
 
 
-def read_config():
-    """Read configuration from file if possible."""
+def read_config() -> tuple[IgnoreList, IgnoreList]:
+    """Read configuration from file if possible.
+
+    Returns two IgnoreLists: one to suppress warnings about files missing in
+    VCS, and one to suppress warnings about files being added to VCS.
+    """
     ignore = IgnoreList.default()
     ignore_bad_ideas = IgnoreList()
     config = _load_config()
     if config.get(CFG_IGNORE_DEFAULT_RULES[1], False):
         ignore.clear()
     if CFG_IGNORE[1] in config:
-        for p in config[CFG_IGNORE[1]]:
+        for p in config[CFG_IGNORE[1]]:  # type: ignore
             if p:
                 ignore.global_exclude(p)
     if CFG_IGNORE_BAD_IDEAS[1] in config:
-        for p in config[CFG_IGNORE_BAD_IDEAS[1]]:
+        for p in config[CFG_IGNORE_BAD_IDEAS[1]]:  # type: ignore
             if p:
                 ignore_bad_ideas.global_exclude(p)
     return ignore, ignore_bad_ideas
 
 
-def _load_config():
+ConfigDict = TypedDict(
+    'ConfigDict',
+    {
+        'ignore-default-rules': bool,
+        'ignore': list[str],
+        'ignore-bad-ideas': list[str],
+    },
+    total=False
+)
+
+
+def _load_config() -> ConfigDict:
     """Searches for config files, reads them and returns a dictionary
 
     Looks for a ``check-manifest`` section in ``pyproject.toml``,
@@ -727,7 +765,7 @@ def _load_config():
         with open('pyproject.toml', 'rb') as f:
             config = tomllib.load(f)
         if CFG_SECTION_CHECK_MANIFEST in config.get("tool", {}):
-            return config["tool"][CFG_SECTION_CHECK_MANIFEST]
+            return config["tool"][CFG_SECTION_CHECK_MANIFEST]  # type: ignore
 
     search_files = ['setup.cfg', 'tox.ini']
     config_parser = configparser.ConfigParser()
@@ -754,12 +792,12 @@ def _load_config():
                 ]
                 config[CFG_IGNORE_BAD_IDEAS[1]] = patterns
 
-            return config
+            return config  # type: ignore
 
     return {}
 
 
-def read_manifest(ui):
+def read_manifest(ui: UI) -> IgnoreList:
     """Read existing configuration from MANIFEST.in.
 
     We use that to ignore anything the MANIFEST.in ignores.
@@ -769,18 +807,21 @@ def read_manifest(ui):
     return _get_ignore_from_manifest('MANIFEST.in', ui)
 
 
-def _get_ignore_from_manifest(filename, ui):
+LineNumber = int | tuple[int, int] | list[int] | None
+
+
+def _get_ignore_from_manifest(filename: str, ui: UI) -> IgnoreList:
     """Gather the various ignore patterns from a MANIFEST.in.
 
     Returns an IgnoreList instance.
     """
 
     class MyTextFile(TextFile):
-        def error(self, msg, line=None):  # pragma: nocover
+        def error(self, msg: str, line: LineNumber = None) -> None:  # pragma: nocover
             # (this is never called by TextFile in current versions of CPython)
             raise Failure(self.gen_error(msg, line))
 
-        def warn(self, msg, line=None):
+        def warn(self, msg: str, line: LineNumber = None) -> None:
             ui.warning(self.gen_error(msg, line))
 
     template = MyTextFile(filename,
@@ -797,7 +838,7 @@ def _get_ignore_from_manifest(filename, ui):
     return _get_ignore_from_manifest_lines(lines, ui)
 
 
-def _get_ignore_from_manifest_lines(lines, ui):
+def _get_ignore_from_manifest_lines(lines: list[str], ui: UI) -> IgnoreList:
     """Gather the various ignore patterns from a MANIFEST.in.
 
     'lines' should be a list of strings with comments removed
@@ -847,14 +888,14 @@ def _get_ignore_from_manifest_lines(lines, ui):
     return ignore
 
 
-def file_matches(filename, patterns):
+def file_matches(filename: str, patterns: list[str]) -> bool:
     """Does this filename match any of the patterns?"""
     return any(fnmatch.fnmatch(filename, pat)
                or fnmatch.fnmatch(os.path.basename(filename), pat)
                for pat in patterns)
 
 
-def strip_sdist_extras(ignore, filelist):
+def strip_sdist_extras(ignore: IgnoreList, filelist: list[str]) -> list[str]:
     """Strip generated files that are only present in source distributions.
 
     We also strip files that are ignored for other reasons, like
@@ -863,13 +904,13 @@ def strip_sdist_extras(ignore, filelist):
     return ignore.filter(filelist)
 
 
-def find_bad_ideas(filelist):
+def find_bad_ideas(filelist: Iterable[str]) -> list[str]:
     """Find files matching WARN_ABOUT_FILES_IN_VCS patterns."""
     return [name for name in filelist
             if file_matches(name, WARN_ABOUT_FILES_IN_VCS)]
 
 
-def find_suggestions(filelist):
+def find_suggestions(filelist: Iterable[str]) -> tuple[list[str], list[str]]:
     """Suggest MANIFEST.in patterns for missing files.
 
     Returns two lists: one with suggested MANIGEST.in commands, and one with
@@ -888,7 +929,7 @@ def find_suggestions(filelist):
     return sorted(suggestions), unknowns
 
 
-def is_package(source_tree='.'):
+def is_package(source_tree: str = '.') -> bool:
     """Is the directory the root of a Python package?
 
     Note: the term "package" here refers to a collection of files
@@ -900,7 +941,7 @@ def is_package(source_tree='.'):
     )
 
 
-def extract_version_from_filename(filename):
+def extract_version_from_filename(filename: str) -> str:
     """Extract version number from sdist filename."""
     filename = os.path.splitext(os.path.basename(filename))[0]
     if filename.endswith('.tar'):
@@ -908,7 +949,7 @@ def extract_version_from_filename(filename):
     return filename.split('-')[-1]
 
 
-def should_use_pep_517():
+def should_use_pep_517() -> bool:
     """Check if the project uses PEP-517 builds."""
     # https://www.python.org/dev/peps/pep-0517/#build-system-table says
     # "If the pyproject.toml file is absent, or the build-backend key is
@@ -925,7 +966,7 @@ def should_use_pep_517():
     return True
 
 
-def build_sdist(tempdir, python=sys.executable, build_isolation=True):
+def build_sdist(tempdir: str, python: str = sys.executable, build_isolation: bool = True) -> None:
     """Build a source distribution in a temporary directory.
 
     Should be run with the current working directory inside the Python package
@@ -945,10 +986,16 @@ def build_sdist(tempdir, python=sys.executable, build_isolation=True):
         run([python, 'setup.py', 'sdist', '-d', tempdir])
 
 
-def check_manifest(source_tree='.', create=False, update=False,
-                   python=sys.executable, ui=None, extra_ignore=None,
-                   extra_ignore_bad_ideas=None,
-                   build_isolation=True):
+def check_manifest(
+    source_tree: str = '.',
+    create: bool = False,
+    update: bool = False,
+    python: str = sys.executable,
+    ui: UI | None = None,
+    extra_ignore: IgnoreList | None = None,
+    extra_ignore_bad_ideas: IgnoreList | None = None,
+    build_isolation: bool = True,
+) -> bool:
     """Compare a generated source distribution with list of files in a VCS.
 
     Returns True if the manifest is fine.
@@ -1058,7 +1105,7 @@ def check_manifest(source_tree='.', create=False, update=False,
 # Main script
 #
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Check a Python MANIFEST.in file for completeness")
     parser.add_argument(
@@ -1133,7 +1180,11 @@ def main():
 # zest.releaser integration
 #
 
-def zest_releaser_check(data):
+class DataDict(TypedDict):
+    workingdir: str
+
+
+def zest_releaser_check(data: DataDict) -> None:
     """Check the completeness of MANIFEST.in before the release.
 
     This is an entry point for zest.releaser.  See the documentation at
