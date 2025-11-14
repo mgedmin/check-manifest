@@ -1,7 +1,7 @@
 check-manifest
 ==============
 
-|buildstatus|_ |appveyor|_ |coverage|_
+|buildstatus|_ |coverage|_
 
 Are you a Python developer?  Have you uploaded packages to the Python Package
 Index?  Have you accidentally uploaded *broken* packages with some files
@@ -157,9 +157,6 @@ so you'll want to list them all in ``additional_dependencies``.
 
 .. |buildstatus| image:: https://github.com/mgedmin/check-manifest/actions/workflows/build.yml/badge.svg?branch=master
 .. _buildstatus: https://github.com/mgedmin/check-manifest/actions
-
-.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/mgedmin/check-manifest?branch=master&svg=true
-.. _appveyor: https://ci.appveyor.com/project/mgedmin/check-manifest
 
 .. |coverage| image:: https://coveralls.io/repos/mgedmin/check-manifest/badge.svg?branch=master
 .. _coverage: https://coveralls.io/r/mgedmin/check-manifest
