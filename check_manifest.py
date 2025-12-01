@@ -17,7 +17,6 @@ MANIFEST.in to be included nevertheless.
 from __future__ import annotations
 
 import argparse
-import codecs
 import configparser
 import fnmatch
 import locale
@@ -474,25 +473,7 @@ class Bazaar(VCS):
         # Python 3.6 lets us name the OEM codepage directly, which is lucky
         # because it also breaks our old method of OEM codepage detection
         # (PEP-528 changed sys.stdout.encoding to UTF-8).
-        try:
-            codecs.lookup('oem')
-        except LookupError:
-            pass
-        else:  # pragma: nocover
-            return 'oem'
-        # Based on bzrlib.osutils.get_terminal_encoding()
-        encoding = getattr(sys.stdout, 'encoding', None)
-        if not encoding:
-            encoding = getattr(sys.stdin, 'encoding', None)
-        if encoding == 'cp0':  # "no codepage"
-            encoding = None
-        # NB: bzrlib falls back on bzrlib.osutils.get_user_encoding(),
-        # which is like locale.getpreferredencoding() on steroids, and
-        # also includes a fallback from 'ascii' to 'utf-8' when
-        # sys.platform is 'darwin'.  This is probably something we might
-        # want to do in run(), but I'll wait for somebody to complain
-        # first, since I don't have a Mac OS X machine and cannot test.
-        return encoding
+        return 'oem'
 
     def get_versioned_files(self) -> list[str]:
         """List all files versioned in Bazaar in the current directory."""
