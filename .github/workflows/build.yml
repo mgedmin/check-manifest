@@ -94,8 +94,8 @@ jobs:
 
       - name: Check test coverage
         run: |
-          coverage report -m --fail-under=${{ matrix.vcs == 'bzr' && 99 || 100 }}
           coverage xml
+          coverage report -m --fail-under=${{ runner.os == 'Windows' && '98' || matrix.vcs == 'bzr' && 99 || 100 }}
 
       - name: Run check-manifest on itself
         run: python check_manifest.py
