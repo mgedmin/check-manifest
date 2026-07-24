@@ -16,10 +16,12 @@ jobs:
   build:
     name: Python ${{ matrix.python-version }} on ${{ matrix.os }}, ${{ matrix.vcs }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.optional }}
 
     strategy:
       fail-fast: true
       matrix:
+        optional: [false]
         python-version:
           - "3.10"
           - "3.11"
@@ -35,6 +37,14 @@ jobs:
           - git
           - hg
           - svn
+        include:
+          - python-version: "pypy3.11"
+            os: windows-latest
+            optional: true
+        exclude:
+          - python-version: "pypy3.11"
+            os: windows-latest
+            optional: false
 
     steps:
       - name: Install OS-level dependencies (Linux)
