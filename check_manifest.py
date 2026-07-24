@@ -52,7 +52,7 @@ if sys.version_info >= (3, 11):
 else:
     import tomli as tomllib  # pragma: nocover
 
-from setuptools.command.egg_info import translate_pattern
+from setuptools.command.egg_info import translate_pattern as _translate_pattern
 
 
 # import distutils after setuptools to avoid a warning
@@ -600,6 +600,16 @@ def normalize_name(name: str) -> str:
 #
 # Packaging logic
 #
+
+def translate_pattern(pat: str) -> re.Pattern[str]:
+    p = _translate_pattern(pat)
+    if not isinstance(p, re.Pattern):
+        # see setuptools commit dd9f436a36486b4cb8a4c70a2321548b0be09b8f
+        # and it totally is my own fault for using private helpers from another
+        # project
+        p = p._pattern
+    return p  # type: ignore
+
 
 class IgnoreList:
 
