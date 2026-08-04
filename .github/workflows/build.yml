@@ -92,7 +92,7 @@ jobs:
           git --version
           hg --version
           svn --version
-          bzr --version
+          bzr --version || true
 
           coverage run -m pytest
         env:
