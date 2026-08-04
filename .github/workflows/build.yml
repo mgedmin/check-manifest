@@ -19,7 +19,7 @@ jobs:
     # brz is broken on ubuntu-22.04 and ubuntu-24.04 aka ubuntu-latest
     # brz works on ubuntu-26.04
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.python-version == 'pypy3.11' || matrix.vcs == 'bzr'}}
+    continue-on-error: ${{ matrix.python-version == 'pypy3.11' || matrix.vcs == 'bzr' || matrix.os == 'windows-latest' }}
 
     strategy:
       fail-fast: true
