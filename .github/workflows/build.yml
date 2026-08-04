@@ -15,8 +15,7 @@ on:
 jobs:
   build:
     name: Python ${{ matrix.python-version }} on ${{ matrix.os }}, ${{ matrix.vcs }}
-    # ubuntu-latest aka ubuntu-24.04 has busted bzr
-    runs-on: ${{ matrix.vcs == 'bzr' && matrix.os == 'ubuntu-latest' && 'ubuntu-22.04' || matrix.os }}
+    runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.python-version == 'pypy3.11' || matrix.vcs == 'bzr'}}
 
     strategy:
