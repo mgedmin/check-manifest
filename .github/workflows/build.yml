@@ -15,9 +15,6 @@ on:
 jobs:
   build:
     name: Python ${{ matrix.python-version }} on ${{ matrix.os }}, ${{ matrix.vcs }}
-    # bzr works on ubuntu-22.04
-    # brz is broken on ubuntu-22.04 and ubuntu-24.04 aka ubuntu-latest
-    # brz works on ubuntu-26.04
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.python-version == 'pypy3.11' || matrix.vcs == 'bzr' || matrix.os == 'windows-latest' }}
 
@@ -32,7 +29,9 @@ jobs:
           - "3.14"
           - "pypy3.11"
         os:
-          - ubuntu-26.04
+          # bzr works on ubuntu-22.04
+          # brz is broken on ubuntu-22.04 and ubuntu-24.04 aka ubuntu-latest and also on ubuntu-26.04
+          - ubuntu-22.04
           - windows-latest
         vcs:
           - bzr
@@ -44,7 +43,7 @@ jobs:
       - name: Install OS-level dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get install -y brz git mercurial subversion
+          sudo apt-get install -y bzr git mercurial subversion
 
       - name: Install OS-level dependencies (Windows)
         if: runner.os == 'Windows'
@@ -57,7 +56,7 @@ jobs:
         # if you try to download the bzr windows installer, so only try to
         # install it for matrix.vcs == 'bzr' jobs
         run: |
-          choco install --no-progress bzr hg svn
+          choco install --no-progress bzr
 
       - name: Git clone
         uses: actions/checkout@v6
@@ -98,7 +97,7 @@ jobs:
 
           coverage run -m pytest
         env:
-          SKIP_NO_TESTS: ${{ runner.os != 'Windows' && '1' || '' }}
+          SKIP_NO_TESTS: ${{ matrix.vcs == 'bzr' && '1' || '' }}
           FORCE_TEST_VCS: ${{ matrix.vcs }}
 
       - name: Check test coverage
