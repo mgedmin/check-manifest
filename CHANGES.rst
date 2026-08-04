@@ -6,6 +6,8 @@ Changelog
 -----------------
 
 - Drop Python 3.8 and 3.9 support.
+- Soft-deprecate Bazaar support: it's becoming harder to install it on CI
+  systems, so I no longer guarantee that the code works.
 
 
 0.51 (2025-10-15)

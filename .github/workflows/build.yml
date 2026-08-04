@@ -15,8 +15,9 @@ on:
 jobs:
   build:
     name: Python ${{ matrix.python-version }} on ${{ matrix.os }}, ${{ matrix.vcs }}
-    runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.python-version == 'pypy3.11' }}
+    # ubuntu-latest aka ubuntu-24.04 has busted bzr
+    runs-on: ${{ matrix.vcs == 'bzr' && matrix.os == 'ubuntu-latest' && 'ubuntu-22.04' || matrix.os }}
+    continue-on-error: ${{ matrix.python-version == 'pypy3.11' || matrix.vcs == 'bzr'}}
 
     strategy:
       fail-fast: true
@@ -29,7 +30,7 @@ jobs:
           - "3.14"
           - "pypy3.11"
         os:
-          - ubuntu-22.04  # ubuntu-latest aka ubuntu-24.04 has busted bzr
+          - ubuntu-latest
           - windows-latest
         vcs:
           - bzr
@@ -39,15 +40,20 @@ jobs:
 
     steps:
       - name: Install OS-level dependencies (Linux)
-        # NB: at some point I'll want to switch from legacy Bazaar (apt package
-        # bzr) to Breezy (apt package brz).  They're both available in
-        # ubuntu-18.04 and ubuntu-20.04.
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get install -y bzr git mercurial subversion
+          sudo apt-get install -y brz git mercurial subversion
 
       - name: Install OS-level dependencies (Windows)
         if: runner.os == 'Windows'
+        run: |
+          choco install --no-progress hg svn
+
+      - name: Install OS-level dependencies (Windows, bzr)
+        if: runner.os == 'Windows' && matrix.vcs == 'bzr'
+        # choco install bzr has been failing lately because launchpad times out
+        # if you try to download the bzr windows installer, so only try to
+        # install it for matrix.vcs == 'bzr' jobs
         run: |
           choco install --no-progress bzr hg svn
 
@@ -67,7 +73,7 @@ jobs:
           python -m pip install -U pip
           python -m pip install -U setuptools wheel
           python -m pip install -U coverage pytest flake8
-          python -m pip install -e .[test]
+          python -m pip install -e '.[test]'
 
       - name: Run tests
         shell: bash
