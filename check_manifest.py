@@ -982,17 +982,42 @@ def build_sdist(tempdir: str, python: str = sys.executable, build_isolation: boo
     you want to build.
     """
     if should_use_pep_517():
-        # I could do this in-process with
-        #   import build.__main__
-        #   build.__main__.build('.', tempdir)
-        # but then it would print a bunch of things to stdout and I'd have to
-        # worry about exceptions
-        cmd = [python, '-m', 'build', '--sdist', '.', '--outdir', tempdir]
-        if not build_isolation:
-            cmd.append('--no-isolation')
-        run(cmd)
+        _build_sdist_pep517(tempdir, isolation=build_isolation)
     else:
         run([python, 'setup.py', 'sdist', '-d', tempdir])
+
+
+def _build_sdist_pep517(tempdir: str, isolation: bool = True) -> None:
+    """Build an sdist by importing ``build`` in-process.
+
+    ``python -m build`` requires ``build`` to be installed in the *target*
+    interpreter.  That fails when ``build`` is only on the generated script's
+    ``sys.path`` (e.g. Buildout).  See issue #172.
+    """
+    from contextlib import redirect_stderr, redirect_stdout
+    from io import StringIO
+
+    from build import ProjectBuilder
+
+    stdout = StringIO()
+    stderr = StringIO()
+    try:
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            if isolation:
+                from build.env import DefaultIsolatedEnv
+                with DefaultIsolatedEnv() as env:
+                    builder = ProjectBuilder.from_isolated_env(env, '.')
+                    env.install(builder.build_system_requires)
+                    env.install(builder.get_requires_for_build('sdist'))
+                    builder.build('sdist', tempdir)
+            else:
+                ProjectBuilder('.').build('sdist', tempdir)
+    except Exception as e:
+        captured = ''.join(
+            part for part in (stdout.getvalue(), stderr.getvalue()) if part
+        )
+        detail = f'{captured.rstrip()}\n{e}' if captured else str(e)
+        raise Failure(f'Failed to build sdist:\n{detail}') from e
 
 
 def check_manifest(

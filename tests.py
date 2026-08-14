@@ -639,6 +639,28 @@ class Tests(unittest.TestCase):
     def test_build_sdist_pep517_no_isolation(self):
         self._test_build_sdist_pep517(build_isolation=False)
 
+    def test_build_sdist_pep517_does_not_need_build_on_target_python(self):
+        # Issue #172: python -m build fails when build is only on the
+        # generated script's sys.path (Buildout), not in the target interpreter.
+        from check_manifest import build_sdist, cd, get_one_file_in
+        src_dir = self.make_temp_dir()
+        filename = os.path.join(src_dir, 'pyproject.toml')
+        self.create_file(filename, textwrap.dedent("""
+            [build-system]
+            requires = [
+                "setuptools >= 40.6.0",
+                "wheel",
+            ]
+            build-backend = "setuptools.build_meta"
+        """))
+        stub = os.path.join(self.make_temp_dir(), 'no-build-python')
+        self.create_file(stub, "#!/bin/sh\n" + 'echo "No module named build" >&2\n' + "exit 1\n")
+        os.chmod(stub, 0o755)
+        out_dir = self.make_temp_dir()
+        with cd(src_dir):
+            build_sdist(out_dir, python=stub, build_isolation=True)
+        self.assertTrue(get_one_file_in(out_dir))
+
 
 class TestConfiguration(unittest.TestCase):
 

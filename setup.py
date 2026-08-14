@@ -58,7 +58,7 @@ setup(
     zip_safe=False,
     python_requires=">=3.10",
     install_requires=[
-        'build>=0.1',
+        'build>=1.0',
         'setuptools',
         'tomli;python_version < "3.11"',
     ],
