@@ -5,6 +5,11 @@ Changelog
 0.52 (unreleased)
 -----------------
 
+- Build PEP 517 sdists by importing ``build`` in-process instead of running
+  ``python -m build``.  This works when ``build`` is only on the generated
+  script's ``sys.path`` (e.g. Buildout) and is not installed in the target
+  interpreter.  (`#172 <https://github.com/mgedmin/check-manifest/issues/172>`_)
+
 - Drop Python 3.8 and 3.9 support.
 
 
