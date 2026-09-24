@@ -1023,7 +1023,7 @@ class VCSMixin:
                          ['a.txt', 'b/b.txt', 'b/c/d.txt'])
 
     def test_get_vcs_files_deleted_but_not_removed(self):
-        if self.vcs.command == 'bzr':
+        if self.vcs.command in ('bzr', 'brz'):
             self.skipTest("this cosmetic feature is not supported with bzr")
             # see the longer explanation in test_missing_source_files
         from check_manifest import get_vcs_files
@@ -1151,21 +1151,66 @@ class TestGit(VCSMixin, unittest.TestCase):
 
 class BzrHelper(VCSHelper):
 
-    command = 'bzr'
+    command = 'brz' if shutil.which('brz') else 'bzr'
 
     def _init_vcs(self):
-        self._run('bzr', 'init')
-        self._run('bzr', 'whoami', '--branch', 'Unit Test <test@example.com>')
+        self._run(self.command, 'init')
+        self._run(self.command, 'whoami', '--branch',
+                  'Unit Test <test@example.com>')
 
     def _add_to_vcs(self, filenames):
-        self._run('bzr', 'add', '--', *filenames)
+        self._run(self.command, 'add', '--', *filenames)
 
     def _commit(self):
-        self._run('bzr', 'commit', '-m', 'Initial')
+        self._run(self.command, 'commit', '-m', 'Initial')
 
 
 class TestBzr(VCSMixin, unittest.TestCase):
     vcs = BzrHelper()
+
+
+class TestBazaarCommandSelection(unittest.TestCase):
+
+    def test_prefers_brz_when_both_commands_are_available(self):
+        from check_manifest import Bazaar
+        with mock.patch('check_manifest.shutil.which',
+                        side_effect=lambda cmd: '/fake/' + cmd):
+            with mock.patch('check_manifest.run',
+                            side_effect=lambda command, **kwargs:
+                            command[0] + '.txt\n') as run:
+                self.assertEqual(Bazaar(MockUI()).get_versioned_files(),
+                                 ['brz.txt'])
+        self.assertEqual(run.call_args.args[0], ['brz', 'ls', '-VR'])
+
+    def test_uses_brz_when_bzr_is_unavailable(self):
+        from check_manifest import Bazaar
+        with mock.patch('check_manifest.shutil.which',
+                        side_effect=lambda cmd: '/fake/brz' if cmd == 'brz'
+                        else None):
+            with mock.patch('check_manifest.run', return_value='brz.txt\n') as run:
+                self.assertEqual(Bazaar(MockUI()).get_versioned_files(),
+                                 ['brz.txt'])
+        self.assertEqual(run.call_args.args[0], ['brz', 'ls', '-VR'])
+
+    def test_uses_bzr_when_brz_is_unavailable(self):
+        from check_manifest import Bazaar
+        with mock.patch('check_manifest.shutil.which',
+                        side_effect=lambda cmd: '/fake/bzr' if cmd == 'bzr'
+                        else None):
+            with mock.patch('check_manifest.run', return_value='bzr.txt\n') as run:
+                self.assertEqual(Bazaar(MockUI()).get_versioned_files(),
+                                 ['bzr.txt'])
+        self.assertEqual(run.call_args.args[0], ['bzr', 'ls', '-VR'])
+
+    def test_does_not_retry_with_bzr_when_brz_fails(self):
+        from check_manifest import Bazaar, CommandFailed
+        failure = CommandFailed(['brz', 'ls', '-VR'], 1, 'bad repository')
+        with mock.patch('check_manifest.shutil.which', return_value='/fake/brz'):
+            with mock.patch('check_manifest.run', side_effect=failure) as run:
+                with self.assertRaises(CommandFailed):
+                    Bazaar(MockUI()).get_versioned_files()
+        run.assert_called_once()
+        self.assertEqual(run.call_args.args[0], ['brz', 'ls', '-VR'])
 
 
 @unittest.skipIf(HAS_OEM_CODEC,
@@ -1569,7 +1614,7 @@ def pick_installed_vcs():
     force = os.getenv('FORCE_TEST_VCS')
     if force:
         for cls in preferred_order:
-            if force == cls.command:
+            if force == cls.command or (force == 'bzr' and cls is BzrHelper):
                 return cls()
         raise ValueError('Unsupported FORCE_TEST_VCS=%s (supported: %s)'
                          % (force, '/'.join(cls.command for cls in preferred_order)))
@@ -1805,7 +1850,7 @@ class TestCheckManifest(unittest.TestCase):
         self._add_to_vcs('missing.py')
         os.unlink('missing.py')
         check_manifest()
-        if self._vcs.command != 'bzr':
+        if self._vcs.command not in ('bzr', 'brz'):
             # 'bzr ls' doesn't list files that were deleted but not
             # marked for deletion.  'bzr st' does, but it doesn't list
             # unmodified files.  Importing bzrlib and using the API to
