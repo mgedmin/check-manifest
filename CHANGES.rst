@@ -7,6 +7,9 @@ Changelog
 
 - Drop Python 3.8 and 3.9 support.
 
+- Warn that MANIFEST.in suggestions may be ignored by build backends other than
+  setuptools (`#169 <https://github.com/mgedmin/check-manifest/issues/169>`_).
+
 
 0.51 (2025-10-15)
 -----------------

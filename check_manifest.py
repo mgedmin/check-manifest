@@ -958,21 +958,23 @@ def extract_version_from_filename(filename: str) -> str:
     return filename.split('-')[-1]
 
 
+def get_build_backend() -> str | None:
+    """Return the build backend explicitly configured in pyproject.toml."""
+    if not os.path.exists('pyproject.toml'):
+        return None
+    with open('pyproject.toml', 'rb') as f:
+        config = tomllib.load(f)
+    backend: str | None = config.get("build-system", {}).get("build-backend")
+    return backend
+
+
 def should_use_pep_517() -> bool:
     """Check if the project uses PEP-517 builds."""
     # https://www.python.org/dev/peps/pep-0517/#build-system-table says
     # "If the pyproject.toml file is absent, or the build-backend key is
     # missing, the source tree is not using this specification, and tools
     # should revert to the legacy behaviour of running setup.py".
-    if not os.path.exists('pyproject.toml'):
-        return False
-    with open('pyproject.toml', 'rb') as f:
-        config = tomllib.load(f)
-    if "build-system" not in config:
-        return False
-    if "build-backend" not in config["build-system"]:
-        return False
-    return True
+    return get_build_backend() is not None
 
 
 def build_sdist(tempdir: str, python: str = sys.executable, build_isolation: bool = True) -> None:
@@ -1072,6 +1074,12 @@ def check_manifest(
                 "lists of files in version control and sdist do not match!\n%s"
                 % format_missing(missing_from_VCS, missing_from_manifest, "VCS", "sdist"))
             suggestions, unknowns = find_suggestions(missing_from_manifest)
+            if suggestions:
+                backend = get_build_backend()
+                if backend not in (None, 'setuptools.build_meta',
+                                   'setuptools.build_meta:__legacy__'):
+                    ui.warning("MANIFEST.in rules are intended for setuptools; "
+                               f"the build backend {backend!r} may ignore them")
             user_asked_for_help = update or (create and not
                                                 os.path.exists('MANIFEST.in'))
             if 'MANIFEST.in' not in existing_source_files:
