@@ -1068,6 +1068,7 @@ def check_manifest(
         if not missing_from_manifest and not missing_from_VCS:
             ui.info("lists of files in version control and sdist match")
         else:
+            all_ok = False
             ui.error(
                 "lists of files in version control and sdist do not match!\n%s"
                 % format_missing(missing_from_VCS, missing_from_manifest, "VCS", "sdist"))
@@ -1093,9 +1094,21 @@ def check_manifest(
                     if unknowns:
                         ui.info("don't know how to come up with rules matching\n%s"
                                 % format_list(unknowns))
+                    elif not missing_from_VCS:
+                        verification_ignore = IgnoreList()
+                        if extra_ignore:
+                            verification_ignore += extra_ignore
+                        if not existed:
+                            # Creating the manifest does not add it to the VCS.
+                            verification_ignore.global_exclude('MANIFEST.in')
+                        all_ok = check_manifest(
+                            python=python, ui=ui,
+                            extra_ignore=verification_ignore,
+                            extra_ignore_bad_ideas=extra_ignore_bad_ideas,
+                            build_isolation=build_isolation,
+                        )
             elif user_asked_for_help:
                 ui.info("don't know how to come up with rules matching any of the files, sorry!")
-            all_ok = False
         bad_ideas = find_bad_ideas(all_source_files)
         filtered_bad_ideas = ignore_bad_ideas.filter(bad_ideas)
         if filtered_bad_ideas:

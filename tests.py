@@ -1698,7 +1698,7 @@ class TestCheckManifest(unittest.TestCase):
         from check_manifest import check_manifest
         self._create_repo_with_code()
         self._add_to_vcs('unrelated.txt')
-        self.assertFalse(check_manifest(create=True))
+        self.assertTrue(check_manifest(create=True))
         self.assertIn("missing from sdist:\n  unrelated.txt",
                       sys.stderr.getvalue())
         self.assertIn("suggested MANIFEST.in rules:\n  include *.txt",
@@ -1713,7 +1713,7 @@ class TestCheckManifest(unittest.TestCase):
         self._create_repo_with_code()
         self._add_to_vcs('unrelated.txt')
         self._add_to_vcs('MANIFEST.in', '#tbd')
-        self.assertFalse(check_manifest(update=True))
+        self.assertTrue(check_manifest(update=True))
         self.assertIn("missing from sdist:\n  unrelated.txt",
                       sys.stderr.getvalue())
         self.assertIn("suggested MANIFEST.in rules:\n  include *.txt",
@@ -1724,6 +1724,26 @@ class TestCheckManifest(unittest.TestCase):
             self.assertEqual(
                 f.read(),
                 "#tbd\n# added by check-manifest\ninclude *.txt\n")
+
+    def test_suggestions_create_with_extra_ignore(self):
+        from check_manifest import IgnoreList, check_manifest
+        self._create_repo_with_code()
+        self._add_to_vcs('unrelated.txt')
+        self._add_to_vcs('ignored.dat')
+        ignore = IgnoreList().global_exclude('ignored.dat')
+        self.assertTrue(check_manifest(create=True, extra_ignore=ignore))
+        self.assertEqual(ignore, IgnoreList().global_exclude('ignored.dat'))
+
+    @mock.patch('check_manifest.get_sdist_file_list',
+                return_value=['setup.py', 'sample.py', 'MANIFEST.in'])
+    def test_suggestions_update_not_applied(self, get_sdist_file_list):
+        from check_manifest import check_manifest
+        self._create_repo_with_code()
+        self._add_to_vcs('unrelated.txt')
+        self._add_to_vcs('MANIFEST.in', '# ignored by the build backend\n')
+        self.assertFalse(check_manifest(update=True))
+        with open('MANIFEST.in') as f:
+            self.assertIn('include *.txt', f.read())
 
     def test_suggestions_all_unknown_patterns(self):
         from check_manifest import check_manifest
