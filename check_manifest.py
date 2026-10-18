@@ -497,7 +497,8 @@ class Bazaar(VCS):
     def get_versioned_files(self) -> list[str]:
         """List all files versioned in Bazaar in the current directory."""
         encoding = self._get_terminal_encoding()
-        output = run(['bzr', 'ls', '-VR'], encoding=encoding)
+        command = 'brz' if shutil.which('brz') else 'bzr'
+        output = run([command, 'ls', '-VR'], encoding=encoding)
         return output.splitlines()
 
 
