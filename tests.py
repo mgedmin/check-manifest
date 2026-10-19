@@ -1694,6 +1694,68 @@ class TestCheckManifest(unittest.TestCase):
         self.assertIn("suggested MANIFEST.in rules:\n  include *.txt",
                       sys.stdout.getvalue())
 
+    def test_suggestions_setuptools_backends(self):
+        from check_manifest import check_manifest
+        self._create_repo_with_code()
+        self._add_to_vcs('unrelated.txt')
+        for backend in ['setuptools.build_meta', 'setuptools.build_meta:__legacy__']:
+            with self.subTest(backend=backend):
+                self._add_to_vcs('pyproject.toml', textwrap.dedent(f'''
+                    [build-system]
+                    requires = ["setuptools"]
+                    build-backend = "{backend}"
+                '''))
+                self.assertFalse(check_manifest(build_isolation=False))
+                self.assertIn("suggested MANIFEST.in rules:\n  include *.txt",
+                              sys.stdout.getvalue())
+                self.assertNotIn("may ignore them", sys.stderr.getvalue())
+
+    def _check_suggestions_with_custom_backend(self, **kwargs):
+        from check_manifest import check_manifest
+        self._create_repo_with_code()
+        self._add_to_vcs('pyproject.toml', textwrap.dedent('''
+            [build-system]
+            requires = []
+            build-backend = "backend"
+            backend-path = ["."]
+        '''))
+        # A real PEP 517 backend that does not interpret MANIFEST.in.
+        self._add_to_vcs('backend.py', textwrap.dedent('''
+            import os
+            import tarfile
+
+            def build_sdist(sdist_directory, config_settings=None):
+                name = 'sample-0.0.0.tar.gz'
+                with tarfile.open(os.path.join(sdist_directory, name), 'w:gz') as archive:
+                    for filename in ['setup.py', 'sample.py', 'pyproject.toml',
+                                     'backend.py', 'MANIFEST.in']:
+                        if os.path.exists(filename):
+                            archive.add(filename, arcname='sample-0.0.0/' + filename)
+                return name
+        '''))
+        self._add_to_vcs('unrelated.txt')
+        if kwargs.get('update'):
+            self._add_to_vcs('MANIFEST.in', '# existing manifest\n')
+        self.assertFalse(check_manifest(build_isolation=False, **kwargs))
+        self.assertIn("missing from sdist:\n  unrelated.txt", sys.stderr.getvalue())
+        self.assertIn("suggested MANIFEST.in rules:\n  include *.txt",
+                      sys.stdout.getvalue())
+        self.assertIn("MANIFEST.in rules are intended for setuptools; "
+                      "the build backend 'backend' may ignore them",
+                      sys.stderr.getvalue())
+        if kwargs:
+            with open('MANIFEST.in') as f:
+                self.assertIn('include *.txt', f.read())
+
+    def test_suggestions_custom_backend(self):
+        self._check_suggestions_with_custom_backend()
+
+    def test_suggestions_custom_backend_create(self):
+        self._check_suggestions_with_custom_backend(create=True)
+
+    def test_suggestions_custom_backend_update(self):
+        self._check_suggestions_with_custom_backend(update=True)
+
     def test_suggestions_create(self):
         from check_manifest import check_manifest
         self._create_repo_with_code()
