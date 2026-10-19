@@ -8,6 +8,9 @@ Changelog
 - Add Python 3.15 support.
 - Drop Python 3.8 and 3.9 support.
 
+- Return success after ``--create`` or ``--update`` when rebuilding confirms
+  that the suggested manifest rules resolve the file differences.  Fixes #82.
+
 
 0.51 (2025-10-15)
 -----------------
