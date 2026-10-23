@@ -604,7 +604,7 @@ def normalize_name(name: str) -> str:
 class IgnoreList:
 
     def __init__(self) -> None:
-        self._regexps: list[re.Pattern[str]] = []
+        self._rules: list[tuple[re.Pattern[str], bool]] = []
 
     @classmethod
     def default(cls) -> IgnoreList:
@@ -634,58 +634,61 @@ class IgnoreList:
         )
 
     def clear(self) -> None:
-        self._regexps = []
+        self._rules = []
 
     def __repr__(self) -> str:
         return 'IgnoreList(%r)' % (
-            [getattr(p, '_pattern', p) for p in self._regexps]
+            [(getattr(p, '_pattern', p), include) for p, include in self._rules]
         )
 
     def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, IgnoreList)
-            and len(self._regexps) == len(other._regexps)
+            and len(self._rules) == len(other._rules)
             and all(
-                getattr(a, '_pattern', a) == getattr(b, '_pattern', b)
-                for a, b in zip(self._regexps, other._regexps)
+                (getattr(a, '_pattern', a), include_a) == (getattr(b, '_pattern', b), include_b)
+                for (a, include_a), (b, include_b) in zip(self._rules, other._rules)
             )
         )
 
     def __iadd__(self, other: IgnoreList) -> IgnoreList:
         assert isinstance(other, IgnoreList)
-        self._regexps += other._regexps
+        self._rules += other._rules
         return self
 
     def _path(self, path: str) -> str:
         return path.replace('/', os.path.sep)
 
-    def exclude(self, *patterns: str) -> IgnoreList:
+    def exclude(self, *patterns: str, include: bool = False) -> IgnoreList:
         for pat in patterns:
             pat = self._path(pat)
-            self._regexps.append(translate_pattern(pat))
+            self._rules.append((translate_pattern(pat), include))
         return self
 
-    def global_exclude(self, *patterns: str) -> IgnoreList:
+    def global_exclude(self, *patterns: str, include: bool = False) -> IgnoreList:
         for pat in patterns:
             pat = os.path.join('**', self._path(pat))
-            self._regexps.append(translate_pattern(pat))
+            self._rules.append((translate_pattern(pat), include))
         return self
 
-    def recursive_exclude(self, dirname: str, *patterns: str) -> IgnoreList:
+    def recursive_exclude(self, dirname: str, *patterns: str, include: bool = False) -> IgnoreList:
         dirname = self._path(dirname)
         for pat in patterns:
             pat = os.path.join(dirname, '**', self._path(pat))
-            self._regexps.append(translate_pattern(pat))
+            self._rules.append((translate_pattern(pat), include))
         return self
 
-    def prune(self, subdir: str) -> IgnoreList:
+    def prune(self, subdir: str, *, include: bool = False) -> IgnoreList:
         pat = os.path.join(self._path(subdir), '**')
-        self._regexps.append(translate_pattern(pat))
+        self._rules.append((translate_pattern(pat), include))
         return self
 
     def filter(self, filelist: list[str]) -> list[str]:
-        return [name for name in filelist
-                if not any(rx.match(self._path(name)) for rx in self._regexps)]
+        # A later MANIFEST.in directive can restore an excluded file.  Begin
+        # with every candidate so unspecified files are still checked.
+        return [name for name in filelist if next(
+            (include for rx, include in reversed(self._rules)
+             if rx.match(self._path(name))), True)]
 
 
 WARN_ABOUT_FILES_IN_VCS = [
@@ -868,32 +871,25 @@ def _get_ignore_from_manifest_lines(lines: list[str], ui: UI) -> IgnoreList:
                 ui.warning("ERROR: Leading slashes are not allowed in MANIFEST.in on Windows: %s" % part)
             if part.endswith('/'):
                 ui.warning("ERROR: Trailing slashes are not allowed in MANIFEST.in on Windows: %s" % part)
-        if cmd == 'exclude':
-            ignore.exclude(*rest.split())
-        elif cmd == 'global-exclude':
-            ignore.global_exclude(*rest.split())
-        elif cmd == 'recursive-exclude':
+        include = cmd in ('include', 'global-include', 'recursive-include', 'graft')
+        if cmd in ('include', 'exclude'):
+            ignore.exclude(*rest.split(), include=include)
+        elif cmd in ('global-include', 'global-exclude'):
+            ignore.global_exclude(*rest.split(), include=include)
+        elif cmd in ('recursive-include', 'recursive-exclude'):
             try:
                 dirname, patterns = rest.split(None, 1)
             except ValueError:
                 # Wrong MANIFEST.in line.
                 ui.warning(
                     "You have a wrong line in MANIFEST.in: %r\n"
-                    "'recursive-exclude' expects <dir> <pattern1> <pattern2>..."
-                    % line
+                    "%r expects <dir> <pattern1> <pattern2>..."
+                    % (line, cmd)
                 )
                 continue
-            ignore.recursive_exclude(dirname, *patterns.split())
-        elif cmd == 'prune':
-            ignore.prune(rest)
-        # XXX: This ignores all 'include'/'global-include'/'recusive-include'/'graft' commands,
-        # which is wrong!  Quoting the documentation:
-        #
-        #    The order of commands in the manifest template matters: initially,
-        #    we have the list of default files as described above, and each
-        #    command in the template adds to or removes from that list of
-        #    files.
-        #           -- https://docs.python.org/3.8/distutils/sourcedist.html#specifying-the-files-to-distribute
+            ignore.recursive_exclude(dirname, *patterns.split(), include=include)
+        elif cmd in ('graft', 'prune'):
+            ignore.prune(rest, include=include)
     return ignore
 
 
@@ -1018,8 +1014,11 @@ def check_manifest(
         if not is_package():
             raise Failure(
                 'This is not a Python project (no setup.py/pyproject.toml).')
-        ignore, ignore_bad_ideas = read_config()
-        ignore += read_manifest(ui)
+        config_ignore, ignore_bad_ideas = read_config()
+        ignore = read_manifest(ui)
+        # Manifest includes restore earlier manifest exclusions, but should not
+        # override generated-file defaults or explicit check-manifest ignores.
+        ignore += config_ignore
         if extra_ignore:
             ignore += extra_ignore
         if extra_ignore_bad_ideas:

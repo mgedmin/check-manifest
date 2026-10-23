@@ -395,8 +395,8 @@ class Tests(unittest.TestCase):
             'src/zope/foo/language.po',
             'src/zope/foo/config.cfg',
         ])
-        ignore = IgnoreList.default()
-        ignore += _get_ignore_from_manifest_lines(manifest_in.splitlines(), self.ui)
+        ignore = _get_ignore_from_manifest_lines(manifest_in.splitlines(), self.ui)
+        ignore += IgnoreList.default()
         result = strip_sdist_extras(ignore, filelist)
         self.assertEqual(result, expected)
 
@@ -488,7 +488,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(parse(['exclude some/directory/*.cfg']),
                          IgnoreList().exclude('some/directory/*.cfg'))
         self.assertEqual(parse(['include *.cfg']),
-                         IgnoreList())
+                         IgnoreList().exclude('*.cfg', include=True))
         self.assertEqual(parse(['global-exclude *.pyc']),
                          IgnoreList().global_exclude('*.pyc'))
         self.assertEqual(parse(['global-exclude *.pyc *.sh']),
@@ -522,6 +522,7 @@ class Tests(unittest.TestCase):
             IgnoreList()
             .exclude('*.02', '*.03', '04.*', 'bar.txt', '*.05', 'some/directory/*.cfg')
             .global_exclude('*.10', '*.11', '*.12')
+            .exclude('*.20', include=True)
             .prune('30')
             .recursive_exclude('40', '*.41')
             .recursive_exclude('42', '*.43', '44.*')
@@ -534,7 +535,8 @@ class Tests(unittest.TestCase):
             graft a/
             recursive-include /b *.txt
         """).splitlines()
-        self.assertEqual(parse(text), IgnoreList())
+        self.assertEqual(parse(text), IgnoreList().prune('a/', include=True)
+                         .recursive_exclude('/b', '*.txt', include=True))
         self.assertEqual(self.ui.warnings, [
             'ERROR: Trailing slashes are not allowed in MANIFEST.in on Windows: a/',
             'ERROR: Leading slashes are not allowed in MANIFEST.in on Windows: /b',
@@ -1386,6 +1388,60 @@ class TestUserInterface(unittest.TestCase):
 
 class TestIgnoreList(unittest.TestCase):
 
+    def test_manifest_rules_match_setuptools_ordering(self):
+        from distutils.filelist import FileList
+
+        from check_manifest import _get_ignore_from_manifest_lines
+
+        files = ['README.rst', 'src/pkg/data.txt', 'src/pkg/code.py',
+                 'src/pkg/cache.pyc', 'docs/guide.txt', 'notes.txt']
+        cases = [
+            ['global-exclude *', 'graft src', 'include README.rst'],
+            ['global-exclude *.txt', 'global-include data.txt notes.txt'],
+            ['prune src', 'recursive-include src *.txt *.py'],
+            ['global-exclude *', 'graft src', 'recursive-exclude src *.pyc'],
+            ['exclude *.txt', 'include notes.txt', 'exclude notes.txt'],
+            ['global-exclude *', 'graft src', 'prune src/pkg'],
+        ]
+        for lines in cases:
+            with self.subTest(lines=lines):
+                oracle = FileList()
+                oracle.allfiles = [name.replace('/', os.path.sep) for name in files]
+                oracle.files = oracle.allfiles[:]
+                for line in lines:
+                    oracle.process_template_line(line)
+                expected = {name.replace(os.path.sep, '/') for name in oracle.files}
+                rules = _get_ignore_from_manifest_lines(lines, MockUI())
+                self.assertEqual(set(rules.filter(files)), expected)
+
+    def test_malformed_recursive_include_warns(self):
+        from check_manifest import _get_ignore_from_manifest_lines
+
+        ui = MockUI()
+        rules = _get_ignore_from_manifest_lines(['recursive-include src'], ui)
+        self.assertEqual(rules.filter(['src/data.txt']), ['src/data.txt'])
+        self.assertEqual(ui.warnings, [
+            "You have a wrong line in MANIFEST.in: 'recursive-include src'\n"
+            "'recursive-include' expects <dir> <pattern1> <pattern2>...",
+        ])
+
+    def test_manifest_include_rules_restore_files_in_order(self):
+        from check_manifest import _get_ignore_from_manifest_lines
+
+        files = ['README.rst', 'src/pkg/data.txt', 'src/pkg/code.py', 'other.txt']
+        cases = [
+            (['prune **', 'graft src', 'include README.rst'], files[:3]),
+            (['global-exclude *.txt', 'global-include data.txt'], files[:3]),
+            (['prune src', 'recursive-include src *.txt'],
+             ['README.rst', 'src/pkg/data.txt', 'other.txt']),
+            (['include README.rst', 'exclude README.rst'], files[1:]),
+            (['prune **', 'graft src', 'global-exclude *.txt'], ['src/pkg/code.py']),
+        ]
+        for lines, expected in cases:
+            with self.subTest(lines=lines):
+                rules = _get_ignore_from_manifest_lines(lines, MockUI())
+                self.assertEqual(rules.filter(files), expected)
+
     def setUp(self):
         from check_manifest import IgnoreList
         self.ignore = IgnoreList()
@@ -1648,6 +1704,30 @@ class TestCheckManifest(unittest.TestCase):
         from check_manifest import check_manifest
         self._create_repo_with_code()
         self.assertTrue(check_manifest(), sys.stderr.getvalue())
+
+    def test_graft_after_prune_still_checks_missing_source_files(self):
+        from check_manifest import check_manifest
+
+        self._create_repo_with_code()
+        self._add_to_vcs('MANIFEST.in', 'prune **\ngraft src\ninclude setup.py\n')
+        self._add_to_vcs(os.path.join('src', 'data.txt'), 'tracked data')
+        # A tracked file disappears before the actual sdist is built.  It must
+        # still be compared, even though an earlier prune matched everything.
+        os.unlink(os.path.join('src', 'data.txt'))
+        self.assertFalse(check_manifest(), sys.stderr.getvalue())
+        self.assertIn('missing from sdist:\n  src/data.txt', sys.stderr.getvalue())
+
+    def test_manifest_includes_do_not_override_config_ignores(self):
+        from check_manifest import IgnoreList, check_manifest
+
+        self._create_repo_with_code()
+        self._add_to_vcs('MANIFEST.in', 'prune **\ngraft src\ninclude setup.py\n')
+        self._add_to_vcs(os.path.join('src', 'data.txt'), 'tracked data')
+        os.unlink(os.path.join('src', 'data.txt'))
+        self._add_to_vcs('setup.cfg', '[check-manifest]\nignore = src/*.txt\n')
+        self.assertTrue(check_manifest(), sys.stderr.getvalue())
+        self.assertTrue(check_manifest(extra_ignore=IgnoreList().prune('src')),
+                        sys.stderr.getvalue())
 
     def test_relative_pathname(self):
         from check_manifest import check_manifest
