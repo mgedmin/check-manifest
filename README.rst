@@ -124,6 +124,11 @@ ignore-bad-ideas
     keep generated files in your version control system, even though
     it is generally a bad idea.
 
+``MANIFEST.in`` include and exclude directives are processed in order: for
+example, ``graft src`` after ``prune **`` restores ``src`` files to the
+comparison. These directives do not override check-manifest's default ignore
+rules, configured ``ignore`` patterns, or command-line ``--ignore`` patterns.
+
 
 Version control integration
 ---------------------------

@@ -8,6 +8,10 @@ Changelog
 - Add Python 3.15 support.
 - Drop Python 3.8 and 3.9 support.
 
+- Honor ordered include and exclude directives in MANIFEST.in, so that a
+  later graft or include can restore files excluded by an earlier prune
+  (issue #144). Explicit check-manifest ignore rules still take precedence.
+
 
 0.51 (2025-10-15)
 -----------------
