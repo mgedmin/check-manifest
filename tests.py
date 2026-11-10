@@ -739,6 +739,15 @@ class TestConfiguration(unittest.TestCase):
         expected = check_manifest.IgnoreList().global_exclude('foo', 'bar*')
         self.assertEqual(ignore_bad_ideas, expected)
 
+    def test_read_pyproject_config_invalid_toml(self):
+        import check_manifest
+        with open('pyproject.toml', 'w') as f:
+            f.write('this is [not valid toml = \n')
+        with self.assertRaises(check_manifest.Failure) as cm:
+            check_manifest.read_config()
+        self.assertIn('pyproject.toml is not valid TOML',
+                      str(cm.exception))
+
     def test_read_manifest_no_manifest(self):
         import check_manifest
         ignore = check_manifest.read_manifest(self.ui)
