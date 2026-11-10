@@ -772,7 +772,10 @@ def _load_config() -> ConfigDict:
     """
     if os.path.exists("pyproject.toml"):
         with open('pyproject.toml', 'rb') as f:
-            config = tomllib.load(f)
+            try:
+                config = tomllib.load(f)
+            except tomllib.TOMLDecodeError as e:
+                raise Failure('pyproject.toml is not valid TOML: %s' % e)
         if CFG_SECTION_CHECK_MANIFEST in config.get("tool", {}):
             return config["tool"][CFG_SECTION_CHECK_MANIFEST]  # type: ignore
 
