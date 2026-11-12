@@ -1,5 +1,6 @@
 import codecs
 import locale
+import ntpath
 import os
 import posixpath
 import re
@@ -174,6 +175,53 @@ class Tests(unittest.TestCase):
                 'makedirs %s' % n('/dest/dir/c/d'),
                 'cp %s %s' % (n('c/d/e'), n('/dest/dir/c/d/e')),
             ])
+
+    def test_expand_directory_links(self):
+        from check_manifest import expand_directory_links
+        targets = {
+            'alias': os.path.abspath('data'),
+            'data/link': os.path.abspath('data/nested'),
+        }
+        with (mock.patch('os.path.islink', lambda path: path in targets or path == 'file-link'),
+              mock.patch('os.path.isdir', lambda path: path in targets),
+              mock.patch('os.path.realpath', targets.__getitem__)):
+            files = ['alias', 'data/link', 'data/nested/input.txt', 'file-link']
+            self.assertEqual(expand_directory_links(files, [
+                'alias/link/input.txt',
+                'alias/nested/input.txt',
+                'data/link/input.txt',
+                'data/nested/input.txt',
+                'file-link',
+            ]), [
+                'alias/link/input.txt',
+                'alias/nested/input.txt',
+                'data/link/input.txt',
+                'data/nested/input.txt',
+                'file-link',
+            ])
+            # A backend that skips or preserves the link must not gain files
+            # just because the clean copy turns it into an ordinary directory.
+            self.assertEqual(expand_directory_links(files, [
+                'alias', 'data/link', 'data/nested/input.txt', 'file-link',
+            ]), files)
+            # Flit can follow an explicitly included outer link while skipping
+            # links found inside it. Keep those omitted links in the check.
+            self.assertEqual(expand_directory_links(files, [
+                'alias/nested/input.txt', 'data/nested/input.txt', 'file-link',
+            ]), [
+                'alias/link', 'alias/nested/input.txt', 'data/link',
+                'data/nested/input.txt', 'file-link',
+            ])
+
+    def test_directory_link_to_another_drive(self):
+        from check_manifest import expand_directory_links
+        relative_path = ntpath.relpath
+        with (mock.patch('os.path.islink', return_value=True),
+              mock.patch('os.path.isdir', return_value=True),
+              mock.patch('os.path.realpath', return_value=r'D:\external'),
+              mock.patch('os.path.relpath', lambda path: relative_path(path, r'C:\project'))):
+            self.assertEqual(expand_directory_links(['alias'], ['alias/input.txt']),
+                             ['alias'])
 
     def test_get_one_file_in(self):
         from check_manifest import get_one_file_in
@@ -1693,6 +1741,43 @@ class TestCheckManifest(unittest.TestCase):
                       sys.stderr.getvalue())
         self.assertIn("suggested MANIFEST.in rules:\n  include *.txt",
                       sys.stdout.getvalue())
+
+    def _create_repo_with_directory_link(self):
+        self._create_repo_with_code()
+        self._add_to_vcs('data/input.txt', 'test data')
+        self._add_to_vcs('MANIFEST.in',
+                         'recursive-include data *\nrecursive-include alias *\n')
+        os.symlink('data', 'alias', target_is_directory=True)
+        self._vcs._add_to_vcs(['alias'])
+
+    @unittest.skipIf(sys.platform == 'win32', 'creating symlinks needs privileges')
+    def test_directory_link(self):
+        from check_manifest import check_manifest
+        self._create_repo_with_directory_link()
+        self.assertTrue(check_manifest(), sys.stderr.getvalue())
+
+    @unittest.skipIf(sys.platform == 'win32', 'creating symlinks needs privileges')
+    def test_directory_link_does_not_hide_untracked_files(self):
+        from check_manifest import check_manifest
+        self._create_repo_with_directory_link()
+        with open('data/untracked.txt', 'w') as f:
+            f.write('not in version control')
+        self.assertFalse(check_manifest())
+        self.assertIn('missing from VCS:\n  alias/untracked.txt\n'
+                      '  data/untracked.txt', sys.stderr.getvalue())
+        self.assertNotIn('missing from sdist', sys.stderr.getvalue())
+
+    @unittest.skipIf(sys.platform == 'win32', 'creating symlinks needs privileges')
+    def test_directory_link_does_not_hide_missing_files(self):
+        from check_manifest import check_manifest
+        self._create_repo_with_directory_link()
+        self._add_to_vcs('data/extra.txt', 'another tracked file')
+        self._add_to_vcs('MANIFEST.in',
+                         'recursive-include data *\ninclude alias/input.txt\n')
+        self.assertFalse(check_manifest())
+        self.assertIn('missing from sdist:\n  alias/extra.txt',
+                      sys.stderr.getvalue())
+        self.assertNotIn('missing from VCS', sys.stderr.getvalue())
 
     def test_suggestions_create(self):
         from check_manifest import check_manifest

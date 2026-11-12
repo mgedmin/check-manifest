@@ -575,6 +575,40 @@ def get_vcs_files(ui: UI) -> list[str]:
     return canonical_file_list(vcs.get_versioned_files())
 
 
+def expand_directory_links(filelist: list[str], sdist_files: list[str]) -> list[str]:
+    """Expand versioned directory symlinks dereferenced by the build backend.
+
+    Do not walk the working tree: files not in version control must remain
+    absent from the clean copy used to check the manifest.
+    """
+    links = {}
+    for name in filelist:
+        if os.path.islink(name) and os.path.isdir(name):
+            try:
+                target = os.path.relpath(os.path.realpath(name))
+            except ValueError:
+                # A target on another drive cannot be in this source tree.
+                continue
+            links[name] = normalize_name(target)
+
+    def expand(name: str, alias: str, parents: set[str]) -> list[str]:
+        if (name not in links or name in parents
+                or not any(f.startswith(alias + '/') for f in sdist_files)):
+            return [alias]
+        target = links[name]
+        prefix = target + '/' if target != '.' else ''
+        expanded = [
+            child
+            for filename in filelist if filename.startswith(prefix)
+            for child in expand(filename, posixpath.join(alias, filename[len(prefix):]),
+                                parents | {name})
+        ]
+        return expanded or [alias]
+
+    return canonical_file_list(
+        child for name in filelist for child in expand(name, name, set()))
+
+
 def normalize_names(names: Iterable[str]) -> list[str]:
     """Normalize file names."""
     return [normalize_name(name) for name in names]
@@ -1038,6 +1072,8 @@ def check_manifest(
             sdist_files = get_sdist_file_list(sdist_filename, ignore)
             ui.info_continue(": %d files and directories" % len(sdist_files))
             version = extract_version_from_filename(sdist_filename)
+        all_source_files = expand_directory_links(all_source_files, sdist_files)
+        source_files = strip_sdist_extras(ignore, all_source_files)
         existing_source_files = list(filter(os.path.exists, all_source_files))
         missing_source_files = sorted(set(all_source_files) - set(existing_source_files))
         if missing_source_files:
