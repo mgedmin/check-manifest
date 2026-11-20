@@ -83,6 +83,11 @@ class Tests(unittest.TestCase):
             for fn in filenames:
                 tf.addfile(tarfile.TarInfo(fn), BytesIO())
 
+    def test_vcs_without_ignore_support(self):
+        from check_manifest import VCS, get_vcs_ignored_files
+        with mock.patch('check_manifest.detect_vcs', return_value=VCS(self.ui)):
+            self.assertEqual(get_vcs_ignored_files(self.ui, ['extra.txt']), [])
+
     def test_run_success(self):
         from check_manifest import run
         self.assertEqual(run(["true"]), "")
@@ -1120,6 +1125,78 @@ class TestGit(VCSMixin, unittest.TestCase):
         open(os.path.join(self.tmpdir, '.git'), 'w').close()
         self.assertEqual(detect_vcs(self.ui).metadata_name, '.git')
 
+    def test_get_ignored_files(self):
+        from check_manifest import get_vcs_ignored_files
+        self._init_vcs()
+        self._create_files(['.gitignore', 'nested/.gitignore'])
+        with open('.gitignore', 'w') as f:
+            f.write('*.generated\n!keep.generated\n')
+        with open('nested/.gitignore', 'w') as f:
+            f.write('ignored.txt\n')
+        self.assertEqual(
+            get_vcs_ignored_files(self.ui, [
+                'cache.generated', 'keep.generated', 'nested/ignored.txt',
+                'nested/keep.txt', 'not-present.generated',
+            ]),
+            ['cache.generated', 'nested/ignored.txt', 'not-present.generated'],
+        )
+
+    def test_get_ignored_files_in_subdirectory(self):
+        from check_manifest import get_vcs_ignored_files
+        self._init_vcs()
+        with open('.gitignore', 'w') as f:
+            f.write('*.generated\n')
+        os.mkdir('project')
+        os.chdir('project')
+        self.assertEqual(get_vcs_ignored_files(self.ui, ['cache.generated']),
+                         ['cache.generated'])
+
+    def test_get_ignored_files_nonascii_and_newline(self):
+        from check_manifest import get_vcs_ignored_files
+        self._init_vcs()
+        with open('.gitignore', 'w') as f:
+            f.write('*.generated\n')
+        filenames = ['\u00e9.generated', 'line\nbreak.generated']
+        self.assertEqual(get_vcs_ignored_files(self.ui, filenames),
+                         sorted(filenames))
+
+    def test_get_ignored_files_none_match(self):
+        from check_manifest import get_vcs_ignored_files
+        self._init_vcs()
+        self.assertEqual(get_vcs_ignored_files(self.ui, ['keep.txt']), [])
+        self.assertEqual(get_vcs_ignored_files(self.ui, []), [])
+
+    def test_get_ignored_files_outside_source_tree(self):
+        from check_manifest import get_vcs_ignored_files
+        self._init_vcs()
+        self.assertEqual(get_vcs_ignored_files(self.ui, [
+            os.path.abspath('outside.generated'), '..', '../outside.generated',
+        ]), [])
+
+    @unittest.skipIf(sys.platform == 'win32', 'symlink creation requires privileges')
+    def test_get_ignored_files_beyond_symlink(self):
+        from check_manifest import get_vcs_ignored_files
+        self._init_vcs()
+        self._create_files(['real/child/file.generated'])
+        os.symlink('real', 'link')
+        with open('.gitignore', 'w') as f:
+            f.write('*.generated\n')
+        self.assertEqual(get_vcs_ignored_files(self.ui, [
+            'link/child/file.generated', 'other.generated',
+        ]), ['other.generated'])
+
+    def test_get_ignored_files_in_submodule(self):
+        from check_manifest import get_vcs_ignored_files
+        self._init_repo_with_files('child', ['tracked.txt'])
+        self._init_repo_with_files('main', ['tracked.txt'])
+        self._add_submodule('main', 'vendor', '../child')
+        os.chdir('main')
+        with open('vendor/.gitignore', 'w') as f:
+            f.write('*.generated\n')
+        self.assertEqual(get_vcs_ignored_files(self.ui, [
+            'vendor/output.generated', 'vendor/tracked.txt',
+        ]), ['vendor/output.generated'])
+
     def test_get_versioned_files_with_git_submodules(self):
         from check_manifest import get_vcs_files
         self._init_repo_with_files('repo1', ['file1', 'file2'])
@@ -1683,6 +1760,38 @@ class TestCheckManifest(unittest.TestCase):
         ignore = IgnoreList().global_exclude('*.txt')
         self.assertTrue(check_manifest(extra_ignore=ignore),
                         sys.stderr.getvalue())
+
+    def test_gitignored_files_missing_from_vcs(self):
+        from check_manifest import check_manifest
+        self._vcs = GitHelper()
+        self._create_repo_with_code()
+        self._add_to_vcs('.gitignore', 'generated.txt\n')
+        self._add_to_vcs('MANIFEST.in', 'include generated.txt\n')
+        with open('generated.txt', 'w') as f:
+            f.write('generated data\n')
+        self.assertTrue(check_manifest(), sys.stderr.getvalue())
+
+    def test_negated_gitignore_files_still_missing_from_vcs(self):
+        from check_manifest import check_manifest
+        self._vcs = GitHelper()
+        self._create_repo_with_code()
+        self._add_to_vcs('.gitignore', '*.generated\n!keep.generated\n')
+        self._add_to_vcs('MANIFEST.in', 'include *.generated\n')
+        for filename in ['cache.generated', 'keep.generated']:
+            with open(filename, 'w') as f:
+                f.write('generated data\n')
+        self.assertFalse(check_manifest())
+        self.assertIn('missing from VCS:\n  keep.generated', sys.stderr.getvalue())
+        self.assertNotIn('cache.generated', sys.stderr.getvalue())
+
+    def test_gitignored_tracked_file_still_missing_from_sdist(self):
+        from check_manifest import check_manifest
+        self._vcs = GitHelper()
+        self._create_repo_with_code()
+        self._add_to_vcs('.gitignore', '*.generated\n')
+        self._add_to_vcs('tracked.generated', 'tracked data\n')
+        self.assertFalse(check_manifest())
+        self.assertIn('missing from sdist:\n  tracked.generated', sys.stderr.getvalue())
 
     def test_suggestions(self):
         from check_manifest import check_manifest

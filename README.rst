@@ -74,6 +74,11 @@ Command-line reference
 Configuration
 -------------
 
+When using Git, files in an sdist that match Git's ignore rules are not
+reported as missing from version control. Nested ignore files and negated
+patterns are respected. Files that are already tracked must still appear in
+the sdist, even when their names match an ignore pattern.
+
 You can configure check-manifest to ignore certain file patterns using
 a ``[tool.check-manifest]`` section in your ``pyproject.toml`` file or
 a ``[check-manifest]`` section in either ``setup.cfg`` or
