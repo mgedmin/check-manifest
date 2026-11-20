@@ -5,6 +5,8 @@ Changelog
 0.52 (unreleased)
 -----------------
 
+- Respect Git ignore rules for sdist files missing from version control.
+
 - Add Python 3.15 support.
 - Drop Python 3.8 and 3.9 support.
 

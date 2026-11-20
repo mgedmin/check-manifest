@@ -165,6 +165,8 @@ def run(
     encoding: str | None = None,
     decode: Literal[True] = True,
     cwd: str | None = None,
+    input_data: bytes | None = None,
+    allowed_returncodes: Collection[int] = (0,),
 ) -> str:
     ...
 
@@ -176,6 +178,8 @@ def run(
     encoding: str | None = None,
     decode: Literal[False],
     cwd: str | None = None,
+    input_data: bytes | None = None,
+    allowed_returncodes: Collection[int] = (0,),
 ) -> bytes:
     ...
 
@@ -186,6 +190,8 @@ def run(
     encoding: str | None = None,
     decode: bool = True,
     cwd: str | None = None,
+    input_data: bytes | None = None,
+    allowed_returncodes: Collection[int] = (0,),
 ) -> str | bytes:
     """Run a command [cmd, arg1, arg2, ...].
 
@@ -196,14 +202,15 @@ def run(
     if not encoding:
         encoding = locale.getpreferredencoding()
     try:
-        pipe = subprocess.Popen(command, stdin=subprocess.DEVNULL,
+        pipe = subprocess.Popen(command,
+                                stdin=subprocess.PIPE if input_data is not None else subprocess.DEVNULL,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, cwd=cwd)
     except OSError as e:
         raise Failure(f"could not run {command}: {e}")
-    output, stderr = pipe.communicate()
+    output, stderr = pipe.communicate(input_data)
     status = pipe.wait()
-    if status != 0:
+    if status not in allowed_returncodes:
         raise CommandFailed(command, status,
                             (output + stderr).decode(encoding, 'replace'))
     if decode:
@@ -432,6 +439,9 @@ class VCS:
     def get_versioned_files(self) -> list[str]:
         raise NotImplementedError('this is an abstract method')
 
+    def get_ignored_files(self, filenames: Collection[str]) -> list[str]:
+        return []
+
 
 class Git(VCS):
     metadata_name = '.git'
@@ -454,6 +464,34 @@ class Git(VCS):
         # -z tells git to use \0 as a line terminator; split() treats it as a
         # line separator, so we always get one empty line at the end, which we
         # drop with the [:-1] slice
+        return output.split("\0")[:-1]
+
+    @staticmethod
+    def _can_check_ignore(filename: str) -> bool:
+        # Git refuses paths outside the repository or beyond symbolic links.
+        # Keep those candidates visible in the mismatch report.
+        if os.path.isabs(filename) or filename == '..' or filename.startswith('../'):
+            return False
+        directory = posixpath.dirname(filename)
+        while directory:
+            if os.path.islink(directory):
+                return False
+            directory = posixpath.dirname(directory)
+        return True
+
+    def get_ignored_files(self, filenames: Collection[str]) -> list[str]:
+        """Check candidate paths against Git's ignore rules, even if absent."""
+        filenames = [name for name in filenames if self._can_check_ignore(name)]
+        if not filenames:
+            return []
+        encoding = self._encoding or locale.getpreferredencoding()
+        output = run(
+            ["git", "check-ignore", "--no-index", "-z", "--stdin"],
+            encoding=encoding,
+            input_data=("\0".join(sorted(filenames)) + "\0").encode(encoding),
+            # No matching ignore rule is a successful empty result.
+            allowed_returncodes=(0, 1),
+        )
         return output.split("\0")[:-1]
 
 
@@ -573,6 +611,11 @@ def get_vcs_files(ui: UI) -> list[str]:
     """List all files under version control in the current directory."""
     vcs = detect_vcs(ui)
     return canonical_file_list(vcs.get_versioned_files())
+
+
+def get_vcs_ignored_files(ui: UI, filenames: Collection[str]) -> list[str]:
+    """List candidate paths ignored by the current version control system."""
+    return normalize_names(detect_vcs(ui).get_ignored_files(filenames))
 
 
 def normalize_names(names: Iterable[str]) -> list[str]:
@@ -1065,6 +1108,7 @@ def check_manifest(
                     ui.info_continue(": %d files and directories" % len(clean_sdist_files))
         missing_from_manifest = set(source_files) - set(clean_sdist_files)
         missing_from_VCS = set(sdist_files + clean_sdist_files) - set(source_files)
+        missing_from_VCS -= set(get_vcs_ignored_files(ui, missing_from_VCS))
         if not missing_from_manifest and not missing_from_VCS:
             ui.info("lists of files in version control and sdist match")
         else:
