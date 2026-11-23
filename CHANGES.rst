@@ -7,6 +7,8 @@ Changelog
 
 - Add Python 3.15 support.
 - Drop Python 3.8 and 3.9 support.
+- Fix misleading MANIFEST.in suggestions when the file exists but is not
+  under version control (`#40 <https://github.com/mgedmin/check-manifest/issues/40>`_).
 
 
 0.51 (2025-10-15)

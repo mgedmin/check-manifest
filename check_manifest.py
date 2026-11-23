@@ -1072,9 +1072,9 @@ def check_manifest(
                 "lists of files in version control and sdist do not match!\n%s"
                 % format_missing(missing_from_VCS, missing_from_manifest, "VCS", "sdist"))
             suggestions, unknowns = find_suggestions(missing_from_manifest)
-            user_asked_for_help = update or (create and not
-                                                os.path.exists('MANIFEST.in'))
-            if 'MANIFEST.in' not in existing_source_files:
+            manifest_exists = os.path.exists('MANIFEST.in')
+            user_asked_for_help = update or (create and not manifest_exists)
+            if not manifest_exists:
                 if suggestions and not user_asked_for_help:
                     ui.info("no MANIFEST.in found; you can run 'check-manifest -c' to create one")
                 else:
@@ -1082,9 +1082,8 @@ def check_manifest(
             if suggestions:
                 ui.info("suggested MANIFEST.in rules:\n%s" % format_list(suggestions))
                 if user_asked_for_help:
-                    existed = os.path.exists('MANIFEST.in')
                     with open('MANIFEST.in', 'a') as f:
-                        if not existed:
+                        if not manifest_exists:
                             ui.info("creating MANIFEST.in")
                         else:
                             ui.info("updating MANIFEST.in")
@@ -1093,7 +1092,7 @@ def check_manifest(
                     if unknowns:
                         ui.info("don't know how to come up with rules matching\n%s"
                                 % format_list(unknowns))
-            elif user_asked_for_help:
+            elif user_asked_for_help and unknowns:
                 ui.info("don't know how to come up with rules matching any of the files, sorry!")
             all_ok = False
         bad_ideas = find_bad_ideas(all_source_files)

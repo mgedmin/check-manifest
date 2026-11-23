@@ -1756,9 +1756,11 @@ class TestCheckManifest(unittest.TestCase):
         self._add_to_vcs('unrelated.txt')
         with open('MANIFEST.in', 'w') as f:
             f.write("include *.txt\n")
-        self.assertFalse(check_manifest())
+        self.assertFalse(check_manifest(update=True))
         self.assertIn("missing from VCS:\n  MANIFEST.in", sys.stderr.getvalue())
         self.assertNotIn("missing from sdist", sys.stderr.getvalue())
+        self.assertNotIn("no MANIFEST.in found", sys.stdout.getvalue())
+        self.assertNotIn("don't know how to come up with rules", sys.stdout.getvalue())
 
     def test_setup_py_does_not_need_to_be_added_to_be_considered(self):
         from check_manifest import check_manifest
