@@ -832,6 +832,13 @@ class TestMain(unittest.TestCase):
         # 1 (default verbosity) + 1 - 1 = 1.
         self.assertEqual(self.ui.verbosity, 1)
 
+    def test_sdist_arg(self):
+        import check_manifest
+        sys.argv.append('--sdist=dist/foo-1.0.tar.gz')
+        check_manifest.main()
+        self.assertEqual(self._check_manifest.call_args.kwargs['sdist'],
+                         'dist/foo-1.0.tar.gz')
+
 
 class TestZestIntegration(unittest.TestCase):
 
@@ -1661,6 +1668,26 @@ class TestCheckManifest(unittest.TestCase):
         python = os.path.relpath(sys.executable)
         self.assertTrue(check_manifest(subdir, python=python),
                         sys.stderr.getvalue())
+
+    def test_existing_sdist(self):
+        from check_manifest import build_sdist, check_manifest, get_one_file_in
+        self._create_repo_with_code()
+        sdist_dir = tempfile.mkdtemp(prefix='test-', suffix='-sdist')
+        try:
+            build_sdist(sdist_dir)
+            sdist = get_one_file_in(sdist_dir)
+            self.assertTrue(check_manifest(sdist=sdist),
+                            sys.stderr.getvalue())
+        finally:
+            rmtree(sdist_dir)
+
+    def test_missing_sdist(self):
+        from check_manifest import Failure, check_manifest
+        self._create_repo_with_code()
+        with self.assertRaises(Failure) as cm:
+            check_manifest(sdist='missing-1.0.tar.gz')
+        self.assertEqual(str(cm.exception),
+                         'Sdist not found: missing-1.0.tar.gz')
 
     def test_python_from_path(self):
         # https://github.com/mgedmin/check-manifest/issues/57

@@ -69,6 +69,9 @@ Command-line reference
       --ignore-bad-ideas patterns
                             ignore bad idea files/directories matching these
                             comma-separated patterns (default: [])
+      --sdist path          use an existing sdist instead of building one from
+                            the source tree (the clean sdist is still built)
+                            (default: None)
 
 
 Configuration
