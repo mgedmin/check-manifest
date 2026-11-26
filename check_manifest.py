@@ -1004,6 +1004,7 @@ def check_manifest(
     extra_ignore: IgnoreList | None = None,
     extra_ignore_bad_ideas: IgnoreList | None = None,
     build_isolation: bool = True,
+    sdist: str | None = None,
 ) -> bool:
     """Compare a generated source distribution with list of files in a VCS.
 
@@ -1030,10 +1031,16 @@ def check_manifest(
         ui.info_continue(": %d files and directories" % len(source_files))
         if not all_source_files:
             raise Failure('There are no files added to version control!')
-        ui.info_begin("building an sdist")
         with mkdtemp('-sdist') as tempdir:
-            build_sdist(tempdir, python=python, build_isolation=build_isolation)
-            sdist_filename = get_one_file_in(tempdir)
+            if sdist is None:
+                ui.info_begin("building an sdist")
+                build_sdist(tempdir, python=python, build_isolation=build_isolation)
+                sdist_filename = get_one_file_in(tempdir)
+            else:
+                ui.info_begin("using an sdist")
+                sdist_filename = os.path.abspath(sdist)
+                if not os.path.isfile(sdist_filename):
+                    raise Failure('Sdist not found: %s' % sdist)
             ui.info_continue(": %s" % os.path.basename(sdist_filename))
             sdist_files = get_sdist_file_list(sdist_filename, ignore)
             ui.info_continue(": %d files and directories" % len(sdist_files))
@@ -1161,6 +1168,12 @@ def main() -> None:
             ' Build dependencies specified by pyproject.toml must be already'
             ' installed if this option is used.'
         ))
+    parser.add_argument(
+        '--sdist', metavar='path', default=None,
+        help=(
+            'use an existing sdist instead of building one from the source'
+            ' tree (the clean sdist is still built)'
+        ))
     args = parser.parse_args()
 
     ignore = IgnoreList()
@@ -1178,7 +1191,8 @@ def main() -> None:
                               update=args.update, python=args.python,
                               ui=ui, extra_ignore=ignore,
                               extra_ignore_bad_ideas=ignore_bad_ideas,
-                              build_isolation=args.build_isolation):
+                              build_isolation=args.build_isolation,
+                              sdist=args.sdist):
             sys.exit(1)
     except Failure as e:
         ui.error(str(e))
