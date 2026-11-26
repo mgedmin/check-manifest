@@ -679,6 +679,14 @@ class IgnoreList:
         return self
 
     def prune(self, subdir: str) -> IgnoreList:
+        # A bare ``prune **`` is a setuptools idiom for "drop all directories
+        # before re-adding files with graft/include".  Translating it as
+        # ``**/**`` matches every path component, including file names, which
+        # makes check-manifest see an empty file list while setuptools builds
+        # a correct sdist.  Treat the bare form as the root directory instead.
+        if self._path(subdir) == '**':
+            self._regexps.append(translate_pattern('**/'))
+            return self
         pat = os.path.join(self._path(subdir), '**')
         self._regexps.append(translate_pattern(pat))
         return self

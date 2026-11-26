@@ -527,6 +527,40 @@ class Tests(unittest.TestCase):
             .recursive_exclude('42', '*.43', '44.*')
         )
 
+    def test_manifest_prune_double_star_does_not_hide_everything(self):
+        """`prune **` must only exclude directories, not re-included files.
+
+        setuptools treats `**` in `prune` as "any directory"; files added by
+        later `graft`/`include` directives must still be visible to
+        check-manifest (see issue #144).
+        """
+        from check_manifest import (
+            IgnoreList,
+            _get_ignore_from_manifest_lines,
+            canonical_file_list,
+            strip_sdist_extras,
+        )
+        manifest_in = textwrap.dedent("""
+            prune **
+            graft src
+            include setup.py
+        """)
+        filelist = canonical_file_list([
+            'setup.py',
+            'README.rst',
+            'src/helper.py',
+            'src/pkg/__init__.py',
+        ])
+        ignore = IgnoreList.default()
+        ignore += _get_ignore_from_manifest_lines(manifest_in.splitlines(), self.ui)
+        result = strip_sdist_extras(ignore, filelist)
+        self.assertEqual(result, canonical_file_list([
+            'setup.py',
+            'README.rst',
+            'src/helper.py',
+            'src/pkg/__init__.py',
+        ]))
+
     def test_get_ignore_from_manifest_lines_warns(self):
         from check_manifest import IgnoreList, _get_ignore_from_manifest_lines
         parse = partial(_get_ignore_from_manifest_lines, ui=self.ui)
